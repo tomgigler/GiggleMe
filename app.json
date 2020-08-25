@@ -1,0 +1,7 @@
+{
+  "name": "GiggleBot",
+  "description": "GiggleBot",
+  "image": "heroku/python",
+  "repository": "https://github.com/tomgigler/giglebot",
+  "keywords": ["python"]
+}
