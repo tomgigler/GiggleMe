@@ -12,6 +12,8 @@ client = discord.Client()
 async def on_message(message):
     if message.author == client.user:
         return
+    if message.content == 'kill':
+        sys.exit()
     if re.search('^[-]?[0-9][0-9]?[0-9]?[CF]$', message.content):
         match = re.search('([-]?[0-9][0-9]?[0-9]?)([CF])', message.content)
         temp = float(match.group(1))
