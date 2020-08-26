@@ -14,13 +14,14 @@ async def on_message(message):
         return
     if message.content == 'kill':
         sys.exit()
-    if re.search('^[-]?[0-9][0-9]?[0-9]?[CF]$', message.content):
-        match = re.search('([-]?[0-9][0-9]?[0-9]?)([CF])', message.content)
-        temp = float(match.group(1))
-        scale = match.group(2)
-        newtemp = temp * 1.8 + 32 if scale == 'C' else (temp - 32)/1.8
-        newscale = 'F' if scale == 'C' else 'C'
-        await message.channel.send(f"{temp}{scale} = {round(newtemp, 1)}{newscale}")
+    if re.search('[-]?[0-9][0-9]?[0-9]?[CF]', message.content):
+        for temp in re.findall('[-]?[0-9][0-9]?[0-9]?[CF]', message.content):
+            match = re.search('([-]?[0-9][0-9]?[0-9]?)([CF])', temp)
+            value = float(match.group(1))
+            scale = match.group(2)
+            newvalue = value * 1.8 + 32 if scale == 'C' else (value - 32)/1.8
+            newscale = 'F' if scale == 'C' else 'C'
+            await message.channel.send(f"{value}{scale} = {round(newvalue, 1)}{newscale}")
     if re.search('hello', message.content, re.IGNORECASE):
         await asyncio.sleep(6)
         await message.channel.send(f"{message.content} {time.strftime('%X')}")
