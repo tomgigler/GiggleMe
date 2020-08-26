@@ -10,10 +10,8 @@ async def on_message(message):
     if message.author == client.user:
         return
     if re.search('hello', message.content, re.IGNORECASE):
-        time.sleep(5)
         await message.channel.send(f"{message.content} {time.strftime('%X')}")
-
-    if re.search('bye', message.content, re.IGNORECASE):
+    elif re.search('bye', message.content, re.IGNORECASE):
         await message.channel.send(f"{message.content} {time.strftime('%X')}")
 
 client.run("NzQ3ODM3NTM2Nzc2NDg2OTUz.X0Ur-g.rKAZTJh8jmqbKzYKy95zfWKJh9M")
