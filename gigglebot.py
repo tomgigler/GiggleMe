@@ -8,10 +8,6 @@ client = discord.Client()
 
 @client.event
 async def on_message(message):
-    if message.author == client.user:
-        await asyncio.sleep(10)
-        await message.delete()
-        return
     if re.search('hello', message.content, re.IGNORECASE):
         await asyncio.sleep(6)
         await message.channel.send(f"{message.content} {time.strftime('%X')}")
