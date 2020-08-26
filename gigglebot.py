@@ -14,9 +14,9 @@ async def on_message(message):
         return
     if message.content == 'kill':
         sys.exit()
-    if re.search('[-]?[0-9][0-9]?[0-9]?[CF]', message.content):
-        for temp in re.findall('[-]?[0-9][0-9]?[0-9]?[CF]', message.content):
-            match = re.search('([-]?[0-9][0-9]?[0-9]?)([CF])', temp)
+    if re.search('[-]?[0-9]+[CF]', message.content):
+        for temp in re.findall('[-]?[0-9]+[CF]', message.content):
+            match = re.search('([-]?[0-9]+)([CF])', temp)
             value = float(match.group(1))
             scale = match.group(2)
             newvalue = value * 1.8 + 32 if scale == 'C' else (value - 32)/1.8
