@@ -18,7 +18,7 @@ async def on_message(message):
         await message.channel.send(f"{message.content} {time.strftime('%X')}")
     elif message.content == 'channels':
         for channel in message.guild.channels:
-            await message.channel.send(str(channel))
+            await message.channel.send(f"{str(channel)}: {channel.type}")
     elif message.content == 'delete':
         async for message in message.channel.history(limit=200):
             await message.delete()
