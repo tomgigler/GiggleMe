@@ -20,5 +20,8 @@ async def on_message(message):
     elif message.content == 'channels':
         for channel in message.guild.channels:
             await message.channel.send(str(channel))
+    elif message.content == 'delete':
+        async for message in message.channel.history(limit=200):
+            await message.delete()
 
 client.run("NzQ3ODM3NTM2Nzc2NDg2OTUz.X0Ur-g.rKAZTJh8jmqbKzYKy95zfWKJh9M")
