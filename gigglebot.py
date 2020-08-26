@@ -2,12 +2,15 @@
 import discord
 import time
 import re
+import os
 import asyncio
 
 client = discord.Client()
 
 @client.event
 async def on_message(message):
+    if message.author == client.user:
+        return
     if re.search('hello', message.content, re.IGNORECASE):
         await asyncio.sleep(6)
         await message.channel.send(f"{message.content} {time.strftime('%X')}")
@@ -20,4 +23,4 @@ async def on_message(message):
         async for message in message.channel.history(limit=200):
             await message.delete()
 
-client.run("NzQ3ODM3NTM2Nzc2NDg2OTUz.X0Ur-g.rKAZTJh8jmqbKzYKy95zfWKJh9M")
+client.run(os.getenv('BOT_TOKEN'))
