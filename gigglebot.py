@@ -17,5 +17,8 @@ async def on_message(message):
         await message.channel.send(f"{message.content} {time.strftime('%X')}")
     elif re.search('bye', message.content, re.IGNORECASE):
         await message.channel.send(f"{message.content} {time.strftime('%X')}")
+    elif message.content == 'channels':
+        for channel in message.guild.channels:
+            await message.channel.send(str(channel))
 
 client.run("NzQ3ODM3NTM2Nzc2NDg2OTUz.X0Ur-g.rKAZTJh8jmqbKzYKy95zfWKJh9M")
