@@ -1,1 +1,1 @@
-worker: python gigglebot.py
+web: python gigglebot.py runserver 0.0.0.0:5000
