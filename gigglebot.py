@@ -11,4 +11,4 @@ async def on_message(message):
     if re.search('hello', message.content, re.IGNORECASE):
         await message.channel.send(client.user)
 
-client.run("NzQ3ODM3NTM2Nzc2NDg2OTUz.X0Ur-g.sXBtS9DzLFq3oKWkfDsNs6tNCF0")
+client.run("NzQ3ODM3NTM2Nzc2NDg2OTUz.X0Ur-g.rKAZTJh8jmqbKzYKy95zfWKJh9M")
