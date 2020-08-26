@@ -2,6 +2,6 @@
   "name": "GiggleBot",
   "description": "GiggleBot",
   "image": "heroku/python",
-  "repository": "https://github.com/tomgigler/giglebot",
+  "repository": "https://github.com/tomgigler/gigglebot",
   "keywords": ["python"]
 }
