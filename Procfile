@@ -1,1 +1,0 @@
-web: gunicorn gigglebot.py --log-file -
