@@ -31,4 +31,7 @@ async def on_message(message):
     if re.search('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$)', message.content):
         await process_temps(message)
 
+    if client.user.mentioned_in(message):
+        await message.channel.send(f"You mentioned me {message.author.display_name}")
+
 client.run(os.getenv('BOT_TOKEN'))
