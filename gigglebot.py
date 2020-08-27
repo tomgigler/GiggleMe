@@ -10,13 +10,17 @@ client = discord.Client()
 async def on_message(message):
     if message.author == client.user:
         return
-    if re.search('[-]?[0-9]+ ?[CF]', message.content):
-        for temp in re.findall('[-]?[0-9]+ ?[CF]', message.content):
-            match = re.search('([-]?[0-9]+) ?([CF])', temp)
+    if re.search('[-]?[0-9]+ ?[CFcf]', message.content):
+        for temp in re.findall('[-]?[0-9]+ ?[CFcf]', message.content):
+            match = re.search('([-]?[0-9]+) ?([CFcf])', temp)
             value = float(match.group(1))
             scale = match.group(2)
             newvalue = value * 1.8 + 32 if scale == 'C' else (value - 32)/1.8
-            newscale = 'F' if scale == 'C' else 'C'
+            newscale = 'F' if scale == 'C' or scale == 'c' else 'C'
+            if scale == 'c':
+                scale = 'C'
+            if scale == 'f':
+                scale = 'F'
             await message.channel.send(f"{value} {scale} = {round(newvalue, 1)} {newscale}")
 
 client.run(os.getenv('BOT_TOKEN'))
