@@ -11,6 +11,7 @@ async def on_message(message):
     if message.author == client.user:
         return
     if re.search('[-]?[0-9]+ ?[CFcf]', message.content):
+        processed_values = []
         for temp in re.findall('[-]?[0-9]+ ?[CFcf]', message.content):
             match = re.search('([-]?[0-9]+) ?([CFcf])', temp)
             value = float(match.group(1))
@@ -21,6 +22,8 @@ async def on_message(message):
                 scale = 'C'
             if scale == 'f':
                 scale = 'F'
-            await message.channel.send(f"{value} {scale} = {round(newvalue, 1)} {newscale}")
+            if f"{value}{scale}" not in processed_values:
+                await message.channel.send(f"{value} {scale} = {round(newvalue, 1)} {newscale}")
+                processed_values.append(f"{value}{scale}")
 
 client.run(os.getenv('BOT_TOKEN'))
