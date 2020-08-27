@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import discord
-import time
 import re
 import os
 import asyncio
-import sys
 
 client = discord.Client()
 
