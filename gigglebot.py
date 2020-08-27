@@ -3,6 +3,7 @@ import discord
 import re
 import os
 import asyncio
+from settings import bot_token
 
 client = discord.Client()
 
@@ -34,4 +35,4 @@ async def on_message(message):
     if client.user.mentioned_in(message):
         await message.channel.send(f"You mentioned me {message.author.display_name}")
 
-client.run(os.getenv('BOT_TOKEN'))
+client.run(bot_token)
