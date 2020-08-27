@@ -1,8 +1,8 @@
 #!/bin/bash
 
-ps -f | grep gigglebot.py | grep -v grep
+ps -f | grep $(pwd)/gigglebot.py | grep -v grep
 
 if [ $? -ne 0 ]
 then
-python3 gigglebot.py &
+  python3 $(pwd)/gigglebot.py &
 fi
