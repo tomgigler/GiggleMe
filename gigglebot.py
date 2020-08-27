@@ -9,8 +9,8 @@ client = discord.Client()
 
 async def process_temps(message):
     processed_values = []
-    for temp in re.findall('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$)', message.content):
-        match = re.search('([-]?[0-9]*\.?[0-9]+) ?([CFcf])(?:\s+|$)', temp)
+    for temp in re.findall('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
+        match = re.search('([-]?[0-9]*\.?[0-9]+) ?([CFcf])(?:\s+|$|\?|\.|,)', temp)
         value = float(match.group(1))
         scale = match.group(2)
         if scale == 'c':
@@ -29,7 +29,8 @@ async def process_temps(message):
 async def on_message(message):
     if message.author == client.user:
         return
-    if re.search('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$)', message.content):
+
+    if re.search('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
         await process_temps(message)
 
     if client.user.mentioned_in(message):
