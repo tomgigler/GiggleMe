@@ -25,5 +25,6 @@ async def on_message(message):
             if f"{value}{scale}" not in processed_values:
                 await message.channel.send(f"{value} {scale} = {round(newvalue, 1)} {newscale}")
                 processed_values.append(f"{value}{scale}")
+                processed_values.append(f"{newvalue}{newscale}")
 
 client.run(os.getenv('BOT_TOKEN'))
