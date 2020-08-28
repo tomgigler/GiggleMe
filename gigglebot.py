@@ -30,10 +30,10 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if re.search('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
+    if re.search(r'^~giggle.*[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
         await process_temps(message)
 
     if client.user.mentioned_in(message):
-        await message.channel.send(f"You mentioned me {message.author.display_name}")
+        await message.channel.send(f"You mentioned me {message.author.display_name}.  FYI, this behavior has been depricated and will be removed in a future version.")
 
 client.run(bot_token)
