@@ -50,35 +50,43 @@ async def process_vol_message(message):
         if channel.name == 'voice-of-light-posts':
             vol_posts_channel = channel
 
+    try:
+        if(message.embeds[0].title == 'Youtube subscriptions'):
+            return
+    except:
+        pass
+
     if vol_posts_channel == message.channel:
         channel_role_name = None
         creator_channel = None
         creator_role = None
-        for link in content_creators:
-            if link == message.embeds[0].footer.icon_url:
-                channel_role_name = content_creators[link]
-        if channel_role_name:
-            for channel in message.guild.text_channels:
-                if channel.name == channel_role_name:
-                    creator_channel = channel
-            for role in message.guild.roles:
-                if role.name == channel_role_name:
-                    creator_role = role
+        try:
+            for link in content_creators:
+                if link == message.embeds[0].footer.icon_url:
+                    channel_role_name = content_creators[link]
+            if channel_role_name:
+                for channel in message.guild.text_channels:
+                    if channel.name == channel_role_name:
+                        creator_channel = channel
+                for role in message.guild.roles:
+                    if role.name == channel_role_name:
+                        creator_role = role
 
-        if not channel_role_name:
-            await vol_posts_channel.send(f"Creator not found {message.embeds[0].footer.icon_url}")
-            return
+            if not channel_role_name:
+                await vol_posts_channel.send(f"Creator not found {message.embeds[0].footer.icon_url}")
+                return
 
-        if creator_channel:
-            if creator_role:
-                await creator_channel.send(creator_role.mention)
+            if creator_channel:
+                if creator_role:
+                    await creator_channel.send(creator_role.mention)
+                else:
+                    await vol_posts_channel.send(f"Cannot ping role for {message.embeds[0].footer.icon_url}")
+                for embed in message.embeds:
+                    await creator_channel.send(embed=embed)
             else:
-                await vol_posts_channel.send(f"Cannot ping role for {message.embeds[0].footer.icon_url}")
-            for embed in message.embeds:
-                await creator_channel.send(embed=embed)
-        else:
-            await vol_posts_channel.send(f"Cannot post to channel for {message.embeds[0].footer.icon_url}")
-
+                await vol_posts_channel.send(f"Cannot post to channel for {message.embeds[0].footer.icon_url}")
+        except:
+            pass
 
 @client.event
 async def on_message(message):
