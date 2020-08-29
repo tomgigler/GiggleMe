@@ -28,7 +28,7 @@ content_creators = {
     "https://yt3.ggpht.com/a/AATXAJzwTTJIyfTRPSovEPrwLWZ_tAl4N7wO65AZNPamqQ=s88-c-k-c0xffffffff-no-rj-mo": "simon-whistler",
     "https://yt3.ggpht.com/a/AATXAJyyX7kXRSqr3GJ2YrXtPBa774tgj2f9TLC2VsPfA6o=s88-c-k-c0xffffffff-no-rj-mo": "unholy-sara",
     "https://yt3.ggpht.com/a/AATXAJyxnZHUlDp6jF3IkdCoDMcjvB8Ld8v5wsThng=s88-c-k-c0xffffffff-no-rj-mo": "aliaki",
-    "https://yt3.ggpht.com/-lBkOlG_wtJI/AAAAAAAAAAI/AAAAAAAAAAA/Nlx8NbFuLz8/s88-c-k-no-mo-rj-c0xffffff/photo.jpg": "cel",
+    "https://yt3.ggpht.com/a/AATXAJwu9Wa4r4oUBLvG_KhmHX3A7LYPCfee9nJV4VLiSA=s88-c-k-c0xffffffff-no-rj-mo": "cel",
 }
 
 async def process_temps(message):
