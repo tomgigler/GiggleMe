@@ -46,6 +46,17 @@ async def process_temps(message):
             processed_values.append(f"{newvalue}{newscale}")
 
 async def process_vol_message(message):
+    try:
+        if re.search(r'Successfully subscribed to (.*)', message.embeds[0].title):
+            channel_name = re.search(r'Successfully subscribed to (.*)', message.embeds[0].title).group(1)
+            for link in content_creators:
+                if link == message.embeds[0].thumbnail.url:
+                    await message.channel.send(f"New {channel_name} videos will be posted to the {content_creators[link]} channel and ping the {content_creators[link]} role")
+                    return
+            await message.channel.send(f"I don't know how to handle {channel_name}'s content.  Please contact my creator to get {channel_name} added to my functionality")
+    except:
+        pass
+
     for channel in message.guild.text_channels:
         if channel.name == 'voice-of-light-posts':
             vol_posts_channel = channel
