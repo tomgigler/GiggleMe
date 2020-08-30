@@ -30,6 +30,7 @@ content_creators = {
     "https://yt3.ggpht.com/a/AATXAJyxnZHUlDp6jF3IkdCoDMcjvB8Ld8v5wsThng=s88-c-k-c0xffffffff-no-rj-mo": "aliaki",
     "https://yt3.ggpht.com/a/AATXAJwu9Wa4r4oUBLvG_KhmHX3A7LYPCfee9nJV4VLiSA=s88-c-k-c0xffffffff-no-rj-mo": "cel",
     "https://yt3.ggpht.com/a/AATXAJyp2-dCelQUHHSUpCYq1IRc_FF3Jkb8Zy2qsq4X=s88-c-k-c0xffffffff-no-rj-mo": "aliakai",
+    "https://yt3.ggpht.com/a/AATXAJwcW643CDxynJALwTrXFbP8ot1jlfxvHtnMbWrE=s88-c-k-c0xffffffff-no-rj-mo": "celeris-garden",
 }
 
 async def process_temps(message):
