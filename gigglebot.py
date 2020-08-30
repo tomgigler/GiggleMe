@@ -53,8 +53,28 @@ async def process_vol_message(message):
     try:
         if re.search(r'Successfully subscribed to (.*)', message.embeds[0].title):
             channel_name = re.search(r'Successfully subscribed to (.*)', message.embeds[0].title).group(1)
+            creator_role_found = False
+            creator_channel_found = False
             for link in content_creators:
                 if link == message.embeds[0].thumbnail.url:
+                    for role in message.guild.roles:
+                        if role.name == content_creators[link]:
+                            creator_role_found = True
+                    for channel in message.guild.channels:
+                        if channel.name == content_creators[link]:
+                            creator_channel_found = True
+                    if not creator_channel_found:
+                        youtube_category = None
+                        for category in message.guild.categories:
+                            if category.name == 'YouTube':
+                                youtube_category = category
+                        if not youtube_category:
+                            youtube_category = await message.guild.create_category('YouTube')
+                        await message.guild.create_text_channel(name=content_creators[link], category=youtube_category)
+                        await message.channel.send(f"I've created the {content_creators[link]} channel")
+                    if not creator_role_found:
+                        await message.guild.create_role(name=content_creators[link])
+                        await message.channel.send(f"I've created the {content_creators[link]} role")
                     await message.channel.send(f"New {channel_name} videos will be posted to the {content_creators[link]} channel and ping the {content_creators[link]} role")
                     return
             await message.channel.send(f"I don't know how to handle {channel_name}'s content.  Please contact my creator to get {channel_name} added to my functionality")
