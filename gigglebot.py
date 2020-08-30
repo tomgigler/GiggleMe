@@ -32,6 +32,7 @@ content_creators = {
     "https://yt3.ggpht.com/a/AATXAJyp2-dCelQUHHSUpCYq1IRc_FF3Jkb8Zy2qsq4X=s88-c-k-c0xffffffff-no-rj-mo": "aliakai",
     "https://yt3.ggpht.com/a/AATXAJwcW643CDxynJALwTrXFbP8ot1jlfxvHtnMbWrE=s88-c-k-c0xffffffff-no-rj-mo": "celeris-garden",
     "https://yt3.ggpht.com/a/AATXAJzgoZheJtMTNcSBdc4pwViRJ6ktnnT9qRtOD3DIEw=s88-c-k-c0xffffffff-no-rj-mo": "oracle-oriax",
+    "https://yt3.ggpht.com/a/AATXAJzywm6ambHpRNhnIbH30Vp6sTONXuAPp2Id2i4oEQ=s88-c-k-c0xffffffff-no-rj-mo": "darkmatter-2525",
 }
 
 async def process_temps(message):
