@@ -136,6 +136,6 @@ async def on_message(message):
         await process_temps(message)
 
     if client.user.mentioned_in(message):
-        await message.channel.send(f"Hi!  I convert temperatures.  Just put ~giggle at the beginning of your message")
+        await message.channel.send(f"Hi {message.author.name}!  I convert temperatures.  Just put ~giggle at the beginning of your message")
 
 client.run(bot_token)
