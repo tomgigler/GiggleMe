@@ -35,6 +35,20 @@ content_creators = {
     "https://yt3.ggpht.com/a/AATXAJzywm6ambHpRNhnIbH30Vp6sTONXuAPp2Id2i4oEQ=s88-c-k-c0xffffffff-no-rj-mo": "darkmatter-2525",
 }
 
+def get_content_creator_names(guild):
+    content_creator_names = []
+    channels = []
+    roles = []
+    for channel in guild.channels:
+        channels.append(channel.name)
+    for role in guild.roles:
+        roles.append(role.name)
+    for link in content_creators:
+        if content_creators[link] in channels and content_creators[link] in roles:
+            if content_creators[link] not in content_creator_names:
+                content_creator_names.append(content_creators[link])
+    return content_creator_names
+
 async def process_temps(message):
     processed_values = []
     for temp in re.findall('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
@@ -51,6 +65,70 @@ async def process_temps(message):
             await message.channel.send(f"{value} {scale} = {round(newvalue, 1)} {newscale}")
             processed_values.append(f"{value}{scale}")
             processed_values.append(f"{newvalue}{newscale}")
+
+async def list_user_roles(message):
+    youtube_roles = []
+    server_roles = []
+    user_roles = []
+    for role in message.guild.roles:
+        server_roles.append(role.name)
+    for role in message.author.roles:
+        user_roles.append(role.name)
+    for link in content_creators:
+        if content_creators[link] in server_roles and content_creators[link] in user_roles:
+            if content_creators[link] not in youtube_roles:
+                youtube_roles.append(content_creators[link])
+    if len(youtube_roles) > 0:
+        await message.channel.send('\n'.join(youtube_roles))
+
+async def add_user_role(message):
+    add_role = re.search('~giggle youtube add (.*)', message.content, re.IGNORECASE).group(1)
+    content_creator_names = get_content_creator_names(message.guild)
+    if add_role not in content_creator_names:
+        await message.channel.send(f"Cannot add {add_role} role")
+        return
+    if discord.utils.get(message.author.roles, name=add_role):
+        await message.channel.send(f"You already have the {add_role} role")
+        return
+    else:
+        role = discord.utils.get(message.guild.roles, name=add_role)
+        await message.author.add_roles(role)
+    if discord.utils.get(message.author.roles, name=add_role):
+        await message.channel.send(f"Added {add_role} role")
+    else:
+        await message.channel.send(f"Failed to add {add_role} role")
+
+async def remove_user_role(message):
+    remove_role = re.search('~giggle youtube remove (.*)', message.content, re.IGNORECASE).group(1)
+    content_creator_names = get_content_creator_names(message.guild)
+    if remove_role not in content_creator_names:
+        await message.channel.send(f"Cannot remove {remove_role} role")
+        return
+    if not discord.utils.get(message.author.roles, name=remove_role):
+        await message.channel.send(f"You don't currently have the {remove_role} role")
+        return
+    else:
+        role = discord.utils.get(message.guild.roles, name=remove_role)
+        await message.author.remove_roles(role)
+    if not discord.utils.get(message.author.roles, name=remove_role):
+        await message.channel.send(f"Removed {remove_role} role")
+    else:
+        await message.channel.send(f"Failed to remove {remove_role} role")
+
+async def list_roles(message):
+    youtube_roles = []
+    channels = []
+    roles = []
+    for channel in message.guild.channels:
+        channels.append(channel.name)
+    for role in message.guild.roles:
+        roles.append(role.name)
+    for link in content_creators:
+        if content_creators[link] in channels and content_creators[link] in roles:
+            if content_creators[link] not in youtube_roles:
+                youtube_roles.append(content_creators[link])
+    if len(youtube_roles) > 0:
+        await message.channel.send('\n'.join(youtube_roles))
 
 async def process_vol_message(message):
     try:
@@ -133,11 +211,41 @@ async def on_message(message):
 
     if message.author.id == 460410391290314752:
         await process_vol_message(message)
-        
-    if re.search(r'^~giggle.*[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
+
+    if re.search(r'^~giggle youtube$', message.content, re.IGNORECASE):
+        await message.channel.send("""Start your message with "~giggle youtube" followed by one of the commands below:
+            roles:
+                Show youtube roles currently assigned to you
+            add <role>:
+                Assign <role> to yourself
+            remove <role>:
+                Remove <role> from yourself
+            list:
+                Show available youtube roles on this server""")
+
+    elif re.search(r'^~giggle youtube roles$', message.content, re.IGNORECASE):
+        await list_user_roles(message)
+
+    elif re.search(r'^~giggle youtube add \S', message.content, re.IGNORECASE):
+        await add_user_role(message)
+
+    elif re.search(r'^~giggle youtube remove \S', message.content, re.IGNORECASE):
+        await remove_user_role(message)
+
+    elif re.search(r'^~giggle youtube list$', message.content, re.IGNORECASE):
+        await list_roles(message)
+
+    elif re.search(r'^~giggle.*[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content, re.IGNORECASE):
         await process_temps(message)
 
     if client.user.mentioned_in(message):
-        await message.channel.send(f"Hi {message.author.name}!  I convert temperatures.  Just put ~giggle at the beginning of your message")
+        await message.channel.send(f"Hi {message.author.name}!  I convert temperatures.  Just put \"~giggle\" at the beginning of your message")
+        vol_posts_channel = None
+        for channel in message.guild.text_channels:
+            if channel.name == 'voice-of-light-posts':
+                vol_posts_channel = channel
+        if vol_posts_channel:
+            await message.channel.send(f"I also do YouTube announcements on this server.  Type \"~giggle youtube\" for details")
+
 
 client.run(bot_token)
