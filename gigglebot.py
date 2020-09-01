@@ -227,6 +227,8 @@ async def process_delay_message(message):
         await message.channel.send(f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes")
         await asyncio.sleep(int(delay)*60)
         await channel.send(msg)
+    else:
+        await message.channel.send('Admin permission are required to send delayed messages')
 
 @client.event
 async def on_message(message):
