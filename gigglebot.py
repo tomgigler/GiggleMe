@@ -225,7 +225,7 @@ async def process_delay_message(message):
         msg = match.group(2)
         msg = f"Here's a message from {message.author.mention}:\n" + msg
         await message.channel.send(f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes")
-        await asyncio.sleep(int(delay*60))
+        await asyncio.sleep(int(delay)*60)
         await channel.send(msg)
 
 @client.event
