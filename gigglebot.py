@@ -5,6 +5,7 @@ import os
 import asyncio
 from settings import bot_token
 import sys
+from datetime import datetime
 
 client = discord.Client()
 
@@ -226,8 +227,10 @@ async def process_delay_message(message):
         msg = match.group(2)
         msg = f"Here's a message from {message.author.mention}:\n" + msg
         await message.channel.send(f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes")
+        print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
         await asyncio.sleep(int(delay)*60)
         await channel.send(msg)
+        print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
     else:
         await message.channel.send('Admin permission are required to send delayed messages')
 
