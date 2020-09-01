@@ -4,6 +4,7 @@ import re
 import os
 import asyncio
 from settings import bot_token
+import sys
 
 client = discord.Client()
 
@@ -234,6 +235,10 @@ async def process_delay_message(message):
 async def on_message(message):
     if message.author == client.user:
         return
+
+    if message.content == 'kill' and message.author.id == 669370838478225448:
+        await message.channel.send(f"Killing {client.user.name}")
+        sys.exit()
 
     if re.search(r'^~giggle delay \d+', message.content):
         await process_delay_message(message)
