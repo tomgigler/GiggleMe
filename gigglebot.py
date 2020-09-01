@@ -204,35 +204,37 @@ async def process_vol_message(message):
         except:
             pass
 
+async def process_delay_message(message):
+    try:
+        server_id = int(re.search(r'server=(\d+)', message.content).group(1))
+    except:
+        server_id = message.guild.id
+
+    guild = discord.utils.get(client.guilds, id=server_id)
+    channel_name = re.search(r'channel=(.+)', message.content).group(1)
+    channel = discord.utils.get(guild.channels, name=channel_name)
+
+    try:
+        is_admin = message.author.permissions_in(channel).administrator
+    except:
+        await message.channel.send('Admin permission are required to send delayed messages')
+        return
+    if is_admin:
+        match = re.search(r'^~giggle delay (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
+        delay = match.group(1)
+        msg = match.group(2)
+        msg = f"Here's a message from {message.author.mention}:\n" + msg
+        await message.channel.send(f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes")
+        await asyncio.sleep(int(delay*60))
+        await channel.send(msg)
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
 
     if re.search(r'^~giggle delay \d+', message.content):
-        try:
-            server_id = int(re.search(r'server=(\d+)', message.content).group(1))
-        except:
-            server_id = message.guild.id
-
-        guild = discord.utils.get(client.guilds, id=server_id)
-        channel_name = re.search(r'channel=(.+)', message.content).group(1)
-        channel = discord.utils.get(guild.channels, name=channel_name)
-
-        try:
-            is_admin = message.author.permissions_in(channel).administrator
-        except:
-            await message.channel.send('Admin permission are required to send delayed messages')
-            return
-        if is_admin:
-            match = re.search(r'^~giggle delay (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
-            delay = match.group(1)
-            msg = match.group(2)
-            msg = f"Here's a message from {message.author.mention}:\n" + msg
-            await message.channel.send(f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes")
-            await asyncio.sleep(int(delay)*60)
-            await channel.send(msg)
-
+        await process_delay_message(message)
         return
 
     if message.author.id == 460410391290314752:
