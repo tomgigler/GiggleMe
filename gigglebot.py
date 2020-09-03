@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 
 client = discord.Client()
+delayed_messages = {}
 
 async def process_temps(message):
     processed_values = []
@@ -179,11 +180,56 @@ async def process_delay_message(message):
         msg = f"Here's a message from {message.author.mention}:\n" + msg
         await message.channel.send(f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes")
         print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
+        if message.author.id in delayed_messages:
+            delayed_messages[message.author.id].append(message)
+        else:
+            delayed_messages[message.author.id] = [message]
         await asyncio.sleep(int(delay)*60)
-        await channel.send(msg)
-        print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
+        if message.author.id in delayed_messages:
+            if message in delayed_messages[message.author.id]:
+                await channel.send(msg)
+                delayed_messages[message.author.id].remove(message)
+                if len(delayed_messages[message.author.id]) < 1:
+                    del delayed_messages[message.author.id]
+                print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
     else:
         await message.channel.send('Admin permission are required to send delayed messages')
+
+async def list_delay_messages(author_id, channel):
+    count = 1
+    if author_id in delayed_messages and len(delayed_messages[author_id]) > 0:
+        output = ""
+        for msg in delayed_messages[author_id]:
+            output += f"{count}: {msg.channel.name} in {msg.guild.name}\n"
+            count += 1
+        await channel.send(output)
+    else:
+        await channel.send("No messages found")
+
+async def show_delay_message(message):
+    msg_num = int(re.search(r'^~giggle delay show (\d+)', message.content).group(1))
+    if message.author.id in delayed_messages:
+        if len(delayed_messages[message.author.id]) >= msg_num:
+            content = re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', delayed_messages[message.author.id][msg_num - 1].content, re.MULTILINE|re.DOTALL).group(1)
+            await message.channel.send(content)
+        else:
+            await message.channel.send("Message not found")
+    else:
+        await message.channel.send("No messages found")
+
+async def cancel_delay_message(message):
+    msg_num = int(re.search(r'^~giggle delay cancel (\d+)', message.content).group(1))
+    if message.author.id in delayed_messages:
+        if len(delayed_messages[message.author.id]) >= msg_num:
+            del delayed_messages[message.author.id][msg_num - 1]
+            if len(delayed_messages[message.author.id]) < 1:
+                del delayed_messages[message.author.id]
+            await message.channel.send("Message canceled")
+            print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
+        else:
+            await message.channel.send("Message not found")
+    else:
+        await message.channel.send("No messages found")
 
 @client.event
 async def on_message(message):
@@ -193,6 +239,18 @@ async def on_message(message):
     if message.content == 'kill' and message.author.id == 669370838478225448:
         await message.channel.send(f"Killing {client.user.name}")
         sys.exit()
+
+    if re.search(r'^~giggle delay list', message.content):
+        await list_delay_messages(message.author.id, message.channel)
+        return
+
+    if re.search(r'^~giggle delay show \d+', message.content):
+        await show_delay_message(message)
+        return
+
+    if re.search(r'^~giggle delay cancel \d+', message.content):
+        await cancel_delay_message(message)
+        return
 
     if re.search(r'^~giggle delay \d+', message.content):
         await process_delay_message(message)
