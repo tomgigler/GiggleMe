@@ -9,48 +9,6 @@ from datetime import datetime
 
 client = discord.Client()
 
-content_creators = {
-    "https://yt3.ggpht.com/a/AATXAJxSQvMvlPBAQ3t22bpTJdB0zVLYT1CaDM4fuwaK=s88-c-k-c0xffffffff-no-rj-mo": "truth-wanted",
-    "https://yt3.ggpht.com/a/AATXAJzS8yRqAyP1a1z8VQVEUt-t_jbz3dQwrSvXSHZEDg=s88-c-k-c0xffffffff-no-rj-mo": "axp",
-    "https://yt3.ggpht.com/a/AATXAJyfVfb8I2lV2vywvLrakn84yhPHtSptswi37-BK=s88-c-k-c0xffffffff-no-rj-mo": "talk-heathen",
-    "https://yt3.ggpht.com/a/AATXAJywmSV97VjI1O8MZ546gBsJYvviV4Y_A9QWVuuGrQ=s88-c-k-c0xffffffff-no-rj-mo": "cosmic-skeptic",
-    "https://yt3.ggpht.com/a/AATXAJyNhlhB3AfZL1Fh6Xegc4TSfTPpdRl8gYCohcW3QQ=s88-c-k-c0xffffffff-no-rj-mo": "gm-skeptic",
-    "https://yt3.ggpht.com/a/AATXAJwusshuBJWMrdF-RVLeZkHxxxjHIc8aBON3zmNU=s88-c-k-c0xffffffff-no-rj-mo": "viced-rhino",
-    "https://yt3.ggpht.com/a/AATXAJz9DQ6bS7M7J7cz_ZxstDneqi_6FKMF3Asb_dHD=s88-c-k-c0xffffffff-no-rj-mo": "tommygig3",
-    "https://yt3.ggpht.com/a/AATXAJyTYaBKgP7oK0LeZjX6M118KlP70VHfI_tr9dzp=s88-c-k-c0xffffffff-no-rj-mo": "suris",
-    "https://yt3.ggpht.com/a/AATXAJyExzxgK7djYxgxnr2UIXZ8vE23BAq-d0IPRmzzTg=s900-c-k-c0xffffffff-no-rj-mo": "prophet-of-zod",
-    "https://yt3.ggpht.com/a/AATXAJx8UL5vsMctl0t4JVFbv0I01jmzFY7Got2gwctiiA=s88-c-k-c0xffffffff-no-rj-mo":  "ocean",
-    "https://yt3.ggpht.com/a/AATXAJxYLKl5krz-WivbaKL3_UzOwlT40GGcMXljWsD-Gg=s88-c-k-c0xffffffff-no-rj-mo": "holy-koolaid",
-    "https://yt3.ggpht.com/a/AATXAJxrhbzJ8H1Xg4aAl2dZe-kA3ytVtkzZpi9udv1F=s88-c-k-c0xffffffff-no-rj-mo": "jimmy-snow",
-    "https://yt3.ggpht.com/a/AATXAJy3orRgbrsu7rPXd4hd7pLrkLmpn_sf-3Acyak=s88-c-k-c0xffffffff-no-rj-mo": "paulogia",
-    "https://yt3.ggpht.com/-M_Syakat5rE/AAAAAAAAAAI/AAAAAAAAAAA/OzT9FKHe8c8/s88-c-k-no-mo-rj-c0xffffff/photo.jpg": "logicked",
-    "https://yt3.ggpht.com/a/AATXAJzrDsatrY320DB6LclM9Vm1-W2vNDP3efG7H2BN1g=s88-c-k-c0xffffffff-no-rj-mo": "isethoriginal",
-    "https://yt3.ggpht.com/a/AATXAJwGqX1M1EgnnSYnmrhejjfQWtXXyGZ0topWRDrSwQ=s88-c-k-c0xffffffff-no-rj-mo": "simon-whistler",
-    "https://yt3.ggpht.com/a/AATXAJwA14TaUzPDsmbs9EdRB7UmgF5qpVID4Es2xKfh=s88-c-k-c0xffffffff-no-rj-mo": "simon-whistler",
-    "https://yt3.ggpht.com/a/AATXAJzwTTJIyfTRPSovEPrwLWZ_tAl4N7wO65AZNPamqQ=s88-c-k-c0xffffffff-no-rj-mo": "simon-whistler",
-    "https://yt3.ggpht.com/a/AATXAJyyX7kXRSqr3GJ2YrXtPBa774tgj2f9TLC2VsPfA6o=s88-c-k-c0xffffffff-no-rj-mo": "unholy-sara",
-    "https://yt3.ggpht.com/a/AATXAJyxnZHUlDp6jF3IkdCoDMcjvB8Ld8v5wsThng=s88-c-k-c0xffffffff-no-rj-mo": "aliaki",
-    "https://yt3.ggpht.com/a/AATXAJwu9Wa4r4oUBLvG_KhmHX3A7LYPCfee9nJV4VLiSA=s88-c-k-c0xffffffff-no-rj-mo": "cel",
-    "https://yt3.ggpht.com/a/AATXAJyp2-dCelQUHHSUpCYq1IRc_FF3Jkb8Zy2qsq4X=s88-c-k-c0xffffffff-no-rj-mo": "aliakai",
-    "https://yt3.ggpht.com/a/AATXAJwcW643CDxynJALwTrXFbP8ot1jlfxvHtnMbWrE=s88-c-k-c0xffffffff-no-rj-mo": "celeris-garden",
-    "https://yt3.ggpht.com/a/AATXAJzgoZheJtMTNcSBdc4pwViRJ6ktnnT9qRtOD3DIEw=s88-c-k-c0xffffffff-no-rj-mo": "oracle-oriax",
-    "https://yt3.ggpht.com/a/AATXAJzywm6ambHpRNhnIbH30Vp6sTONXuAPp2Id2i4oEQ=s88-c-k-c0xffffffff-no-rj-mo": "darkmatter-2525",
-}
-
-def get_content_creator_names(guild):
-    content_creator_names = []
-    channels = []
-    roles = []
-    for channel in guild.channels:
-        channels.append(channel.name)
-    for role in guild.roles:
-        roles.append(role.name)
-    for link in content_creators:
-        if content_creators[link] in channels and content_creators[link] in roles:
-            if content_creators[link] not in content_creator_names:
-                content_creator_names.append(content_creators[link])
-    return content_creator_names
-
 async def process_temps(message):
     processed_values = []
     for temp in re.findall('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
@@ -70,23 +28,27 @@ async def process_temps(message):
 
 async def list_user_roles(message):
     youtube_roles = []
+    youtube_channels = []
     server_roles = []
     user_roles = []
+    youtube_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    for channel in youtube_category.channels:
+        youtube_channels.append(channel.name)
     for role in message.guild.roles:
         server_roles.append(role.name)
     for role in message.author.roles:
         user_roles.append(role.name)
-    for link in content_creators:
-        if content_creators[link] in server_roles and content_creators[link] in user_roles:
-            if content_creators[link] not in youtube_roles:
-                youtube_roles.append(content_creators[link])
+    for name in youtube_channels:
+        if name in server_roles and name in user_roles:
+            if name not in youtube_roles:
+                youtube_roles.append(name)
     if len(youtube_roles) > 0:
         await message.channel.send('\n'.join(youtube_roles))
 
 async def add_user_role(message):
     add_role = re.search('~giggle youtube add (.*)', message.content, re.IGNORECASE).group(1)
-    content_creator_names = get_content_creator_names(message.guild)
-    if add_role not in content_creator_names:
+    youtube_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    if not discord.utils.get(youtube_category.channels, name=add_role):
         await message.channel.send(f"Cannot add {add_role} role")
         return
     if discord.utils.get(message.author.roles, name=add_role):
@@ -95,6 +57,7 @@ async def add_user_role(message):
     else:
         role = discord.utils.get(message.guild.roles, name=add_role)
         await message.author.add_roles(role)
+    await asyncio.sleep(1)
     if discord.utils.get(message.author.roles, name=add_role):
         await message.channel.send(f"Added {add_role} role")
     else:
@@ -102,8 +65,8 @@ async def add_user_role(message):
 
 async def remove_user_role(message):
     remove_role = re.search('~giggle youtube remove (.*)', message.content, re.IGNORECASE).group(1)
-    content_creator_names = get_content_creator_names(message.guild)
-    if remove_role not in content_creator_names:
+    youtube_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    if not discord.utils.get(youtube_category.channels, name=remove_role):
         await message.channel.send(f"Cannot remove {remove_role} role")
         return
     if not discord.utils.get(message.author.roles, name=remove_role):
@@ -112,6 +75,7 @@ async def remove_user_role(message):
     else:
         role = discord.utils.get(message.guild.roles, name=remove_role)
         await message.author.remove_roles(role)
+    await asyncio.sleep(1)
     if not discord.utils.get(message.author.roles, name=remove_role):
         await message.channel.send(f"Removed {remove_role} role")
     else:
@@ -119,50 +83,49 @@ async def remove_user_role(message):
 
 async def list_roles(message):
     youtube_roles = []
-    channels = []
-    roles = []
-    for channel in message.guild.channels:
-        channels.append(channel.name)
+    youtube_channels = []
+    server_roles = []
+    youtube_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    for channel in youtube_category.channels:
+        youtube_channels.append(channel.name)
     for role in message.guild.roles:
-        roles.append(role.name)
-    for link in content_creators:
-        if content_creators[link] in channels and content_creators[link] in roles:
-            if content_creators[link] not in youtube_roles:
-                youtube_roles.append(content_creators[link])
+        server_roles.append(role.name)
+    for name in youtube_channels:
+        if name in server_roles:
+            if name not in youtube_roles:
+                youtube_roles.append(name)
     if len(youtube_roles) > 0:
         await message.channel.send('\n'.join(youtube_roles))
 
 async def process_vol_message(message):
+    server_roles = []
+    youtube_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
+    content_creators = []
+    for channel in youtube_category.channels:
+        content_creators.append(channel)
     try:
         if re.search(r'Successfully subscribed to (.*)', message.embeds[0].title):
             channel_name = re.search(r'Successfully subscribed to (.*)', message.embeds[0].title).group(1)
+            name = channel_name.replace(' ', '-').lower()
             creator_role_found = False
             creator_channel_found = False
-            for link in content_creators:
-                if link == message.embeds[0].thumbnail.url:
-                    for role in message.guild.roles:
-                        if role.name == content_creators[link]:
-                            creator_role_found = True
-                    for channel in message.guild.channels:
-                        if channel.name == content_creators[link]:
-                            creator_channel_found = True
-                    if not creator_channel_found:
-                        youtube_category = None
-                        for category in message.guild.categories:
-                            if category.name == 'YouTube':
-                                youtube_category = category
-                        if not youtube_category:
-                            youtube_category = await message.guild.create_category('YouTube')
-                        await message.guild.create_text_channel(name=content_creators[link], category=youtube_category)
-                        await message.channel.send(f"I've created the {content_creators[link]} channel")
-                    if not creator_role_found:
-                        await message.guild.create_role(name=content_creators[link])
-                        await message.channel.send(f"I've created the {content_creators[link]} role")
-                    await message.channel.send(f"New {channel_name} videos will be posted to the {content_creators[link]} channel and ping the {content_creators[link]} role")
-                    return
-            await message.channel.send(f"I don't know how to handle {channel_name}'s content.  Please contact my creator to get {channel_name} added to my functionality")
+            for role in message.guild.roles:
+                if role.name == channel_name:
+                    creator_role_found = True
+            for channel in message.guild.channels:
+                if channel.name == channel_name:
+                    creator_channel_found = True
+            if not creator_channel_found:
+                await message.guild.create_text_channel(name=name, category=youtube_category)
+                await message.channel.send(f"I've created the {name} channel")
+            if not creator_role_found:
+                await message.guild.create_role(name=name)
+                await message.channel.send(f"I've created the {name} role")
+            await message.channel.send(f"New {channel_name} videos will be posted to the {name} channel and ping the {name} role")
+            return
     except:
-        pass
+        await message.channel.send(f"I don't know how to handle {channel_name}'s content.  Please contact my creator to get {channel_name} added to my functionality")
+        return
 
     for channel in message.guild.text_channels:
         if channel.name == 'voice-of-light-posts':
@@ -175,34 +138,22 @@ async def process_vol_message(message):
         pass
 
     if vol_posts_channel == message.channel:
-        channel_role_name = None
-        creator_channel = None
-        creator_role = None
         try:
-            for link in content_creators:
-                if link == message.embeds[0].footer.icon_url:
-                    channel_role_name = content_creators[link]
-            if channel_role_name:
-                for channel in message.guild.text_channels:
-                    if channel.name == channel_role_name:
-                        creator_channel = channel
-                for role in message.guild.roles:
-                    if role.name == channel_role_name:
-                        creator_role = role
+            creator_name = message.embeds[0].author.name
+            channel_role_name = creator_name.replace(' ', '-').lower()
 
-            if not channel_role_name:
-                await vol_posts_channel.send(f"Creator not found {message.embeds[0].footer.icon_url}")
-                return
+            creator_channel = discord.utils.get(message.guild.channels, name=channel_role_name)
+            creator_role = discord.utils.get(message.guild.roles, name=channel_role_name)
 
             if creator_channel:
                 if creator_role:
                     await creator_channel.send(creator_role.mention)
                 else:
-                    await vol_posts_channel.send(f"Cannot ping role for {message.embeds[0].footer.icon_url}")
+                    await vol_posts_channel.send(f"Cannot ping role {creator_name}")
                 for embed in message.embeds:
                     await creator_channel.send(embed=embed)
             else:
-                await vol_posts_channel.send(f"Cannot post to channel for {message.embeds[0].footer.icon_url}")
+                await vol_posts_channel.send(f"Cannot post to channel {creator_name}")
         except:
             pass
 
