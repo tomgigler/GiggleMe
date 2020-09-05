@@ -12,6 +12,7 @@ delayed_messages = {}
 
 async def process_temps(message):
     processed_values = []
+    output = ""
     for temp in re.findall('[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content):
         match = re.search('([-]?[0-9]*\.?[0-9]+) ?([CFcf])(?:\s+|$|\?|\.|,)', temp)
         value = float(match.group(1))
@@ -22,10 +23,15 @@ async def process_temps(message):
             scale = 'F'
         newvalue = value * 1.8 + 32 if scale == 'C' else (value - 32)/1.8
         newscale = 'F' if scale == 'C' else 'C'
+
         if f"{value}{scale}" not in processed_values:
-            await message.channel.send(f"{value} {scale} = {round(newvalue, 1)} {newscale}")
+            output += f"{value} {scale} = {round(newvalue, 1)} {newscale}\n"
             processed_values.append(f"{value}{scale}")
             processed_values.append(f"{newvalue}{newscale}")
+
+    if output:
+        embed = discord.Embed(description=output, color=0x00ff00)
+        await message.channel.send(embed=embed)
 
 async def list_user_roles(message):
     youtube_roles = []
