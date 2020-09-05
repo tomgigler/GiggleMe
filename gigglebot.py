@@ -187,14 +187,14 @@ async def process_delay_message(message):
         await message.channel.send(f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes")
         print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
         if message.author.id in delayed_messages:
-            delayed_messages[message.author.id].append(message)
+            delayed_messages[message.author.id].append((message, channel))
         else:
-            delayed_messages[message.author.id] = [message]
+            delayed_messages[message.author.id] = [(message, channel)]
         await asyncio.sleep(int(delay)*60)
         if message.author.id in delayed_messages:
-            if message in delayed_messages[message.author.id]:
+            if (message, channel) in delayed_messages[message.author.id]:
                 await channel.send(msg)
-                delayed_messages[message.author.id].remove(message)
+                delayed_messages[message.author.id].remove(message, channel)
                 if len(delayed_messages[message.author.id]) < 1:
                     del delayed_messages[message.author.id]
                 print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
@@ -205,8 +205,8 @@ async def list_delay_messages(author_id, channel):
     count = 1
     if author_id in delayed_messages and len(delayed_messages[author_id]) > 0:
         output = ""
-        for msg in delayed_messages[author_id]:
-            output += f"{count}: {msg.channel.name} in {msg.guild.name}\n"
+        for msg, send_channel in delayed_messages[author_id]:
+            output += f"{count}: {send_channel} in {msg.guild.name}\n"
             count += 1
         await channel.send(output)
     else:
@@ -216,7 +216,8 @@ async def show_delay_message(message):
     msg_num = int(re.search(r'^~giggle delay show (\d+)', message.content).group(1))
     if message.author.id in delayed_messages:
         if len(delayed_messages[message.author.id]) >= msg_num:
-            content = re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', delayed_messages[message.author.id][msg_num - 1].content, re.MULTILINE|re.DOTALL).group(1)
+            msg, channel = delayed_messages[message.author.id][msg_num - 1]
+            content = re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', msg.content, re.MULTILINE|re.DOTALL).group(1)
             await message.channel.send(content)
         else:
             await message.channel.send("Message not found")
