@@ -50,43 +50,44 @@ async def list_user_roles(message):
             if name not in youtube_roles:
                 youtube_roles.append(name)
     if len(youtube_roles) > 0:
-        await message.channel.send('\n'.join(youtube_roles))
+        embed = discord.Embed(title=f"{message.author.name}'s roles:", description='\n'.join(youtube_roles), color=0x00ff00)
+        await message.channel.send(embed=embed)
 
 async def add_user_role(message):
     add_role = re.search('~giggle youtube add (.*)', message.content, re.IGNORECASE).group(1)
     youtube_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
     if not discord.utils.get(youtube_category.channels, name=add_role):
-        await message.channel.send(f"Cannot add {add_role} role")
+        await message.channel.send(embed=discord.Embed(description=f"Cannot add {add_role} role", color=0x00ff00))
         return
     if discord.utils.get(message.author.roles, name=add_role):
-        await message.channel.send(f"You already have the {add_role} role")
+        await message.channel.send(embed=discord.Embed(description=f"You already have the {add_role} role", color=0x00ff00))
         return
     else:
         role = discord.utils.get(message.guild.roles, name=add_role)
         await message.author.add_roles(role)
     await asyncio.sleep(1)
     if discord.utils.get(message.author.roles, name=add_role):
-        await message.channel.send(f"Added {add_role} role")
+        await message.channel.send(embed=discord.Embed(description=f"Added {add_role} role", color=0x00ff00))
     else:
-        await message.channel.send(f"Failed to add {add_role} role")
+        await message.channel.send(embed=discord.Embed(description=f"Failed to add {add_role} role", color=0x00ff00))
 
 async def remove_user_role(message):
     remove_role = re.search('~giggle youtube remove (.*)', message.content, re.IGNORECASE).group(1)
     youtube_category = discord.utils.get(message.guild.channels, name="YOUTUBE")
     if not discord.utils.get(youtube_category.channels, name=remove_role):
-        await message.channel.send(f"Cannot remove {remove_role} role")
+        await message.channel.send(embed=discord.Embed(description=f"Cannot remove {remove_role} role", color=0x00ff00))
         return
     if not discord.utils.get(message.author.roles, name=remove_role):
-        await message.channel.send(f"You don't currently have the {remove_role} role")
+        await message.channel.send(embed=discord.Embed(description=f"You don't currently have the {remove_role} role", color=0x00ff00))
         return
     else:
         role = discord.utils.get(message.guild.roles, name=remove_role)
         await message.author.remove_roles(role)
     await asyncio.sleep(1)
     if not discord.utils.get(message.author.roles, name=remove_role):
-        await message.channel.send(f"Removed {remove_role} role")
+        await message.channel.send(embed=discord.Embed(description=f"Removed {remove_role} role", color=0x00ff00))
     else:
-        await message.channel.send(f"Failed to remove {remove_role} role")
+        await message.channel.send(embed=discord.Embed(description=f"Failed to remove {remove_role} role", color=0x00ff00))
 
 async def list_roles(message):
     youtube_roles = []
@@ -102,7 +103,9 @@ async def list_roles(message):
             if name not in youtube_roles:
                 youtube_roles.append(name)
     if len(youtube_roles) > 0:
-        await message.channel.send('\n'.join(youtube_roles))
+        await message.channel.send(embed=discord.Embed(title='Available roles:', description='\n'.join(youtube_roles), color=0x00ff00))
+    else:
+        await message.channel.send(embed=discord.Embed(description='No YouTube roles found', color=0x00ff00))
 
 async def process_vol_message(message):
     server_roles = []
@@ -116,6 +119,7 @@ async def process_vol_message(message):
             name = channel_name.replace(' ', '-').lower()
             creator_role_found = False
             creator_channel_found = False
+            output = ""
             for role in message.guild.roles:
                 if role.name == channel_name:
                     creator_role_found = True
@@ -124,11 +128,12 @@ async def process_vol_message(message):
                     creator_channel_found = True
             if not creator_channel_found:
                 await message.guild.create_text_channel(name=name, category=youtube_category)
-                await message.channel.send(f"I've created the {name} channel")
+                output += f"I've created the {name} channel\n"
             if not creator_role_found:
                 await message.guild.create_role(name=name)
-                await message.channel.send(f"I've created the {name} role")
-            await message.channel.send(f"New {channel_name} videos will be posted to the {name} channel and ping the {name} role")
+                output += f"I've created the {name} role\n"
+            output += f"New {channel_name} videos will be posted to the {name} channel and ping the {name} role\n"
+            await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
             return
     except:
         await message.channel.send(f"I don't know how to handle {channel_name}'s content.  Please contact my creator to get {channel_name} added to my functionality")
@@ -156,11 +161,11 @@ async def process_vol_message(message):
                 if creator_role:
                     await creator_channel.send(creator_role.mention)
                 else:
-                    await vol_posts_channel.send(f"Cannot ping role {creator_name}")
+                    await vol_posts_channel.send(embed=discord.Embed(description=f"Cannot ping role {creator_name}", color=0x00ff00))
                 for embed in message.embeds:
                     await creator_channel.send(embed=embed)
             else:
-                await vol_posts_channel.send(f"Cannot post to channel {creator_name}")
+                await vol_posts_channel.send(embed=discord.Embed(description=f"Cannot post to channel {creator_name}", color=0x00ff00))
         except:
             pass
 
@@ -177,14 +182,14 @@ async def process_delay_message(message):
     try:
         is_admin = message.author.permissions_in(channel).administrator
     except:
-        await message.channel.send('Admin permission are required to send delayed messages')
+        await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
         return
     if is_admin:
         match = re.search(r'^~giggle delay (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
         delay = match.group(1)
         msg = match.group(2)
         msg = f"Here's a message from {message.author.mention}:\n" + msg
-        await message.channel.send(f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes")
+        await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes", color=0x00ff00))
         print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
         if message.author.id in delayed_messages:
             delayed_messages[message.author.id].append((message, channel))
@@ -199,7 +204,7 @@ async def process_delay_message(message):
                     del delayed_messages[message.author.id]
                 print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
     else:
-        await message.channel.send('Admin permission are required to send delayed messages')
+        await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
 
 async def list_delay_messages(author_id, channel):
     count = 1
@@ -208,9 +213,9 @@ async def list_delay_messages(author_id, channel):
         for msg, send_channel in delayed_messages[author_id]:
             output += f"{count}: {send_channel} in {msg.guild.name}\n"
             count += 1
-        await channel.send(output)
+        await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
     else:
-        await channel.send("No messages found")
+        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_delay_message(message):
     msg_num = int(re.search(r'^~giggle delay show (\d+)', message.content).group(1))
@@ -220,9 +225,9 @@ async def show_delay_message(message):
             content = re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', msg.content, re.MULTILINE|re.DOTALL).group(1)
             await message.channel.send(content)
         else:
-            await message.channel.send("Message not found")
+            await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
     else:
-        await message.channel.send("No messages found")
+        await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def cancel_delay_message(message):
     msg_num = int(re.search(r'^~giggle delay cancel (\d+)', message.content).group(1))
@@ -231,12 +236,12 @@ async def cancel_delay_message(message):
             del delayed_messages[message.author.id][msg_num - 1]
             if len(delayed_messages[message.author.id]) < 1:
                 del delayed_messages[message.author.id]
-            await message.channel.send("Message canceled")
+            await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
             print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
         else:
-            await message.channel.send("Message not found")
+            await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
     else:
-        await message.channel.send("No messages found")
+        await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 @client.event
 async def on_message(message):
@@ -244,7 +249,7 @@ async def on_message(message):
         return
 
     if message.content == 'kill' and message.author.id == 669370838478225448:
-        await message.channel.send(f"Killing {client.user.name}")
+        await message.channel.send(embed=discord.Embed(description=f"Killing {client.user.name}", color=0x00ff00))
         sys.exit()
 
     if re.search(r'^~giggle delay list', message.content):
@@ -293,13 +298,13 @@ async def on_message(message):
         await process_temps(message)
 
     if client.user.mentioned_in(message):
-        await message.channel.send(f"Hi {message.author.name}!  I convert temperatures.  Just put \"~giggle\" at the beginning of your message")
+        output = f"Hi {message.author.name}!  I convert temperatures.  Just put \"~giggle\" at the beginning of your message\n"
         vol_posts_channel = None
         for channel in message.guild.text_channels:
             if channel.name == 'voice-of-light-posts':
                 vol_posts_channel = channel
         if vol_posts_channel:
-            await message.channel.send(f"I also do YouTube announcements on this server.  Type \"~giggle youtube\" for details")
-
+            output += f"I also do YouTube announcements on this server.  Type \"~giggle youtube\" for details"
+        await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 client.run(bot_token)
