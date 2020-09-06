@@ -114,7 +114,7 @@ async def process_vol_message(message):
     for channel in youtube_category.channels:
         content_creators.append(channel)
     try:
-        if re.search(r'Successfully subscribed to (.*)', message.embeds[0].title):
+        if len(message.embeds) > 0 and re.search(r'Successfully subscribed to (.*)', message.embeds[0].title):
             channel_name = re.search(r'Successfully subscribed to (.*)', message.embeds[0].title).group(1)
             name = channel_name.replace(' ', '-').lower()
             creator_role_found = False
