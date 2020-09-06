@@ -272,7 +272,7 @@ async def on_message(message):
         await process_vol_message(message)
 
     if re.search(r'^~giggle youtube$', message.content, re.IGNORECASE):
-        await message.channel.send("""Start your message with "~giggle youtube" followed by one of the commands below:
+        await message.channel.send("""```Start your message with "~giggle youtube" followed by one of the commands below:
             roles:
                 Show youtube roles currently assigned to you
             add <role>:
@@ -280,7 +280,7 @@ async def on_message(message):
             remove <role>:
                 Remove <role> from yourself
             list:
-                Show available youtube roles on this server""")
+                Show available youtube roles on this server```""")
 
     elif re.search(r'^~giggle youtube roles$', message.content, re.IGNORECASE):
         await list_user_roles(message)
