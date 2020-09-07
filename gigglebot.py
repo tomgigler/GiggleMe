@@ -241,16 +241,16 @@ async def show_delay_message(message):
 
 async def cancel_delay_message(message):
     try:
-        guild = message.guild
+        guild_id = message.guild.id
     except:
         return
 
     msg_num = int(re.search(r'^~giggle delay cancel (\d+)', message.content).group(1))
-    if message.guild.id in delayed_messages:
-        if len(delayed_messages[message.guild.id]) >= msg_num:
-            del delayed_messages[message.guild.id][msg_num - 1]
-            if len(delayed_messages[message.guild.id]) < 1:
-                del delayed_messages[message.guild.id]
+    if guild_id in delayed_messages:
+        if len(delayed_messages[guild_id]) >= msg_num:
+            del delayed_messages[guild_id][msg_num - 1]
+            if len(delayed_messages[guild_id]) < 1:
+                del delayed_messages[guild_id]
             await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
             print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
         else:
