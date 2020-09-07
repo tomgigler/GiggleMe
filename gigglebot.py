@@ -199,7 +199,7 @@ async def process_delay_message(message):
         if message.author.id in delayed_messages:
             if (message, channel) in delayed_messages[message.author.id]:
                 await channel.send(msg)
-                delayed_messages[message.author.id].remove(message, channel)
+                delayed_messages[message.author.id].remove((message, channel))
                 if len(delayed_messages[message.author.id]) < 1:
                     del delayed_messages[message.author.id]
                 print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
