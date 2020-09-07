@@ -171,11 +171,11 @@ async def process_vol_message(message):
 
 async def process_delay_message(message):
     try:
-        server_id = int(re.search(r'server=(\d+)', message.content).group(1))
+        guild = message.guild
+        guild_id = guild.id
     except:
-        server_id = message.guild.id
+        return
 
-    guild = discord.utils.get(client.guilds, id=server_id)
     channel_name = re.search(r'channel=(.+)', message.content).group(1)
     channel = discord.utils.get(guild.channels, name=channel_name)
 
@@ -191,38 +191,48 @@ async def process_delay_message(message):
         msg = f"Here's a message from {message.author.mention}:\n" + msg
         await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes", color=0x00ff00))
         print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
-        if message.author.id in delayed_messages:
-            delayed_messages[message.author.id].append((message, channel))
+        if message.guild.id in delayed_messages:
+            delayed_messages[message.guild.id].append((message, channel))
         else:
-            delayed_messages[message.author.id] = [(message, channel)]
+            delayed_messages[message.guild.id] = [(message, channel)]
         await asyncio.sleep(int(delay)*60)
-        if message.author.id in delayed_messages:
-            if (message, channel) in delayed_messages[message.author.id]:
+        if message.guild.id in delayed_messages:
+            if (message, channel) in delayed_messages[message.guild.id]:
                 await channel.send(msg)
-                delayed_messages[message.author.id].remove((message, channel))
-                if len(delayed_messages[message.author.id]) < 1:
-                    del delayed_messages[message.author.id]
+                delayed_messages[message.guild.id].remove((message, channel))
+                if len(delayed_messages[message.guild.id]) < 1:
+                    del delayed_messages[message.guild.id]
                 print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
     else:
         await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
 
-async def list_delay_messages(author_id, channel):
+async def list_delay_messages(message):
+    try:
+        guild_id = message.guild.id
+    except:
+        return
+    channel = message.channel
     count = 1
-    if author_id in delayed_messages and len(delayed_messages[author_id]) > 0:
+    if guild_id in delayed_messages and len(delayed_messages[guild_id]) > 0:
         output = ""
-        for msg, send_channel in delayed_messages[author_id]:
-            output += f"{count}: {send_channel} in {msg.guild.name}\n"
+        for msg, send_channel in delayed_messages[guild_id]:
+            output += f"{count}: {msg.author.name} {send_channel} in {msg.guild.name}\n"
             count += 1
         await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_delay_message(message):
+    try:
+        guild_id = message.guild.id
+    except:
+        return
     msg_num = int(re.search(r'^~giggle delay show (\d+)', message.content).group(1))
-    if message.author.id in delayed_messages:
-        if len(delayed_messages[message.author.id]) >= msg_num:
-            msg, channel = delayed_messages[message.author.id][msg_num - 1]
-            content = re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', msg.content, re.MULTILINE|re.DOTALL).group(1)
+    if guild_id in delayed_messages:
+        if len(delayed_messages[guild_id]) >= msg_num:
+            msg, channel = delayed_messages[guild_id][msg_num - 1]
+            content = f"{msg.author.name} scheduled:\n"
+            content += re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', msg.content, re.MULTILINE|re.DOTALL).group(1)
             await message.channel.send(content)
         else:
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
@@ -230,12 +240,17 @@ async def show_delay_message(message):
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def cancel_delay_message(message):
+    try:
+        guild = message.guild
+    except:
+        return
+
     msg_num = int(re.search(r'^~giggle delay cancel (\d+)', message.content).group(1))
-    if message.author.id in delayed_messages:
-        if len(delayed_messages[message.author.id]) >= msg_num:
-            del delayed_messages[message.author.id][msg_num - 1]
-            if len(delayed_messages[message.author.id]) < 1:
-                del delayed_messages[message.author.id]
+    if message.guild.id in delayed_messages:
+        if len(delayed_messages[message.guild.id]) >= msg_num:
+            del delayed_messages[message.guild.id][msg_num - 1]
+            if len(delayed_messages[message.guild.id]) < 1:
+                del delayed_messages[message.guild.id]
             await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
             print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
         else:
@@ -253,7 +268,7 @@ async def on_message(message):
         sys.exit()
 
     if re.search(r'^~giggle delay list', message.content):
-        await list_delay_messages(message.author.id, message.channel)
+        await list_delay_messages(message)
         return
 
     if re.search(r'^~giggle delay show \d+', message.content):
