@@ -312,7 +312,7 @@ async def on_message(message):
     elif re.search(r'^~giggle.*[-]?[0-9]*\.?[0-9]+ ?[CFcf](?:\s+|$|\?|\.|,)', message.content, re.IGNORECASE):
         await process_temps(message)
 
-    if client.user.mentioned_in(message):
+    if client.user.mentioned_in(message) and re.search(f'{client.user.id}', message.content):
         output = f"Hi {message.author.name}!  I convert temperatures.  Just put \"~giggle\" at the beginning of your message\n"
         vol_posts_channel = None
         for channel in message.guild.text_channels:
