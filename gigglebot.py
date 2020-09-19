@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 from time import time, ctime
 from operator import attrgetter
+from hashlib import md5
 
 client = discord.Client()
 delayed_messages = {}
@@ -17,6 +18,7 @@ class DelayedMessage:
         self.message = message
         self.channel = channel
         self.deliveryTime = time() + int(delay) * 60
+        self.id = md5((message.author.name + message.content + channel.name + str(self.deliveryTime)).encode('utf-8')).hexdigest()[:8]
 
 async def process_temps(message):
     processed_values = []
@@ -221,16 +223,14 @@ async def list_delay_messages(message):
     except:
         return
     channel = message.channel
-    count = 1
     if guild_id in delayed_messages and len(delayed_messages[guild_id]) > 0:
         embed=discord.Embed(title="Scheduled Messages ==================================")
         delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
         for msg in delayed_messages[guild_id]:
-            embed.add_field(name="ID", value=f"{count}", inline=True)
+            embed.add_field(name="ID", value=f"{msg.id}", inline=True)
             embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.channel}", inline=True)
             embed.add_field(name="Delivery Time", value=f"{ctime(msg.deliveryTime)}", inline=False)
-            count += 1
         await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
@@ -240,14 +240,16 @@ async def show_delay_message(message):
         guild_id = message.guild.id
     except:
         return
-    msg_num = int(re.search(r'^~giggle delay show (\d+)', message.content).group(1))
+    message_found = False
+    msg_num = re.search(r'^~giggle delay show (\S+)', message.content).group(1)
     if guild_id in delayed_messages:
-        if len(delayed_messages[guild_id]) >= msg_num:
-            msg = delayed_messages[guild_id][msg_num - 1]
-            content = f"{msg.message.author.name} scheduled:\n"
-            content += re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
-            await message.channel.send(content)
-        else:
+        for msg in delayed_messages[guild_id]:
+            if msg.id == msg_num:
+                content = f"{msg.message.author.name} scheduled:\n"
+                content += re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
+                await message.channel.send(content)
+                message_found = True
+        if not message_found:
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
@@ -258,15 +260,18 @@ async def cancel_delay_message(message):
     except:
         return
 
-    msg_num = int(re.search(r'^~giggle delay cancel (\d+)', message.content).group(1))
+    msg_num = re.search(r'^~giggle delay cancel (\S+)', message.content).group(1)
+    message_found = False
     if guild_id in delayed_messages:
-        if len(delayed_messages[guild_id]) >= msg_num:
-            del delayed_messages[guild_id][msg_num - 1]
-            if len(delayed_messages[guild_id]) < 1:
-                del delayed_messages[guild_id]
-            await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
-            print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
-        else:
+        for msg in delayed_messages[guild_id]:
+            if msg.id == msg_num:
+                delayed_messages[guild_id].remove(msg)
+                if len(delayed_messages[guild_id]) < 1:
+                    del delayed_messages[guild_id]
+                await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
+                print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
+                message_found = True
+        if not message_found:
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
@@ -284,11 +289,11 @@ async def on_message(message):
         await list_delay_messages(message)
         return
 
-    if re.search(r'^~giggle delay show \d+', message.content):
+    if re.search(r'^~giggle delay show \S+', message.content):
         await show_delay_message(message)
         return
 
-    if re.search(r'^~giggle delay cancel \d+', message.content):
+    if re.search(r'^~giggle delay cancel \S+', message.content):
         await cancel_delay_message(message)
         return
 
