@@ -6,14 +6,17 @@ import asyncio
 from settings import bot_token
 import sys
 from datetime import datetime
+from time import time, ctime
+
 
 client = discord.Client()
 delayed_messages = {}
 
 class DelayedMessage:
-    def __init__(self, message, channel):
+    def __init__(self, message, channel, delay):
         self.message = message
         self.channel = channel
+        self.deliveryTime = time() + int(delay) * 60
 
 async def process_temps(message):
     processed_values = []
@@ -196,7 +199,7 @@ async def process_delay_message(message):
         msg = f"Here's a message from {message.author.mention}:\n" + msg
         await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes", color=0x00ff00))
         print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
-        newMessage = DelayedMessage(message, channel)
+        newMessage = DelayedMessage(message, channel, delay)
         if message.guild.id in delayed_messages:
             delayed_messages[message.guild.id].append(newMessage)
         else:
@@ -220,11 +223,14 @@ async def list_delay_messages(message):
     channel = message.channel
     count = 1
     if guild_id in delayed_messages and len(delayed_messages[guild_id]) > 0:
-        output = ""
+        embed=discord.Embed(title="Scheduled Messages ==================================")
         for msg in delayed_messages[guild_id]:
-            output += f"{count}: {msg.message.author.name} {msg.channel} in {msg.message.guild.name}\n"
+            embed.add_field(name="ID", value=f"{count}", inline=True)
+            embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
+            embed.add_field(name="Channel", value=f"{msg.channel}", inline=True)
+            embed.add_field(name="Delivery Time", value=f"{ctime(msg.deliveryTime)}", inline=False)
             count += 1
-        await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+        await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
