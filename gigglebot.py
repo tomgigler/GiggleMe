@@ -7,7 +7,7 @@ from settings import bot_token
 import sys
 from datetime import datetime
 from time import time, ctime
-
+from operator import attrgetter
 
 client = discord.Client()
 delayed_messages = {}
@@ -224,6 +224,7 @@ async def list_delay_messages(message):
     count = 1
     if guild_id in delayed_messages and len(delayed_messages[guild_id]) > 0:
         embed=discord.Embed(title="Scheduled Messages ==================================")
+        delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
         for msg in delayed_messages[guild_id]:
             embed.add_field(name="ID", value=f"{count}", inline=True)
             embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
