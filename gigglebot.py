@@ -186,8 +186,11 @@ async def process_delay_message(message):
     except:
         return
 
-    channel_name = re.search(r'channel=(.+)', message.content).group(1)
-    channel = discord.utils.get(guild.channels, name=channel_name)
+    try:
+        channel_name = re.search(r'channel=(.+)', message.content).group(1)
+        channel = discord.utils.get(guild.channels, name=channel_name)
+    except:
+        channel = message.channel
 
     try:
         is_admin = message.author.permissions_in(channel).administrator
