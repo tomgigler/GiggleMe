@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ps -f | grep $(pwd)/gigglebot.py | grep -v grep
+ps -ef | grep $(pwd)/gigglebot.py | grep -v grep
 
 if [ $? -ne 0 ]
 then
