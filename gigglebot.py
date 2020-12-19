@@ -90,7 +90,7 @@ async def show_delay_message(message):
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
                 content = f"{msg.message.author.name} scheduled:\n"
-                content += re.search(r'^~giggle delay \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
+                content += re.search(r'^~giggle \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
                 await message.channel.send(content)
                 message_found = True
         if not message_found:
