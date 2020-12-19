@@ -39,7 +39,7 @@ async def process_delay_message(message):
         await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
         return
     if is_admin:
-        match = re.search(r'^~giggle delay (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
+        match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
         delay = match.group(1)
         msg = match.group(2)
         msg = f"Here's a message from {message.author.mention}:\n" + msg
@@ -85,7 +85,7 @@ async def show_delay_message(message):
     except:
         return
     message_found = False
-    msg_num = re.search(r'^~giggle delay show (\S+)', message.content).group(1)
+    msg_num = re.search(r'^~giggle show (\S+)', message.content).group(1)
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
@@ -104,7 +104,7 @@ async def cancel_delay_message(message):
     except:
         return
 
-    msg_num = re.search(r'^~giggle delay cancel (\S+)', message.content).group(1)
+    msg_num = re.search(r'^~giggle cancel (\S+)', message.content).group(1)
     message_found = False
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
