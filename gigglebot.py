@@ -30,6 +30,9 @@ async def process_delay_message(message):
     try:
         channel_name = re.search(r'channel=(.+)', message.content).group(1)
         channel = discord.utils.get(guild.channels, name=channel_name)
+        if not channel:
+            await message.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0x00ff00))
+            return
     except:
         channel = message.channel
 
