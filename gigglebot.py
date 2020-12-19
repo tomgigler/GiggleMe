@@ -125,6 +125,9 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    if not message.author.guild_permissions.mute_members:
+        return
+
     if message.content == 'kill' and message.author.id == 669370838478225448:
         await message.channel.send(embed=discord.Embed(description=f"Killing {client.user.name}", color=0x00ff00))
         sys.exit()
