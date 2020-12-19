@@ -34,11 +34,11 @@ async def process_delay_message(message):
         channel = message.channel
 
     try:
-        is_admin = message.author.permissions_in(channel).administrator
+        has_permission = message.author.permissions_in(channel).manage_channels
     except:
-        await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
+        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0x00ff00))
         return
-    if is_admin:
+    if has_permission:
         match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
         delay = match.group(1)
         msg = match.group(2)
@@ -59,7 +59,7 @@ async def process_delay_message(message):
                     del delayed_messages[message.guild.id]
                 print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
     else:
-        await message.channel.send(embed=discord.Embed(description='Admin permission are required to send delayed messages', color=0x00ff00))
+        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0x00ff00))
 
 async def list_delay_messages(message):
     try:
