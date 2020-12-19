@@ -74,7 +74,7 @@ async def list_delay_messages(message):
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
             embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.channel}", inline=True)
-            embed.add_field(name="Delivery Time", value=f"{ctime(msg.deliveryTime)}", inline=False)
+            embed.add_field(name="Delivering in", value=f"{str(round((msg.deliveryTime - time())/60, 1))} minutes", inline=False)
         await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
