@@ -45,7 +45,16 @@ async def process_delay_message(message):
         match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
         delay = match.group(1)
         msg = match.group(2)
-        msg = re.sub(r'{}', r'@', msg)
+        for mention in re.finditer(r'{([^}]+)}', msg):
+            if mention.group(1) == 'everyone':
+                mention_replace = '@everyone'
+            else:
+                try:
+                    mention_replace = discord.utils.get(guild.roles,name=mention.group(1)).mention
+                except:
+                    await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
+                    return
+            msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
         await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server in {delay} minutes", color=0x00ff00))
         print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} in {delay} minutes")
         newMessage = DelayedMessage(message, channel, delay)
