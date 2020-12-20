@@ -91,6 +91,21 @@ async def list_delay_messages(message):
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
+async def list_all_delay_messages(message):
+    channel = message.channel
+    if len(delayed_messages) > 0:
+        embed=discord.Embed(title="Scheduled Messages ==================================")
+        for guild_id in delayed_messages:
+            delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
+            for msg in delayed_messages[guild_id]:
+                embed.add_field(name="ID", value=f"{msg.id}", inline=True)
+                embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
+                embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.channel}", inline=True)
+                embed.add_field(name="Delivering in", value=f"{str(round((msg.deliveryTime - time())/60, 1))} minutes", inline=False)
+        await channel.send(embed=embed)
+    else:
+        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+
 async def show_delay_message(message):
     try:
         guild_id = message.guild.id
@@ -146,6 +161,10 @@ async def on_message(message):
     if message.content == 'kill' and message.author.id == 669370838478225448:
         await message.channel.send(embed=discord.Embed(description=f"Killing {client.user.name}", color=0x00ff00))
         await client.close()
+
+    if re.search(r'^~giggle listall', message.content) and message.author.id == 669370838478225448:
+        await list_all_delay_messages(message)
+        return
 
     if re.search(r'^~giggle list', message.content):
         await list_delay_messages(message)
