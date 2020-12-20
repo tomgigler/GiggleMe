@@ -31,7 +31,7 @@ async def process_delay_message(message):
         channel_name = re.search(r'channel=(.+)', message.content).group(1)
         channel = discord.utils.get(guild.channels, name=channel_name)
         if not channel:
-            await message.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0x00ff00))
+            await message.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0xff0000))
             return
     except:
         channel = message.channel
@@ -39,7 +39,7 @@ async def process_delay_message(message):
     try:
         has_permission = message.author.permissions_in(channel).manage_channels
     except:
-        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0x00ff00))
+        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
         return
     if has_permission:
         match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
@@ -71,7 +71,7 @@ async def process_delay_message(message):
                     del delayed_messages[message.guild.id]
                 print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
     else:
-        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0x00ff00))
+        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
 
 async def list_delay_messages(message):
     try:
