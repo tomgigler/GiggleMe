@@ -37,9 +37,11 @@ async def process_delay_message(message):
     try:
         has_permission = message.author.permissions_in(channel).manage_channels
     except:
-        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
-        return
-    if has_permission:
+        if not message.user.id == 150869368064966656:
+            await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
+            return
+
+    if has_permission or message.user.id == 150869368064966656:
         match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
         delay = match.group(1)
         msg = match.group(2)
@@ -138,7 +140,7 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if not message.author.guild_permissions.mute_members and message.author.id != 669370838478225448:
+    if not message.author.guild_permissions.mute_members and message.author.id != 669370838478225448 and message.author.id != 150869368064966656:
         return
 
     if message.content == 'kill' and message.author.id == 669370838478225448:
