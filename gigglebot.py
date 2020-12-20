@@ -156,7 +156,7 @@ async def on_message(message):
         await cancel_delay_message(message)
         return
 
-    if re.search(r'^~giggle \d+', message.content):
+    if re.search(r'^~giggle \d+.*\n.', message.content):
         await process_delay_message(message)
         return
 
