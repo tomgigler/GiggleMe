@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 import discord
 import re
-import os
 import asyncio
 from settings import bot_token
-import sys
 from datetime import datetime
 from time import time, ctime
 from operator import attrgetter
