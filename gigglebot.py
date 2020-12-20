@@ -130,6 +130,9 @@ async def cancel_delay_message(message):
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
+async def show_help(channel):
+    await channel.send(embed=discord.Embed(description="TODO: Show help"))
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
@@ -156,6 +159,10 @@ async def on_message(message):
 
     if re.search(r'^~giggle \d+.*\n.', message.content):
         await process_delay_message(message)
+        return
+
+    if re.search(r'^~giggle', message.content):
+        await show_help(message.channel)
         return
 
 client.run(bot_token)
