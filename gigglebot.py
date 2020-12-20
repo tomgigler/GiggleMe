@@ -142,7 +142,7 @@ async def on_message(message):
 
     if message.content == 'kill' and message.author.id == 669370838478225448:
         await message.channel.send(embed=discord.Embed(description=f"Killing {client.user.name}", color=0x00ff00))
-        sys.exit()
+        await client.close()
 
     if re.search(r'^~giggle list', message.content):
         await list_delay_messages(message)
