@@ -152,10 +152,13 @@ async def show_help(channel):
 
 @client.event
 async def on_message(message):
-    if message.author == client.user:
+    try:
+        if not message.author.guild_permissions.mute_members and message.author.id != 669370838478225448 and message.author.id != 150869368064966656:
+            return
+    except:
         return
 
-    if not message.author.guild_permissions.mute_members and message.author.id != 669370838478225448 and message.author.id != 150869368064966656:
+    if message.author == client.user:
         return
 
     if message.content == 'kill' and message.author.id == 669370838478225448:
