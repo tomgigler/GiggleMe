@@ -4,7 +4,7 @@ import re
 import asyncio
 from settings import bot_token
 from datetime import datetime
-from time import time, ctime
+from time import time, ctime, localtime
 from operator import attrgetter
 from hashlib import md5
 
@@ -93,10 +93,9 @@ async def list_delay_messages(message):
             embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.channel}", inline=True)
             if round((msg.deliveryTime - time())/60, 1) < 0:
-                deliver_in = f"Delivery failed {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago"
+                embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
             else:
-                deliver_in = str(round((msg.deliveryTime - time())/60, 1))
-            embed.add_field(name="Delivering in", value=f"{deliver_in} minutes", inline=False)
+                embed.add_field(name="Deliver at", value=f"{ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}", inline=False)
         await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
@@ -112,10 +111,9 @@ async def list_all_delay_messages(message):
                 embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
                 embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.channel}", inline=True)
                 if round((msg.deliveryTime - time())/60, 1) < 0:
-                    deliver_in = f"Delivery failed {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago"
+                    embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
                 else:
-                    deliver_in = str(round((msg.deliveryTime - time())/60, 1))
-                embed.add_field(name="Delivering in", value=f"{deliver_in} minutes", inline=False)
+                    embed.add_field(name="Deliver at", value=f"{ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}", inline=False)
         await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
