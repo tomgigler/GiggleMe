@@ -92,7 +92,11 @@ async def list_delay_messages(message):
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
             embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.channel}", inline=True)
-            embed.add_field(name="Delivering in", value=f"{str(round((msg.deliveryTime - time())/60, 1))} minutes", inline=False)
+            if round((msg.deliveryTime - time())/60, 1) < 0:
+                deliver_in = f"Delivery failed {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago"
+            else:
+                deliver_in = str(round((msg.deliveryTime - time())/60, 1))
+            embed.add_field(name="Delivering in", value=f"{deliver_in} minutes", inline=False)
         await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
@@ -107,7 +111,11 @@ async def list_all_delay_messages(message):
                 embed.add_field(name="ID", value=f"{msg.id}", inline=True)
                 embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
                 embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.channel}", inline=True)
-                embed.add_field(name="Delivering in", value=f"{str(round((msg.deliveryTime - time())/60, 1))} minutes", inline=False)
+                if round((msg.deliveryTime - time())/60, 1) < 0:
+                    deliver_in = f"Delivery failed {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago"
+                else:
+                    deliver_in = str(round((msg.deliveryTime - time())/60, 1))
+                embed.add_field(name="Delivering in", value=f"{deliver_in} minutes", inline=False)
         await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
