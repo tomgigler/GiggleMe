@@ -171,25 +171,8 @@ async def list_all_delay_messages(message):
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_delay_message(message):
-    try:
-        guild_id = message.guild.id
-    except:
-        return
     message_found = False
     msg_num = re.search(r'^~giggle show (\S+)', message.content).group(1)
-    if guild_id in delayed_messages:
-        for msg in delayed_messages[guild_id]:
-            if msg.id == msg_num:
-                content = f"{msg.message.author.name} scheduled:\n"
-                content += re.search(r'^~giggle \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
-                await message.channel.send(content)
-                message_found = True
-    if not message_found:
-        await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
-
-async def show_all_delay_message(message):
-    message_found = False
-    msg_num = re.search(r'^~giggle showall (\S+)', message.content).group(1)
     for guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
@@ -254,10 +237,6 @@ async def on_message(message):
 
     if re.search(r'^~giggle show \S+', message.content) and message.author.id == 669370838478225448:
         await show_delay_message(message)
-        return
-
-    if re.search(r'^~giggle showall \S+', message.content):
-        await show_all_delay_message(message)
         return
 
     if re.search(r'^~giggle cancel \S+', message.content):
