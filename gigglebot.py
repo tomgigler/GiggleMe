@@ -176,7 +176,12 @@ async def show_delay_message(message):
     for guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
-                content = f"{msg.message.author.name} scheduled:\n"
+                content = f"Author: {msg.message.author.name}\n"
+                content += f"Deliver to: {msg.deliveryChannel.name}\n"
+                if round((msg.deliveryTime - time())/60, 1) < 0:
+                    content += f"Delivery failed {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago\n"
+                else:
+                    content += f"Deliver {ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}\n"
                 content += re.search(r'^~giggle \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
                 await message.channel.send(content)
                 message_found = True
