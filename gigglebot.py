@@ -25,7 +25,7 @@ class DelayedMessage:
         self.channel = channel
         self.deliveryChannel = deliveryChannel
         self.deliveryTime = deliveryTime
-        self.id = md5((message.author.name + message.content + channel.name + str(self.deliveryTime)).encode('utf-8')).hexdigest()[:8]
+        self.id = md5((message.author.name + message.content + channel.name + +deliveryChannel.name + str(self.deliveryTime) + str(time())).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mycursor = mydb.cursor()
