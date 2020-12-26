@@ -62,7 +62,7 @@ async def load_from_db():
         newMessage =  DelayedMessage(deliveryChannel, float(deliveryTime), guild, author, channel, message)
 
         insert_into_db(newMessage)
-        
+
         if int(guildID) in delayed_messages:
             delayed_messages[int(guildID)].append(newMessage)
         else:
