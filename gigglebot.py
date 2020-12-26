@@ -112,8 +112,9 @@ async def process_delay_message(message, deliveryTime=None):
         else:
             delayed_messages[message.guild.id] = [newMessage]
 
-        # TODO: everything here except the final else could be moved into a schedule_delayed_message method
-        # Replace {everyone|here|<role>} with mention
+        await schedule_delay_message(newMessage)
+
+async def schedule_delay_message(newMessage):
 
         guild_1 = discord.utils.get(client.guilds, id=int(newMessage.guild))
         channel_1 = discord.utils.get(guild.text_channels, id=int(newMessage.deliveryChannel.id))
