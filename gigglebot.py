@@ -53,6 +53,10 @@ async def load_from_db():
         delete_from_db(msg[0])
         newMessage =  DelayedMessage(int(channel), float(deliveryTime), int(guild), int(author), content)
         insert_into_db(newMessage)
+        if int(guild) in delayed_messages:
+            delayed_messages[int(guild)].append(newMessage)
+        else:
+            delayed_messages[int(guild)] = [newMessage]
         loop.create_task(schedule_delay_message(newMessage))
 
 async def process_delay_message(message, deliveryTime=None):
