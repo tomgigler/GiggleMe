@@ -105,7 +105,18 @@ async def process_delay_message(message):
             deliveryTime = float(time()) + int(match.group(1)) * 60
         msg = match.group(2)
 
-        #TODO: Make sure {roles} exist
+        #Make sure {roles} exist
+        for mention in re.finditer(r'{([^}]+)}', msg):
+            if mention.group(1) != 'everyone' and mention.group(1) != 'here':
+                try:
+                    mention_replace = discord.utils.get(guild.roles,name=mention.group(1))
+                except:
+                    # TODO: try searching for user mention.group(1)
+                    await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
+                    return
+
+                if not mention_replace:
+                    await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
 
         # create new DelayedMessage
         newMessage =  DelayedMessage(channel, float(deliveryTime), message.guild, message.author.name, message.channel, message)
