@@ -21,10 +21,10 @@ mydb = mysql.connector.connect(
 
 class DelayedMessage:
     def __init__(self, deliveryChannel, deliveryTime, guild, author, content):
-        self.deliveryChannel = deliveryChannel.id
+        self.deliveryChannel = deliveryChannel
         self.deliveryTime = deliveryTime
-        self.guild = guild.id
-        self.author = author.id
+        self.guild = guild
+        self.author = author
         self.content = content
         self.id = md5((self.author.name + self.content + self.deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
 
