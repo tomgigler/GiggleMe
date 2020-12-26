@@ -47,7 +47,7 @@ async def load_from_db():
     for msg in mycursor.fetchall():
         guild = msg[1]
         channel = msg[3]
-        deliverTime = msg[4]
+        deliveryTime = msg[4]
         author = msg[5]
         content = msg[7]
         delete_from_db(msg[0])
@@ -169,7 +169,7 @@ async def list_delay_messages(message):
         delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
         for msg in delayed_messages[guild_id]:
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
-            embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
+            embed.add_field(name="Author", value=f"{msg.author}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.deliveryChannel}", inline=True)
             if round((msg.deliveryTime - time())/60, 1) < 0:
                 embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
@@ -187,7 +187,7 @@ async def list_all_delay_messages(message):
             delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
             for msg in delayed_messages[guild_id]:
                 embed.add_field(name="ID", value=f"{msg.id}", inline=True)
-                embed.add_field(name="Author", value=f"{msg.message.author.name}", inline=True)
+                embed.add_field(name="Author", value=f"{msg.author}", inline=True)
                 embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.deliveryChannel}", inline=True)
                 if round((msg.deliveryTime - time())/60, 1) < 0:
                     embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
@@ -203,13 +203,13 @@ async def show_delay_message(message):
     for guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
-                content = f"**Author:**  {msg.message.author.name}\n"
-                content += f"**Deliver to:**  {msg.deliveryChannel.name}\n"
+                content = f"**Author:**  {msg.author}\n"
+                content += f"**Deliver to:**  {msg.deliveryChannel}\n"
                 if round((msg.deliveryTime - time())/60, 1) < 0:
                     content += f"**Delivery failed:**  {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago\n"
                 else:
                     content += f"**Deliver:**  {ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}\n"
-                content += re.search(r'^~giggle \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL).group(1)
+                content += msg.content
                 await message.channel.send(content)
                 message_found = True
     if not message_found:
