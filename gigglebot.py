@@ -20,11 +20,14 @@ mydb = mysql.connector.connect(
         )
 
 class DelayedMessage:
-    def __init__(self, message, channel, deliveryChannel, deliveryTime):
+    def __init__(self, message, channel, deliveryChannel, deliveryTime, guildID, authorID, content):
         self.message = message
         self.channel = channel
         self.deliveryChannel = deliveryChannel
         self.deliveryTime = deliveryTime
+        self.guild = guildID
+        self.author = authorID
+        self.content = content
         self.id = md5((message.author.name + message.content + channel.name + deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
@@ -109,7 +112,7 @@ async def process_delay_message(message, deliveryTime=None):
             msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(message, message.channel, channel, float(deliveryTime))
+        newMessage =  DelayedMessage(message, message.channel, channel, float(deliveryTime), message.guild.id, message.author.id, message.content)
         insert_into_db(newMessage)
         if not skipOutput:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
@@ -123,7 +126,7 @@ async def process_delay_message(message, deliveryTime=None):
             delayed_messages[message.guild.id] = [newMessage]
 
         # TODO: everything here except the final else could be moved into a schedule_delayed_message method
-        delay = float(deliveryTime) - float(time())
+        delay = float(newMessage.deliveryTime) - float(time())
         if float(delay) < 0:
             return
         await asyncio.sleep(int(delay))
