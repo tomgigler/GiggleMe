@@ -71,19 +71,12 @@ async def load_from_db():
         loop.create_task(schedule_delay_message(newMessage))
 
 async def process_delay_message(message, deliveryTime=None):
-    try:
-        guild = message.guild
-        # TODO: remove this.  guild_id is not used
-        guild_id = guild.id
-    except:
-        return
-
     skipOutput = True if deliveryTime else False
 
     # get channel (deliveryChannel) from original message
     try:
         channel_name = re.search(r'channel=(.+)', message.content).group(1)
-        channel = discord.utils.get(guild.channels, name=channel_name)
+        channel = discord.utils.get(message.guild.channels, name=channel_name)
         if not channel:
             await message.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0xff0000))
             return
