@@ -73,11 +73,10 @@ async def process_delay_message(message, deliveryTime=None):
     try:
         has_permission = message.author.permissions_in(channel).manage_channels
     except:
-        if not message.user.id == 150869368064966656:
-            await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
-            return
+        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
+        return
 
-    if not has_permission or message.user.id == 150869368064966656:
+    if not has_permission:
         await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
     else:
         if not re.search(r'~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content) and not re.search(r'^~giggle (\d+)[ \n]', message.content):
@@ -231,7 +230,7 @@ async def show_help(channel):
 @client.event
 async def on_message(message):
     try:
-        if not message.author.guild_permissions.mute_members and message.author.id != 669370838478225448 and message.author.id != 150869368064966656:
+        if not message.author.guild_permissions.mute_members and message.author.id != 669370838478225448:
             return
     except:
         return
