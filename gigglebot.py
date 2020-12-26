@@ -20,15 +20,14 @@ mydb = mysql.connector.connect(
         )
 
 class DelayedMessage:
-    def __init__(self, message, channel, deliveryChannel, deliveryTime, guildID, authorID, content):
-        self.message = message
+    def __init__(self, channel, deliveryChannel, deliveryTime, guildID, authorID, content):
         self.channel = channel
         self.deliveryChannel = deliveryChannel
         self.deliveryTime = deliveryTime
         self.guild = guildID
         self.author = authorID
         self.content = content
-        self.id = md5((message.author.name + message.content + channel.name + deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
+        self.id = md5((author + content + channel.name + deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mycursor = mydb.cursor()
@@ -99,7 +98,7 @@ async def process_delay_message(message, deliveryTime=None):
         #TODO: Make sure {roles} exist
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(message, message.channel, channel, float(deliveryTime), message.guild.id, message.author.id, msg)
+        newMessage =  DelayedMessage(message.channel, channel, float(deliveryTime), message.guild.id, message.author.id, msg)
         insert_into_db(newMessage)
         if not skipOutput:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
