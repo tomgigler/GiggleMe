@@ -16,7 +16,7 @@ mydb = mysql.connector.connect(
         host="localhost",
         user=settings.db_user,
         password=settings.db_password,
-        database="gigglebot"
+        database=settings.database
         )
 
 class DelayedMessage:
