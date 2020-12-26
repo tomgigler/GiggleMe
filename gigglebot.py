@@ -77,7 +77,9 @@ async def process_delay_message(message, deliveryTime=None):
             await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
             return
 
-    if has_permission or message.user.id == 150869368064966656:
+    if not has_permission or message.user.id == 150869368064966656:
+        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
+    else:
         if not re.search(r'~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content) and not re.search(r'^~giggle (\d+)[ \n]', message.content):
             if not skipOutput:
                 await show_help(message.channel)
@@ -139,8 +141,6 @@ async def process_delay_message(message, deliveryTime=None):
                 except:
                     pass
                 delete_from_db(newMessage.id)
-    else:
-        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
 
 async def list_delay_messages(message):
     try:
