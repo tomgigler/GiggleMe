@@ -135,7 +135,8 @@ async def schedule_delay_message(newMessage):
 
     guild = newMessage.guild
 
-    msg = newMessage.message.content
+    match = re.search(r'^~giggle \d+[^\n]*[\n](.*)', newMessage.message.content, re.MULTILINE|re.DOTALL)
+    msg = match.group(1)
     for mention in re.finditer(r'{([^}]+)}', msg):
         if mention.group(1) == 'everyone':
             mention_replace = '@everyone'
@@ -222,7 +223,8 @@ async def show_delay_message(message):
                     content += f"**Delivery failed:**  {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago\n"
                 else:
                     content += f"**Deliver:**  {ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}\n"
-                content += msg.message.content
+                match = re.search(r'^~giggle \d+[^\n]*[\n](.*)', message.message.content, re.MULTILINE|re.DOTALL)
+                content += match.group(1)
                 await message.channel.send(content)
                 message_found = True
     if not message_found:
