@@ -116,7 +116,7 @@ async def process_delay_message(message, deliveryTime=None):
         # Replace {everyone|here|<role>} with mention
 
         guild_1 = discord.utils.get(client.guilds, id=int(newMessage.guild))
-        channel_1 = discord.utils.get(guild.text_channels, id=int(newMessage.deliveryChannel))
+        channel_1 = discord.utils.get(guild.text_channels, id=int(newMessage.deliveryChannel.id))
         author = discord.utils.get(guild.members, id=int(newMessage.author))
 
         msg = newMessage.content
@@ -132,6 +132,9 @@ async def process_delay_message(message, deliveryTime=None):
                     # TODO: try searching for user mention.group(1)
                     # await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
                     # return
+
+                    # At this point, we'll just leave {role} in the message
+                    pass
             msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
 
         delay = float(newMessage.deliveryTime) - float(time())
