@@ -117,8 +117,8 @@ async def process_delay_message(message, deliveryTime=None):
 async def schedule_delay_message(newMessage):
 
         guild_1 = discord.utils.get(client.guilds, id=int(newMessage.guild))
-        channel_1 = discord.utils.get(guild.text_channels, id=int(newMessage.deliveryChannel.id))
-        author = discord.utils.get(guild.members, id=int(newMessage.author))
+        channel_1 = discord.utils.get(guild_1.text_channels, id=int(newMessage.deliveryChannel.id))
+        author = discord.utils.get(guild_1.members, id=int(newMessage.author))
 
         msg = newMessage.content
         for mention in re.finditer(r'{([^}]+)}', msg):
@@ -128,7 +128,7 @@ async def schedule_delay_message(newMessage):
                 mention_replace = '@here'
             else:
                 try:
-                    mention_replace = discord.utils.get(guild.roles,name=mention.group(1)).mention
+                    mention_replace = discord.utils.get(guild_1.roles,name=mention.group(1)).mention
                 except:
                     # TODO: try searching for user mention.group(1)
                     # await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
