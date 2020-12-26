@@ -70,8 +70,7 @@ async def load_from_db():
 
         loop.create_task(schedule_delay_message(newMessage))
 
-async def process_delay_message(message, deliveryTime=None):
-    skipOutput = True if deliveryTime else False
+async def process_delay_message(message):
 
     # get channel (deliveryChannel) from original message
     try:
@@ -98,12 +97,10 @@ async def process_delay_message(message, deliveryTime=None):
             return
         if re.search(r'~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content):
             match = re.search(r'^~giggle (\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2})[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
-            if not deliveryTime:
-                deliveryTime = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M').timestamp()
+            deliveryTime = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M').timestamp()
         else:
             match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
-            if not deliveryTime:
-                deliveryTime = float(time()) + int(match.group(1)) * 60
+            deliveryTime = float(time()) + int(match.group(1)) * 60
         msg = match.group(2)
 
         #TODO: Make sure {roles} exist
