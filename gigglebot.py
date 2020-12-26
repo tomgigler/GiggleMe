@@ -20,17 +20,19 @@ mydb = mysql.connector.connect(
         )
 
 class DelayedMessage:
-    def __init__(self, deliveryChannel, deliveryTime, guild, author, content):
+    def __init__(self, deliveryChannel, deliveryTime, guild, author, channel, message):
         self.deliveryChannel = deliveryChannel
         self.deliveryTime = deliveryTime
         self.guild = guild
         self.author = author
         self.content = content
-        self.id = md5((self.author + self.content + self.deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
+        self.channel = channel
+        self.message = message
+        self.id = md5((self.author + self.deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mycursor = mydb.cursor()
-    mycursor.execute(f"INSERT INTO messages values ('{message.id}', '{message.guild.id}', 'NULL', '{message.deliveryChannel.id}', '{message.deliveryTime}', '{message.author}', 'NULL', '{message.content}')")
+    mycursor.execute(f"INSERT INTO messages values ('{message.id}', '{message.guild.id}', '{message.channel.id}', '{message.deliveryChannel.id}', '{message.deliveryTime}', '{message.author}', '{message.message.id}')")
     mydb.commit()
 
 def delete_from_db(id):
@@ -46,16 +48,19 @@ async def load_from_db():
 
     for msg in mycursor.fetchall():
         guildID = msg[1]
-        channelID = msg[3]
+        channelID = msg[2]
+        deliveryChannelID = msg[3]
         deliveryTime = msg[4]
         author = msg[5]
-        content = msg[7]
+        messageID = msg[6]
         delete_from_db(msg[0])
 
         guild = discord.utils.get(client.guilds, id=int(guildID))
+        deliveryChannel = discord.utils.get(guild.text_channels, id=int(deliveryChannelID))
         channel = discord.utils.get(guild.text_channels, id=int(channelID))
+        message = await channel.fetch_message(int(messageID))
 
-        newMessage =  DelayedMessage(channel, float(deliveryTime), guild, author, content)
+        newMessage =  DelayedMessage(deliveryChannel, float(deliveryTime), guild, author, channel, message)
 
         insert_into_db(newMessage)
         
@@ -112,7 +117,7 @@ async def process_delay_message(message, deliveryTime=None):
         #TODO: Make sure {roles} exist
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(channel, float(deliveryTime), message.guild, message.author.name, msg)
+        newMessage =  DelayedMessage(channel, float(deliveryTime), message.guild, message.author.name, message.channel, message)
         insert_into_db(newMessage)
         if not skipOutput:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
@@ -131,7 +136,7 @@ async def schedule_delay_message(newMessage):
 
     guild = newMessage.guild
 
-    msg = newMessage.content
+    msg = newMessage.message.content
     for mention in re.finditer(r'{([^}]+)}', msg):
         if mention.group(1) == 'everyone':
             mention_replace = '@everyone'
@@ -218,7 +223,7 @@ async def show_delay_message(message):
                     content += f"**Delivery failed:**  {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago\n"
                 else:
                     content += f"**Deliver:**  {ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}\n"
-                content += msg.content
+                content += msg.message.content
                 await message.channel.send(content)
                 message_found = True
     if not message_found:
