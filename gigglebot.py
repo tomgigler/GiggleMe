@@ -26,11 +26,11 @@ class DelayedMessage:
         self.guild = guild
         self.author = author
         self.content = content
-        self.id = md5((self.author.name + self.content + self.deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
+        self.id = md5((self.author + self.content + self.deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mycursor = mydb.cursor()
-    mycursor.execute(f"INSERT INTO messages values ('{message.id}', '{message.guild.id}', 'NULL', '{message.deliveryChannel.id}', '{message.deliveryTime.id}', '{message.author.id}', 'NULL', '{message.content}')")
+    mycursor.execute(f"INSERT INTO messages values ('{message.id}', '{message.guild.id}', 'NULL', '{message.deliveryChannel.id}', '{message.deliveryTime}', '{message.author}', 'NULL', '{message.content}')")
     mydb.commit()
 
 def delete_from_db(id):
@@ -48,13 +48,12 @@ async def load_from_db():
         guildID = msg[1]
         channelID = msg[3]
         deliveryTime = msg[4]
-        authorID = msg[5]
+        author = msg[5]
         content = msg[7]
         delete_from_db(msg[0])
 
         guild = discord.utils.get(client.guilds, id=int(guildID))
         channel = discord.utils.get(guild.text_channels, id=int(channelID))
-        author = discord.utils.get(guild.members, id=int(authorID))
 
         newMessage =  DelayedMessage(channel, float(deliveryTime), guild, author, content)
 
@@ -113,7 +112,7 @@ async def process_delay_message(message, deliveryTime=None):
         #TODO: Make sure {roles} exist
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(channel, float(deliveryTime), message.guild, message.author, msg)
+        newMessage =  DelayedMessage(channel, float(deliveryTime), message.guild, message.author.name, msg)
         insert_into_db(newMessage)
         if not skipOutput:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
@@ -179,7 +178,7 @@ async def list_delay_messages(message):
         delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
         for msg in delayed_messages[guild_id]:
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
-            embed.add_field(name="Author", value=f"{msg.author.name}", inline=True)
+            embed.add_field(name="Author", value=f"{msg.author}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.deliveryChannel.name}", inline=True)
             if round((msg.deliveryTime - time())/60, 1) < 0:
                 embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
@@ -197,7 +196,7 @@ async def list_all_delay_messages(message):
             delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
             for msg in delayed_messages[guild_id]:
                 embed.add_field(name="ID", value=f"{msg.id}", inline=True)
-                embed.add_field(name="Author", value=f"{msg.author.name}", inline=True)
+                embed.add_field(name="Author", value=f"{msg.author}", inline=True)
                 embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.deliveryChannel.name}", inline=True)
                 if round((msg.deliveryTime - time())/60, 1) < 0:
                     embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
@@ -213,7 +212,7 @@ async def show_delay_message(message):
     for guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
-                content = f"**Author:**  {msg.author.name}\n"
+                content = f"**Author:**  {msg.author}\n"
                 content += f"**Deliver to:**  {msg.deliveryChannel.name}\n"
                 if round((msg.deliveryTime - time())/60, 1) < 0:
                     content += f"**Delivery failed:**  {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago\n"
