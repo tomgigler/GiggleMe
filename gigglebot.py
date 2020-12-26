@@ -96,23 +96,10 @@ async def process_delay_message(message, deliveryTime=None):
                 deliveryTime = float(time()) + int(match.group(1)) * 60
         msg = match.group(2)
 
-        # Replace {everyone|here|<role>} with mention
-        for mention in re.finditer(r'{([^}]+)}', msg):
-            if mention.group(1) == 'everyone':
-                mention_replace = '@everyone'
-            elif mention.group(1) == 'here':
-                mention_replace = '@here'
-            else:
-                try:
-                    mention_replace = discord.utils.get(guild.roles,name=mention.group(1)).mention
-                except:
-                    # TODO: try searching for user mention.group(1)
-                    await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
-                    return
-            msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
+        #TODO: Make sure {roles} exist
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(message, message.channel, channel, float(deliveryTime), message.guild.id, message.author.id, message.content)
+        newMessage =  DelayedMessage(message, message.channel, channel, float(deliveryTime), message.guild.id, message.author.id, msg)
         insert_into_db(newMessage)
         if not skipOutput:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
@@ -126,20 +113,41 @@ async def process_delay_message(message, deliveryTime=None):
             delayed_messages[message.guild.id] = [newMessage]
 
         # TODO: everything here except the final else could be moved into a schedule_delayed_message method
+        # Replace {everyone|here|<role>} with mention
+
+        guild_1 = discord.utils.get(client.guilds, id=int(newMessage.guild))
+        channel_1 = discord.utils.get(guild.text_channels, id=int(newMessage.deliveryChannel))
+        author = discord.utils.get(guild.members, id=int(newMessage.author))
+
+        msg = newMessage.content
+        for mention in re.finditer(r'{([^}]+)}', msg):
+            if mention.group(1) == 'everyone':
+                mention_replace = '@everyone'
+            elif mention.group(1) == 'here':
+                mention_replace = '@here'
+            else:
+                try:
+                    mention_replace = discord.utils.get(guild.roles,name=mention.group(1)).mention
+                except:
+                    # TODO: try searching for user mention.group(1)
+                    # await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
+                    # return
+            msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
+
         delay = float(newMessage.deliveryTime) - float(time())
         if float(delay) < 0:
             return
         await asyncio.sleep(int(delay))
 
         # after sleep, make sure message has not been canceled
-        if message.guild.id in delayed_messages:
-            if newMessage in delayed_messages[message.guild.id]:
-                await channel.send(msg)
-                delayed_messages[message.guild.id].remove(newMessage)
-                if len(delayed_messages[message.guild.id]) < 1:
-                    del delayed_messages[message.guild.id]
+        if guild_1.id in delayed_messages:
+            if newMessage in delayed_messages[guild_1.id]:
+                await channel_1.send(msg)
+                delayed_messages[guild_1.id].remove(newMessage)
+                if len(delayed_messages[guild_1.id]) < 1:
+                    del delayed_messages[guild_1.id]
                 try:
-                    print(f"{datetime.now()}: {message.author.name}'s message on {channel.name} in {guild.name} has been delivered")
+                    print(f"{datetime.now()}: {author_1.name}'s message on {channel_1.name} in {guild_1.name} has been delivered")
                 except:
                     pass
                 delete_from_db(newMessage.id)
