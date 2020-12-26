@@ -20,18 +20,17 @@ mydb = mysql.connector.connect(
         )
 
 class DelayedMessage:
-    def __init__(self, channel, deliveryChannel, deliveryTime, guildID, authorID, content):
-        self.channel = channel
-        self.deliveryChannel = deliveryChannel
+    def __init__(self, deliveryChannelID, deliveryTime, guildID, authorID, content):
+        self.deliveryChannel = deliveryChannelID
         self.deliveryTime = deliveryTime
         self.guild = guildID
         self.author = authorID
         self.content = content
-        self.id = md5((author + content + channel.name + deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
+        self.id = md5((author + content + deliveryChannel + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mycursor = mydb.cursor()
-    mycursor.execute(f"INSERT INTO messages values ('{message.id}', '{message.message.guild.id}', '{message.channel.id}', '{message.deliveryChannel.id}', '{message.deliveryTime}', '{message.message.author.id}', '{message.message.id}')")
+    mycursor.execute(f"INSERT INTO messages values ('{message.id}', '{message.guild}', 'NULL', '{message.deliveryChannel}', '{message.deliveryTime}', '{message.author}', 'NULL', '{message.content}')")
     mydb.commit()
 
 def delete_from_db(id):
@@ -46,11 +45,15 @@ async def load_from_db():
     mycursor.execute("select * from messages")
 
     for msg in mycursor.fetchall():
-        guild = discord.utils.get(client.guilds, id=int(msg[1]))
-        channel = discord.utils.get(guild.text_channels, id=int(msg[2]))
-        message = await channel.fetch_message(int(msg[6]))
+        guild = msg[1]
+        channel = msg[3]
+        deliverTime = msg[4]
+        author = msg[5]
+        content = msg[7]
         delete_from_db(msg[0])
-        loop.create_task(process_delay_message(message, msg[4]))
+        newMessage =  DelayedMessage(int(channel), float(deliveryTime), int(guild), int(author), content)
+        insert_into_db(newMessage)
+        loop.create_task(schedule_delay_message(newMessage)
 
 async def process_delay_message(message, deliveryTime=None):
     try:
@@ -98,7 +101,7 @@ async def process_delay_message(message, deliveryTime=None):
         #TODO: Make sure {roles} exist
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(message.channel, channel, float(deliveryTime), message.guild.id, message.author.id, msg)
+        newMessage =  DelayedMessage(channel.id, float(deliveryTime), message.guild.id, message.author.id, msg)
         insert_into_db(newMessage)
         if not skipOutput:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
