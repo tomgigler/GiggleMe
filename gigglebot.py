@@ -59,10 +59,10 @@ async def load_from_db():
 
         insert_into_db(newMessage)
         
-        if int(guild) in delayed_messages:
-            delayed_messages[int(guild)].append(newMessage)
+        if int(guildID) in delayed_messages:
+            delayed_messages[int(guildID)].append(newMessage)
         else:
-            delayed_messages[int(guild)] = [newMessage]
+            delayed_messages[int(guildID)] = [newMessage]
 
         loop.create_task(schedule_delay_message(newMessage))
 
