@@ -121,10 +121,13 @@ async def process_delay_message(message, deliveryTime=None):
         else:
             delayed_messages[message.guild.id] = [newMessage]
 
+        # TODO: everything here except the final else could be moved into a schedule_delayed_message method
         delay = float(deliveryTime) - float(time())
         if float(delay) < 0:
             return
         await asyncio.sleep(int(delay))
+
+        # after sleep, make sure message has not been canceled
         if message.guild.id in delayed_messages:
             if newMessage in delayed_messages[message.guild.id]:
                 await channel.send(msg)
