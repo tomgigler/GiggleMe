@@ -240,7 +240,7 @@ async def on_message(message):
         await list_delay_messages(message)
         return
 
-    if re.search(r'^~giggle show \S+', message.content) and message.author.id == 669370838478225448:
+    if re.search(r'^~giggle show \S+', message.content):
         await show_delay_message(message)
         return
 
