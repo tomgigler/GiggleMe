@@ -25,7 +25,6 @@ class DelayedMessage:
         self.deliveryTime = deliveryTime
         self.guild = guild
         self.author = author
-        self.content = content
         self.channel = channel
         self.message = message
         self.id = md5((self.author + self.deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
