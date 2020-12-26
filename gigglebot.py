@@ -228,10 +228,6 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if message.content == 'kill' and message.author.id == 669370838478225448:
-        await message.channel.send(embed=discord.Embed(description=f"Killing {client.user.name}", color=0x00ff00))
-        await client.close()
-
     if re.search(r'^~giggle listall', message.content) and message.author.id == 669370838478225448:
         await list_all_delay_messages(message)
         return
