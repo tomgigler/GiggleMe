@@ -80,9 +80,11 @@ async def process_delay_message(message):
             await message.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0xff0000))
             return
     except:
+        # default to current channel
         channel = message.channel
 
     try:
+        # TODO:  for now, user needs manage_channels permissions in the target channel
         has_permission = message.author.permissions_in(channel).manage_channels
     except:
         await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
