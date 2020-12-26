@@ -53,12 +53,14 @@ async def load_from_db():
 async def process_delay_message(message, deliveryTime=None):
     try:
         guild = message.guild
+        # TODO: remove this.  guild_id is not used
         guild_id = guild.id
     except:
         return
 
     skipOutput = True if deliveryTime else False
 
+    # get channel (deliveryChannel) from original message
     try:
         channel_name = re.search(r'channel=(.+)', message.content).group(1)
         channel = discord.utils.get(guild.channels, name=channel_name)
@@ -89,6 +91,8 @@ async def process_delay_message(message, deliveryTime=None):
             if not deliveryTime:
                 deliveryTime = float(time()) + int(match.group(1)) * 60
         msg = match.group(2)
+
+        # Replace {everyone|here|<role>} with mention
         for mention in re.finditer(r'{([^}]+)}', msg):
             if mention.group(1) == 'everyone':
                 mention_replace = '@everyone'
@@ -98,9 +102,12 @@ async def process_delay_message(message, deliveryTime=None):
                 try:
                     mention_replace = discord.utils.get(guild.roles,name=mention.group(1)).mention
                 except:
+                    # TODO: try searching for user mention.group(1)
                     await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
                     return
             msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
+
+        # create new DelayedMessage
         newMessage =  DelayedMessage(message, message.channel, channel, float(deliveryTime))
         insert_into_db(newMessage)
         if not skipOutput:
@@ -113,6 +120,7 @@ async def process_delay_message(message, deliveryTime=None):
             delayed_messages[message.guild.id].append(newMessage)
         else:
             delayed_messages[message.guild.id] = [newMessage]
+
         delay = float(deliveryTime) - float(time())
         if float(delay) < 0:
             return
