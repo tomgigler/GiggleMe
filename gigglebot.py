@@ -252,7 +252,7 @@ async def on_message(message):
         await process_delay_message(message)
         return
 
-    if re.search(r'^~giggle resume', message.content):
+    if re.search(r'^~giggle resume', message.content) and message.author.id == 669370838478225448:
         await load_from_db()
         return
 
