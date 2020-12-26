@@ -26,7 +26,7 @@ class DelayedMessage:
         self.guild = guildID
         self.author = authorID
         self.content = content
-        self.id = md5((author + content + deliveryChannel + ctime()).encode('utf-8')).hexdigest()[:8]
+        self.id = md5((str(self.author) + str(self.content) + str(self.deliveryChannel) + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mycursor = mydb.cursor()
@@ -53,7 +53,7 @@ async def load_from_db():
         delete_from_db(msg[0])
         newMessage =  DelayedMessage(int(channel), float(deliveryTime), int(guild), int(author), content)
         insert_into_db(newMessage)
-        loop.create_task(schedule_delay_message(newMessage)
+        loop.create_task(schedule_delay_message(newMessage))
 
 async def process_delay_message(message, deliveryTime=None):
     try:
@@ -118,9 +118,9 @@ async def process_delay_message(message, deliveryTime=None):
 
 async def schedule_delay_message(newMessage):
 
-        guild = discord.utils.get(client.guilds, id=int(newMessage.guild))
-        channel = discord.utils.get(guild.text_channels, id=int(newMessage.deliveryChannel.id))
-        author = discord.utils.get(guild.members, id=int(newMessage.author))
+        guild = discord.utils.get(client.guilds, id=newMessage.guild)
+        channel = discord.utils.get(guild.text_channels, id=newMessage.deliveryChannel)
+        author = discord.utils.get(guild.members, id=newMessage.author)
 
         msg = newMessage.content
         for mention in re.finditer(r'{([^}]+)}', msg):
