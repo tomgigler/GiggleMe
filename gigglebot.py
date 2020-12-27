@@ -94,8 +94,7 @@ async def process_delay_message(message):
         await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
     else:
         if not re.search(r'~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content) and not re.search(r'^~giggle (\d+)[ \n]', message.content):
-            if not skipOutput:
-                await show_help(message.channel)
+            await show_help(message.channel)
             return
         if re.search(r'~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content):
             match = re.search(r'^~giggle (\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2})[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
@@ -109,7 +108,7 @@ async def process_delay_message(message):
         for mention in re.finditer(r'{([^}]+)}', msg):
             if mention.group(1) != 'everyone' and mention.group(1) != 'here':
                 try:
-                    mention_replace = discord.utils.get(guild.roles,name=mention.group(1))
+                    mention_replace = discord.utils.get(message.guild.roles,name=mention.group(1))
                 except:
                     # TODO: try searching for user mention.group(1)
                     await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
@@ -121,8 +120,7 @@ async def process_delay_message(message):
         # create new DelayedMessage
         newMessage =  DelayedMessage(channel, float(deliveryTime), message.guild, message.author.name, message.channel, message)
         insert_into_db(newMessage)
-        if not skipOutput:
-            await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
+        await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {message.guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
         try:
             print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} {ctime(newMessage.deliveryTime)} minutes")
         except:
