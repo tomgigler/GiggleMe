@@ -12,13 +12,6 @@ import mysql.connector
 client = discord.Client()
 delayed_messages = {}
 
-mydb = mysql.connector.connect(
-        host="localhost",
-        user=settings.db_user,
-        password=settings.db_password,
-        database=settings.database
-        )
-
 class DelayedMessage:
     def __init__(self, deliveryChannel, deliveryTime, guild, author, channel, message):
         self.deliveryChannel = deliveryChannel
@@ -30,16 +23,41 @@ class DelayedMessage:
         self.id = md5((self.author + self.message.content + self.deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
+    mydb = mysql.connector.connect(
+            host="localhost",
+            user=settings.db_user,
+            password=settings.db_password,
+            database=settings.database
+            )
+
     mycursor = mydb.cursor()
     mycursor.execute(f"INSERT INTO messages values ('{message.id}', '{message.guild.id}', '{message.channel.id}', '{message.deliveryChannel.id}', '{message.deliveryTime}', '{message.author}', '{message.message.id}')")
     mydb.commit()
+    mycursor.close()
+    mydb.disconnect()
 
 def delete_from_db(id):
+    mydb = mysql.connector.connect(
+            host="localhost",
+            user=settings.db_user,
+            password=settings.db_password,
+            database=settings.database
+            )
+
     mycursor = mydb.cursor()
     mycursor.execute(f"DELETE FROM messages WHERE id='{id}'")
     mydb.commit()
+    mycursor.close()
+    mydb.disconnect()
 
 async def load_from_db():
+    mydb = mysql.connector.connect(
+            host="localhost",
+            user=settings.db_user,
+            password=settings.db_password,
+            database=settings.database
+            )
+
     loop = asyncio.get_event_loop()
     mycursor = mydb.cursor()
 
@@ -69,6 +87,9 @@ async def load_from_db():
             delayed_messages[int(guildID)] = [newMessage]
 
         loop.create_task(schedule_delay_message(newMessage))
+
+    mycursor.close()
+    mydb.disconnect()
 
 async def process_delay_message(message):
 
