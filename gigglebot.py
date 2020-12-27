@@ -101,7 +101,10 @@ async def process_delay_message(message):
             deliveryTime = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M').timestamp()
         else:
             match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
-            deliveryTime = float(time()) + int(match.group(1)) * 60
+            if match.group(1) == '0':
+                deliveryTime = 0
+            else:
+                deliveryTime = float(time()) + int(match.group(1)) * 60
         msg = match.group(2)
 
         #Make sure {roles} exist
@@ -155,7 +158,10 @@ async def schedule_delay_message(newMessage):
                 pass
         msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
 
-    delay = float(newMessage.deliveryTime) - float(time())
+    if newMessage.deliveryTime == 0):
+        delay = 0
+    else:
+        delay = float(newMessage.deliveryTime) - float(time())
     if float(delay) < 0:
         return
     await asyncio.sleep(int(delay))
