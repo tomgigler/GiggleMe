@@ -182,6 +182,7 @@ async def list_delay_messages(message):
     if guild_id in delayed_messages and len(delayed_messages[guild_id]) > 0:
         embed=discord.Embed(title="Scheduled Messages ==================================")
         delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
+        count = 0
         for msg in delayed_messages[guild_id]:
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
             embed.add_field(name="Author", value=f"{msg.author}", inline=True)
@@ -190,6 +191,11 @@ async def list_delay_messages(message):
                 embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
             else:
                 embed.add_field(name="Deliver", value=f"{ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}", inline=False)
+            count += 1
+            if count == 6:
+                await channel.send(embed=embed)
+                embed=discord.Embed(title="Scheduled Messages (continued) ======================")
+                count = 0
         await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
