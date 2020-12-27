@@ -158,7 +158,7 @@ async def schedule_delay_message(newMessage):
                 pass
         msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
 
-    if newMessage.deliveryTime == 0):
+    if newMessage.deliveryTime == 0:
         delay = 0
     else:
         delay = float(newMessage.deliveryTime) - float(time())
