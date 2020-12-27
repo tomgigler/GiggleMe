@@ -196,7 +196,8 @@ async def list_delay_messages(message):
                 await channel.send(embed=embed)
                 embed=discord.Embed(title="Scheduled Messages (continued) ======================")
                 count = 0
-        await channel.send(embed=embed)
+        if count != 0:
+            await channel.send(embed=embed)
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
