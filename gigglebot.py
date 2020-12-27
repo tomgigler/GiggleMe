@@ -190,7 +190,7 @@ async def schedule_delay_message(newMessage):
     # after sleep, make sure message has not been canceled
     if guild.id in delayed_messages:
         if newMessage in delayed_messages[guild.id]:
-            await newMessage.channel.send(msg)
+            await newMessage.deliveryChannel.send(msg)
             delayed_messages[guild.id].remove(newMessage)
             if len(delayed_messages[guild.id]) < 1:
                 del delayed_messages[guild.id]
