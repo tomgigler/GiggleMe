@@ -365,7 +365,7 @@ async def on_message(message):
 
 @client.event
 async def on_guild_join(guild):
-    user = await client.get_user(669370838478225448)
-    await client.send_message(user, f"GiggleMe bot joined {guild.name}")
+    user = client.get_user(669370838478225448)
+    await user.send(user, f"GiggleMe bot joined {guild.name}")
 
 client.run(settings.bot_token)
