@@ -273,6 +273,38 @@ async def show_delay_message(message):
     if not message_found:
         await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
+async def send_delay_message(message):
+    try:
+        guild_id = message.guild.id
+    except:
+        return
+
+    msg_num = re.search(r'^~giggle send +(\S+)', message.content).group(1)
+    message_found = False
+    if guild_id in delayed_messages:
+        for msg in delayed_messages[guild_id]:
+            if msg.id == msg_num:
+                delayed_messages[guild_id].remove(msg)
+                if len(delayed_messages[guild_id]) < 1:
+                    del delayed_messages[guild_id]
+                delete_from_db(msg.id)
+                msg.id = md5((msg.author.name + msg.content + msg.delivery_channel.name + ctime()).encode('utf-8')).hexdigest()[:8]
+                msg.delivery_time = 0
+                insert_into_db(newMessage)
+                if msg.guild.id in delayed_messages:
+                    delayed_messages[msg.guild.id].append(msg)
+                else:
+                    delayed_messages[msg.guild.id] = [msg]
+
+                await schedule_delay_message(msg)
+
+                await message.channel.send(embed=discord.Embed(description="Message sent", color=0x00ff00))
+                message_found = True
+        if not message_found:
+            await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
+    else:
+        await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+
 async def cancel_delay_message(message):
     try:
         guild_id = message.guild.id
@@ -349,6 +381,10 @@ async def on_message(message):
 
     if re.search(r'^~giggle (cancel|delete|remove|clear) +\S+', message.content):
         await cancel_delay_message(message)
+        return
+
+    if re.search(r'^~giggle send +\S+', message.content):
+        await send_delay_message(message)
         return
 
     if re.search(r'^~giggle \d+.*\n.', message.content):
