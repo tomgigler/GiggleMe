@@ -306,7 +306,7 @@ async def show_help(channel):
 
     To schedule <message> to be delivered to <channel> at <date-time>:
 
-    `~giggle <date-time> [channel=<channel>]`
+    `~giggle <date-time> channel=<channel>`
     `<message>`
 
     The format for <date-time> is YYYY-MM-DD HH:MM
