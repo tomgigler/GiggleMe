@@ -144,7 +144,10 @@ async def process_delay_message(message):
         # create new DelayedMessage
         newMessage =  DelayedMessage(channel, float(deliveryTime), message.guild, message.author.name, message.channel, message)
         insert_into_db(newMessage)
-        await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {message.guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
+        if deliveryTime == 0:
+            await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
+        else:
+            await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {message.guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
         try:
             print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} {ctime(newMessage.deliveryTime)} minutes")
         except:
