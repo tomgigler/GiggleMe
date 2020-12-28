@@ -349,6 +349,10 @@ async def show_help(channel):
     `~giggle show <message-id>`
     Show the contens of the message identified by <message-id>
 
+    `~giggle send <message-id>`
+    Send message identified by <message-id>
+    immediately and remove it from the queue
+
     `~giggle cancel <message-id>`
     Cancel message identified by <message-id>
 
