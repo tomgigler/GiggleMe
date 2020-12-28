@@ -27,11 +27,13 @@ def insert_into_db(message):
             host="localhost",
             user=settings.db_user,
             password=settings.db_password,
-            database=settings.database
+            database=settings.database,
+            charset='utf8mb4'
             )
 
     mycursor = mydb.cursor()
-    mycursor.execute(f"INSERT INTO messages values ('{message.id}', '{message.guild.id}', '{message.channel.id}', '{message.deliveryChannel.id}', '{message.deliveryTime}', '{message.author}', '{message.message.id}')")
+    sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s, %s)"
+    mycursor.execute(sql, (message.id, message.guild.id, message.channel.id, message.deliveryChannel.id, message.deliveryTime, message.author, message.message.id, message.message.content))
     mydb.commit()
     mycursor.close()
     mydb.disconnect()
@@ -41,7 +43,8 @@ def delete_from_db(id):
             host="localhost",
             user=settings.db_user,
             password=settings.db_password,
-            database=settings.database
+            database=settings.database,
+            charset='utf8mb4'
             )
 
     mycursor = mydb.cursor()
@@ -55,7 +58,8 @@ async def load_from_db():
             host="localhost",
             user=settings.db_user,
             password=settings.db_password,
-            database=settings.database
+            database=settings.database,
+            charset='utf8mb4'
             )
 
     loop = asyncio.get_event_loop()
