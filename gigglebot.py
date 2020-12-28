@@ -257,7 +257,7 @@ async def list_all_delay_messages(message):
 
 async def show_delay_message(message):
     message_found = False
-    msg_num = re.search(r'^~giggle show (\S+)', message.content).group(1)
+    msg_num = re.search(r'^~giggle show +(\S+)', message.content).group(1)
     for guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
@@ -304,6 +304,9 @@ async def send_delay_message(message):
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+
+async def edit_delay_message(message):
+    await message.channel.send(embed=discord.Embed(description="TODO: Implement edit_delay_message"))
 
 async def cancel_delay_message(message):
     try:
@@ -353,6 +356,14 @@ async def show_help(channel):
     Send message identified by <message-id>
     immediately and remove it from the queue
 
+    `~giggle edit <message-id> <date-time> channel=<channel>`
+    `<message>`
+    Edit message identified by <message-id>.
+    <date-time> may be either a date as specified above or a number of minutes from now.
+    If not specified the current delivery time will be used.
+    channel=<channel> is optional.  If not specified the current delivery channel will be used.
+    <message> is optional.  If specified, it will replace the body of the current message.
+
     `~giggle cancel <message-id>`
     Cancel message identified by <message-id>
 
@@ -379,7 +390,7 @@ async def on_message(message):
         await list_delay_messages(message)
         return
 
-    if re.search(r'^~giggle show \S+', message.content):
+    if re.search(r'^~giggle show +\S+', message.content):
         await show_delay_message(message)
         return
 
@@ -389,6 +400,10 @@ async def on_message(message):
 
     if re.search(r'^~giggle send +\S+', message.content):
         await send_delay_message(message)
+        return
+
+    if re.search(r'^~giggle edit +\S+', message.content):
+        await edit_delay_message(message)
         return
 
     if re.search(r'^~giggle \d+.*\n.', message.content):
