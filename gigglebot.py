@@ -148,10 +148,7 @@ async def process_delay_message(message):
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
         else:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {message.guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
-        try:
-            print(f"{datetime.now()}: {message.author.name} has scheduled a message on {channel.name} in {guild.name} {ctime(newMessage.deliveryTime)} minutes")
-        except:
-            pass
+
         if message.guild.id in delayed_messages:
             delayed_messages[message.guild.id].append(newMessage)
         else:
@@ -197,10 +194,6 @@ async def schedule_delay_message(newMessage):
             delayed_messages[guild.id].remove(newMessage)
             if len(delayed_messages[guild.id]) < 1:
                 del delayed_messages[guild.id]
-            try:
-                print(f"{datetime.now()}: {newMessage.author.name}'s message on {newMessage.channel.name} in {guild.name} has been delivered")
-            except:
-                pass
             delete_from_db(newMessage.id)
 
 async def list_delay_messages(message):
@@ -290,10 +283,6 @@ async def cancel_delay_message(message):
                 if len(delayed_messages[guild_id]) < 1:
                     del delayed_messages[guild_id]
                 await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
-                try:
-                    print(f"{datetime.now()}: {message.author.name} canceled message {msg_num}")
-                except:
-                    pass
                 message_found = True
                 delete_from_db(msg.id)
         if not message_found:
