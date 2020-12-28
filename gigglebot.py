@@ -13,14 +13,14 @@ client = discord.Client()
 delayed_messages = {}
 
 class DelayedMessage:
-    def __init__(self, deliveryChannel, deliveryTime, guild, author, channel, message):
-        self.deliveryChannel = deliveryChannel
-        self.deliveryTime = deliveryTime
+    def __init__(self, guild, delivery_channel, delivery_time, author, content):
         self.guild = guild
+        self.delivery_channel = delivery_channel
+        self.delivery_time = float(delivery_time)
         self.author = author
-        self.channel = channel
-        self.message = message
-        self.id = md5((self.author + self.message.content + self.deliveryChannel.name + ctime()).encode('utf-8')).hexdigest()[:8]
+        self.content = content
+
+        self.id = md5((self.author + self.content + self.delivery_channel.name + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mydb = mysql.connector.connect(
@@ -32,8 +32,8 @@ def insert_into_db(message):
             )
 
     mycursor = mydb.cursor()
-    sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s, %s)"
-    mycursor.execute(sql, (message.id, message.guild.id, message.channel.id, message.deliveryChannel.id, message.deliveryTime, message.author, message.message.id, message.message.content))
+    sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s)"
+    mycursor.execute(sql, (message.id, message.guild.id, message.delivery_channel.id, message.delivery_time, message.author, message.content))
     mydb.commit()
     mycursor.close()
     mydb.disconnect()
@@ -68,27 +68,24 @@ async def load_from_db():
     mycursor.execute("select * from messages")
 
     for msg in mycursor.fetchall():
-        guildID = msg[1]
-        channelID = msg[2]
-        deliveryChannelID = msg[3]
-        deliveryTime = msg[4]
-        author = msg[5]
-        messageID = msg[6]
+        guild_id = msg[1]
+        delivery_channel_id = msg[2]
+        delivery_time = msg[3]
+        author = msg[4]
+        content = msg[5]
         delete_from_db(msg[0])
 
-        guild = discord.utils.get(client.guilds, id=int(guildID))
-        deliveryChannel = discord.utils.get(guild.text_channels, id=int(deliveryChannelID))
-        channel = discord.utils.get(guild.text_channels, id=int(channelID))
-        message = await channel.fetch_message(int(messageID))
+        guild = discord.utils.get(client.guilds, id=int(guild_id))
+        delivery_channel = discord.utils.get(guild.text_channels, id=int(delivery_channel_id))
 
-        newMessage =  DelayedMessage(deliveryChannel, float(deliveryTime), guild, author, channel, message)
+        newMessage =  DelayedMessage(guild, delivery_channel, float(delivery_time), author, content)
 
         insert_into_db(newMessage)
 
-        if int(guildID) in delayed_messages:
-            delayed_messages[int(guildID)].append(newMessage)
+        if int(guild_id) in delayed_messages:
+            delayed_messages[int(guild_id)].append(newMessage)
         else:
-            delayed_messages[int(guildID)] = [newMessage]
+            delayed_messages[int(guild_id)] = [newMessage]
 
         loop.create_task(schedule_delay_message(newMessage))
 
@@ -97,43 +94,49 @@ async def load_from_db():
 
 async def process_delay_message(message):
 
-    # get channel (deliveryChannel) from original message
+    # get delivery_channel from the original message
     try:
-        channel_name = re.search(r'channel=(.+)', message.content).group(1)
-        channel = discord.utils.get(message.guild.channels, name=channel_name)
-        if not channel:
-            await message.channel.send(embed=discord.Embed(description=f"Cannot find {channel_name} channel", color=0xff0000))
+        delivery_channel_name = re.search(r'channel=(.+)', message.content).group(1)
+        delivery_channel = discord.utils.get(message.guild.channels, name=delivery_channel_name)
+        if not delivery_channel:
+            await message.channel.send(embed=discord.Embed(description=f"Cannot find {delivery_channel_name} channel", color=0xff0000))
             return
     except:
         # default to current channel
-        channel = message.channel
+        delivery_channel = message.channel
 
     try:
         # TODO:  for now, user needs manage_channels permissions in the target channel
-        has_permission = message.author.permissions_in(channel).manage_channels
+        has_permission = message.author.permissions_in(delivery_channel).manage_channels
     except:
-        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
+        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {delivery_channel.name}", color=0xff0000))
         return
 
     if not has_permission:
-        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {channel.name}", color=0xff0000))
+        await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {delivery_channel.name}", color=0xff0000))
     else:
-        if not re.search(r'~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content) and not re.search(r'^~giggle (\d+)[ \n]', message.content):
+        if not re.search(r'^~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content) and not re.search(r'^~giggle (\d+)[ \n]', message.content):
             await show_help(message.channel)
             return
-        if re.search(r'~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content):
+
+        # if message.content matches things like "~giggle 2020-12-25 12:00"
+        if re.search(r'^~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content):
+
+            # capture things like "~giggle (2020-12-25 12:00)\n(.*)"
             match = re.search(r'^~giggle (\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2})[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
-            deliveryTime = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M').timestamp()
+            delivery_time = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M').timestamp()
         else:
+            # capture things like "~giggle (15)\n(.*)"
             match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
             if match.group(1) == '0':
-                deliveryTime = 0
+                delivery_time = 0
             else:
-                deliveryTime = float(time()) + int(match.group(1)) * 60
-        msg = match.group(2)
+                delivery_time = float(time()) + int(match.group(1)) * 60
+
+        content = match.group(2)
 
         #Make sure {roles} exist
-        for mention in re.finditer(r'{([^}]+)}', msg):
+        for mention in re.finditer(r'{([^}]+)}', content):
             if mention.group(1) != 'everyone' and mention.group(1) != 'here':
                 try:
                     mention_replace = discord.utils.get(message.guild.roles,name=mention.group(1))
@@ -146,12 +149,12 @@ async def process_delay_message(message):
                     await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(channel, float(deliveryTime), message.guild, message.author.name, message.channel, message)
+        newMessage =  DelayedMessage(message.guild, delivery_channel, float(delivery_time), message.author.name, content)
         insert_into_db(newMessage)
-        if deliveryTime == 0:
-            await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
+        if delivery_time == 0:
+            await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
         else:
-            await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {channel.name} channel in the {message.guild.name} server {ctime(newMessage.deliveryTime)} {localtime(newMessage.deliveryTime).tm_zone}", color=0x00ff00))
+            await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server {ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", color=0x00ff00))
 
         if message.guild.id in delayed_messages:
             delayed_messages[message.guild.id].append(newMessage)
@@ -160,13 +163,12 @@ async def process_delay_message(message):
 
         await schedule_delay_message(newMessage)
 
-async def schedule_delay_message(newMessage):
+async def schedule_delay_message(message):
 
-    guild = newMessage.guild
+    guild = message.guild
 
-    match = re.search(r'^~giggle \d+[^\n]*[\n](.*)', newMessage.message.content, re.MULTILINE|re.DOTALL)
-    msg = match.group(1)
-    for mention in re.finditer(r'{([^}]+)}', msg):
+    content = message.content
+    for mention in re.finditer(r'{([^}]+)}', content):
         if mention.group(1) == 'everyone':
             mention_replace = '@everyone'
         elif mention.group(1) == 'here':
@@ -181,77 +183,76 @@ async def schedule_delay_message(newMessage):
 
                 # At this point, we'll just leave {role} in the message
                 pass
-        msg = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, msg)
+        content = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, content)
 
-    if newMessage.deliveryTime == 0:
+    if message.delivery_time == 0:
         delay = 0
     else:
-        delay = float(newMessage.deliveryTime) - float(time())
+        delay = float(message.delivery_time) - float(time())
     if float(delay) < 0:
         return
     await asyncio.sleep(int(delay))
 
     # after sleep, make sure message has not been canceled
     if guild.id in delayed_messages:
-        if newMessage in delayed_messages[guild.id]:
-            await newMessage.deliveryChannel.send(msg)
-            delayed_messages[guild.id].remove(newMessage)
+        if message in delayed_messages[guild.id]:
+            await message.delivery_channel.send(content)
+            delayed_messages[guild.id].remove(message)
             if len(delayed_messages[guild.id]) < 1:
                 del delayed_messages[guild.id]
-            delete_from_db(newMessage.id)
+            delete_from_db(message.id)
 
 async def list_delay_messages(message):
     try:
         guild_id = message.guild.id
     except:
         return
-    channel = message.channel
+
     if guild_id in delayed_messages and len(delayed_messages[guild_id]) > 0:
         embed=discord.Embed(title="Scheduled Messages ==================================")
-        delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
+        delayed_messages[guild_id].sort(key=attrgetter('delivery_time'))
         count = 0
         for msg in delayed_messages[guild_id]:
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
             embed.add_field(name="Author", value=f"{msg.author}", inline=True)
-            embed.add_field(name="Channel", value=f"{msg.deliveryChannel.name}", inline=True)
-            if round((msg.deliveryTime - time())/60, 1) < 0:
-                embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
+            embed.add_field(name="Channel", value=f"{msg.delivery_channel.name}", inline=True)
+            if round((msg.delivery_time - time())/60, 1) < 0:
+                embed.add_field(name="Delivery failed", value=f"{str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago", inline=False)
             else:
-                embed.add_field(name="Deliver", value=f"{ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}", inline=False)
+                embed.add_field(name="Deliver", value=f"{ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}", inline=False)
             count += 1
             if count == 6:
-                await channel.send(embed=embed)
+                await message.channel.send(embed=embed)
                 embed=discord.Embed(title="Scheduled Messages (continued) ======================")
                 count = 0
         if count != 0:
-            await channel.send(embed=embed)
+            await message.channel.send(embed=embed)
     else:
-        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+        await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def list_all_delay_messages(message):
-    channel = message.channel
     if len(delayed_messages) > 0:
         embed=discord.Embed(title="Scheduled Messages ==================================")
         count = 0
         for guild_id in delayed_messages:
-            delayed_messages[guild_id].sort(key=attrgetter('deliveryTime'))
+            delayed_messages[guild_id].sort(key=attrgetter('delivery_time'))
             for msg in delayed_messages[guild_id]:
                 embed.add_field(name="ID", value=f"{msg.id}", inline=True)
                 embed.add_field(name="Author", value=f"{msg.author}", inline=True)
-                embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.deliveryChannel.name}", inline=True)
-                if round((msg.deliveryTime - time())/60, 1) < 0:
-                    embed.add_field(name="Delivery failed", value=f"{str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago", inline=False)
+                embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.delivery_channel.name}", inline=True)
+                if round((msg.delivery_time - time())/60, 1) < 0:
+                    embed.add_field(name="Delivery failed", value=f"{str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago", inline=False)
                 else:
-                    embed.add_field(name="Deliver", value=f"{ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}", inline=False)
+                    embed.add_field(name="Deliver", value=f"{ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}", inline=False)
                 count += 1
                 if count == 6:
-                    await channel.send(embed=embed)
+                    await message.channel.send(embed=embed)
                     embed=discord.Embed(title="Scheduled Messages (continued) ======================")
                     count = 0
         if count != 0:
-            await channel.send(embed=embed)
+            await message.channel.send(embed=embed)
     else:
-        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+        await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_delay_message(message):
     message_found = False
@@ -260,13 +261,12 @@ async def show_delay_message(message):
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
                 content = f"**Author:**  {msg.author}\n"
-                content += f"**Deliver to:**  {msg.deliveryChannel.name}\n"
-                if round((msg.deliveryTime - time())/60, 1) < 0:
-                    content += f"**Delivery failed:**  {str(round((msg.deliveryTime - time())/60, 1) * -1)} minutes ago\n"
+                content += f"**Deliver to:**  {msg.delivery_channel.name}\n"
+                if round((msg.delivery_time - time())/60, 1) < 0:
+                    content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
-                    content += f"**Deliver:**  {ctime(msg.deliveryTime)} {localtime(msg.deliveryTime).tm_zone}\n"
-                match = re.search(r'^~giggle \d+[^\n]*[\n](.*)', msg.message.content, re.MULTILINE|re.DOTALL)
-                content += match.group(1)
+                    content += f"**Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
+                content += msg.content
                 await message.channel.send(content)
                 message_found = True
     if not message_found:
