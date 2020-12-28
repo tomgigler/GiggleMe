@@ -299,7 +299,23 @@ async def cancel_delay_message(message):
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_help(channel):
-    await channel.send(embed=discord.Embed(description="TODO: Show help"))
+    helpOutput = """To schedule <message> to be delivered to <channel> in <minutes>:
+
+    `~giggle <minutes> channel=<channel>`
+    `<message>`
+
+    To schedule <message> to be delivered to <channel> at <date-time>:
+
+    `~giggle <date-time> [channel=<channel>]`
+    `<message>`
+
+    The format for <date-time> is YYYY-MM-DD HH:MM
+    All times are UTC
+
+    To see a list of other available commands:
+
+    `~giggle commands`"""
+    await channel.send(embed=discord.Embed(description=helpOutput))
 
 @client.event
 async def on_message(message):
@@ -334,6 +350,10 @@ async def on_message(message):
 
     if re.search(r'^~giggle resume', message.content) and message.author.id == 669370838478225448:
         await load_from_db()
+        return
+
+    if re.search(r'^~giggle commands', message.content):
+        await channel.send(embed=discord.Embed(description="TODO: Show commands"))
         return
 
     if re.search(r'^~giggle', message.content):
