@@ -278,7 +278,7 @@ async def cancel_delay_message(message):
     except:
         return
 
-    msg_num = re.search(r'^~giggle cancel +(\S+)|^~giggle delete +(\S+)|^~giggle remove +(\S+)|^~giggle clear +(\S+)', message.content).group(1)
+    msg_num = re.search(r'^~giggle (cancel|delete|remove|clear) +(\S+)', message.content).group(2)
     message_found = False
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
@@ -346,7 +346,7 @@ async def on_message(message):
         await show_delay_message(message)
         return
 
-    if re.search(r'^~giggle cancel +\S+|^~giggle delete +\S+|^~giggle remove +\S+|^~giggle clear +\S+', message.content):
+    if re.search(r'^~giggle (cancel|delete|remove|clear) +\S+', message.content):
         await cancel_delay_message(message)
         return
 
