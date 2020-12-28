@@ -20,7 +20,7 @@ class DelayedMessage:
         self.author = author
         self.content = content
 
-        self.id = md5((self.author + self.content + self.delivery_channel.name + ctime()).encode('utf-8')).hexdigest()[:8]
+        self.id = md5((self.author.name + self.content + self.delivery_channel.name + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mydb = mysql.connector.connect(
@@ -33,7 +33,7 @@ def insert_into_db(message):
 
     mycursor = mydb.cursor()
     sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s)"
-    mycursor.execute(sql, (message.id, message.guild.id, message.delivery_channel.id, message.delivery_time, message.author, message.content))
+    mycursor.execute(sql, (message.id, message.guild.id, message.delivery_channel.id, message.delivery_time, message.author.id, message.content))
     mydb.commit()
     mycursor.close()
     mydb.disconnect()
@@ -71,12 +71,13 @@ async def load_from_db():
         guild_id = msg[1]
         delivery_channel_id = msg[2]
         delivery_time = msg[3]
-        author = msg[4]
+        author_id = msg[4]
         content = msg[5]
         delete_from_db(msg[0])
 
         guild = discord.utils.get(client.guilds, id=int(guild_id))
         delivery_channel = discord.utils.get(guild.text_channels, id=int(delivery_channel_id))
+        author = client.get_user(int(author_id))
 
         newMessage =  DelayedMessage(guild, delivery_channel, float(delivery_time), author, content)
 
@@ -214,7 +215,7 @@ async def list_delay_messages(message):
         count = 0
         for msg in delayed_messages[guild_id]:
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
-            embed.add_field(name="Author", value=f"{msg.author}", inline=True)
+            embed.add_field(name="Author", value=f"{msg.author.name}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.delivery_channel.name}", inline=True)
             if round((msg.delivery_time - time())/60, 1) < 0:
                 embed.add_field(name="Delivery failed", value=f"{str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago", inline=False)
@@ -238,7 +239,7 @@ async def list_all_delay_messages(message):
             delayed_messages[guild_id].sort(key=attrgetter('delivery_time'))
             for msg in delayed_messages[guild_id]:
                 embed.add_field(name="ID", value=f"{msg.id}", inline=True)
-                embed.add_field(name="Author", value=f"{msg.author}", inline=True)
+                embed.add_field(name="Author", value=f"{msg.author.name}", inline=True)
                 embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.delivery_channel.name}", inline=True)
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     embed.add_field(name="Delivery failed", value=f"{str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago", inline=False)
@@ -260,7 +261,7 @@ async def show_delay_message(message):
     for guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
-                content = f"**Author:**  {msg.author}\n"
+                content = f"**Author:**  {msg.author.name}\n"
                 content += f"**Deliver to:**  {msg.delivery_channel.name}\n"
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
