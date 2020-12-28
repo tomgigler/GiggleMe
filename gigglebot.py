@@ -284,17 +284,7 @@ async def send_delay_message(message):
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
-                delayed_messages[guild_id].remove(msg)
-                if len(delayed_messages[guild_id]) < 1:
-                    del delayed_messages[guild_id]
-                delete_from_db(msg.id)
-                msg.id = md5((msg.author.name + msg.content + msg.delivery_channel.name + ctime()).encode('utf-8')).hexdigest()[:8]
                 msg.delivery_time = 0
-                insert_into_db(msg)
-                if msg.guild.id in delayed_messages:
-                    delayed_messages[msg.guild.id].append(msg)
-                else:
-                    delayed_messages[msg.guild.id] = [msg]
 
                 await schedule_delay_message(msg)
 
