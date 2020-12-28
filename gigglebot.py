@@ -312,9 +312,19 @@ async def show_help(channel):
     The format for <date-time> is YYYY-MM-DD HH:MM
     All times are UTC
 
-    To see a list of other available commands:
+    The following commands may be used to manage scheduled messages:
 
-    `~giggle commands`"""
+    `~giggle list`
+    Display a list of currently scheduled messages
+
+    `~giggle show <message-id>`
+    Show the contens of the message identified by <message-id>
+
+    `~giggle cancel <message-id>`
+    Cancel message identified by <message-id>
+
+    `~giggle help`
+    Show this help"""
     await channel.send(embed=discord.Embed(description=helpOutput))
 
 @client.event
@@ -350,10 +360,6 @@ async def on_message(message):
 
     if re.search(r'^~giggle resume', message.content) and message.author.id == 669370838478225448:
         await load_from_db()
-        return
-
-    if re.search(r'^~giggle commands', message.content):
-        await message.channel.send(embed=discord.Embed(description="TODO: Show commands"))
         return
 
     if re.search(r'^~giggle', message.content):
