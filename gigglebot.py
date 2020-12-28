@@ -353,7 +353,7 @@ async def on_message(message):
         return
 
     if re.search(r'^~giggle commands', message.content):
-        await channel.send(embed=discord.Embed(description="TODO: Show commands"))
+        await message.channel.send(embed=discord.Embed(description="TODO: Show commands"))
         return
 
     if re.search(r'^~giggle', message.content):
