@@ -150,7 +150,7 @@ async def process_delay_message(message):
                     await message.channel.send(embed=discord.Embed(description=f"Cannot find role {mention.group(1)}", color=0xff0000))
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(message.guild, delivery_channel, float(delivery_time), message.author.name, content)
+        newMessage =  DelayedMessage(message.guild, delivery_channel, float(delivery_time), message.author, content)
         insert_into_db(newMessage)
         if delivery_time == 0:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
