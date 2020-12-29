@@ -392,7 +392,7 @@ async def edit_delay_message(message):
                 await message.channel.send(embed=embed)
                 
                 if match_time:
-                    schedule_delay_message(msg)
+                    await schedule_delay_message(msg)
 
         if not message_found:
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
