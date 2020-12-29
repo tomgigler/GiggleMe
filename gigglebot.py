@@ -384,7 +384,7 @@ async def edit_delay_message(message):
                         delayed_messages[message.guild.id] = [newMessage]
                     delayed_messages[guild_id].remove(msg)
                     if delivery_time == 0:
-                        embed.add_field(name="Delivering now", inline=False)
+                        embed.add_field(name="Deliver", value="Now", inline=False)
                     else:
                         embed.add_field(name="Deliver", value=f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", inline=False)
                     msg = newMessage
