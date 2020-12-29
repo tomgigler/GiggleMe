@@ -13,14 +13,17 @@ client = discord.Client()
 delayed_messages = {}
 
 class DelayedMessage:
-    def __init__(self, guild, delivery_channel, delivery_time, author, content):
+    def __init__(self, guild, delivery_channel, delivery_time, author, content, id=None):
         self.guild = guild
         self.delivery_channel = delivery_channel
         self.delivery_time = float(delivery_time)
         self.author = author
         self.content = content
 
-        self.id = md5((self.delivery_channel.name + str(delivery_time) + self.author.name + self.content + ctime()).encode('utf-8')).hexdigest()[:8]
+        if id:
+            self.id = id
+        else:
+            self.id = md5((self.delivery_channel.name + str(delivery_time) + self.author.name + self.content + ctime()).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(message):
     mydb = mysql.connector.connect(
@@ -38,7 +41,7 @@ def insert_into_db(message):
     mycursor.close()
     mydb.disconnect()
 
-def update_db(message, id):
+def update_db(message):
     mydb = mysql.connector.connect(
             host="localhost",
             user=settings.db_user,
@@ -48,8 +51,8 @@ def update_db(message, id):
             )
 
     mycursor = mydb.cursor()
-    sql = "UPDATE messages SET id = %s, guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s WHERE id = %s"
-    mycursor.execute(sql, (message.id, message.guild.id, message.delivery_channel.id, message.delivery_time, message.author.id, message.content, id))
+    sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s WHERE id = %s"
+    mycursor.execute(sql, (message.guild.id, message.delivery_channel.id, message.delivery_time, message.author.id, message.content, message.id))
     mydb.commit()
     mycursor.close()
     mydb.disconnect()
@@ -89,15 +92,12 @@ async def load_from_db():
         delivery_time = msg[3]
         author_id = msg[4]
         content = msg[5]
-        delete_from_db(msg[0])
 
         guild = discord.utils.get(client.guilds, id=int(guild_id))
         delivery_channel = discord.utils.get(guild.text_channels, id=int(delivery_channel_id))
         author = client.get_user(int(author_id))
 
-        newMessage =  DelayedMessage(guild, delivery_channel, float(delivery_time), author, content)
-
-        insert_into_db(newMessage)
+        newMessage =  DelayedMessage(guild, delivery_channel, float(delivery_time), author, content, msg[0])
 
         if int(guild_id) in delayed_messages:
             delayed_messages[int(guild_id)].append(newMessage)
@@ -377,18 +377,15 @@ async def edit_delay_message(message):
                 if match_message:
                     msg.content = content
                 if match_time:
-                    message_id = msg.id
-                    newMessage =  DelayedMessage(msg.guild, msg.delivery_channel, float(delivery_time), msg.author, msg.content)
+                    newMessage =  DelayedMessage(msg.guild, msg.delivery_channel, float(delivery_time), msg.author, msg.content, msg.id)
                     if message.guild.id in delayed_messages:
                         delayed_messages[message.guild.id].append(newMessage)
                     else:
                         delayed_messages[message.guild.id] = [newMessage]
                     delayed_messages[guild_id].remove(msg)
-                    msg = newMessage
-                    embed.add_field(name="Deliver", value=f"{ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}", inline=False)
-                    embed.add_field(name="New Message ID", value=f"{msg.id}", inline=False)
+                    embed.add_field(name="Deliver", value=f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", inline=False)
 
-                update_db(msg, message_id)
+                update_db(newMessage)
 
                 message_found = True
                 await message.channel.send(embed=embed)
