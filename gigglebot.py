@@ -384,8 +384,9 @@ async def edit_delay_message(message):
                         delayed_messages[message.guild.id] = [newMessage]
                     delayed_messages[guild_id].remove(msg)
                     embed.add_field(name="Deliver", value=f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", inline=False)
+                    msg = newMessage
 
-                update_db(newMessage)
+                update_db(msg)
 
                 message_found = True
                 await message.channel.send(embed=embed)
