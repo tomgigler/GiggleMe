@@ -533,7 +533,7 @@ async def on_message(message):
         return
 
     if re.search(r'^~giggle', message.content):
-        await channel.send(embed=discord.Embed(description="Invalid command\n\nTo see help type:\n\n~giggle help"))
+        await message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
         return
 
 @client.event
