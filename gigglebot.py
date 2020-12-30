@@ -468,27 +468,27 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if re.search(r'^~giggle listall', message.content) and message.author.id == 669370838478225448:
+    if re.search(r'^~giggle\s+listall\s*$', message.content) and message.author.id == 669370838478225448:
         await list_all_delay_messages(message)
         return
 
-    if re.search(r'^~giggle list', message.content):
+    if re.search(r'^~giggle\s+list\s*$', message.content):
         await list_delay_messages(message)
         return
 
-    if re.search(r'^~giggle show +\S+', message.content):
+    if re.search(r'^~giggle\s+show\s+(\S+)\s*$', message.content):
         await show_delay_message(message)
         return
 
-    if re.search(r'^~giggle (cancel|delete|remove|clear) +\S+', message.content):
+    if re.search(r'^~giggle\s+(cancel|delete|remove|clear)\s+(\S+)\s*$', message.content):
         await cancel_delay_message(message)
         return
 
-    if re.search(r'^~giggle send +\S+', message.content):
+    if re.search(r'^~giggle\s+send\s+(\S+)\s*$', message.content):
         await send_delay_message(message)
         return
 
-    match = re.search(r'^~giggle edit\s+(\S+)((\s+)(\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}|\d+))?((\s+channel=)(\S+))?\s*((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle\s+edit\s+(\S+)((\s+)(\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{1,2}|\d+))?((\s+channel=)(\S+))?\s*((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
     if match:
         await edit_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10))
         return
@@ -497,7 +497,7 @@ async def on_message(message):
         await process_delay_message(message)
         return
 
-    if re.search(r'^~giggle resume', message.content) and message.author.id == 669370838478225448:
+    if re.search(r'^~giggle\s+resume\s*$', message.content) and message.author.id == 669370838478225448:
         await load_from_db()
         await list_all_delay_messages(message)
         return
