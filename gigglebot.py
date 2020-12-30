@@ -222,16 +222,11 @@ async def schedule_delay_message(message):
             delete_from_db(message.id)
 
 async def list_delay_messages(message):
-    try:
-        guild_id = message.guild.id
-    except:
-        return
-
-    if guild_id in delayed_messages and len(delayed_messages[guild_id]) > 0:
+    if message.guild.id in delayed_messages and len(delayed_messages[message.guild.id]) > 0:
         embed=discord.Embed(title="Scheduled Messages ==================================")
-        delayed_messages[guild_id].sort(key=attrgetter('delivery_time'))
+        delayed_messages[message.guild.id].sort(key=attrgetter('delivery_time'))
         count = 0
-        for msg in delayed_messages[guild_id]:
+        for msg in delayed_messages[message.guild.id]:
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
             embed.add_field(name="Author", value=f"{msg.author.name}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.delivery_channel.name}", inline=True)
@@ -291,14 +286,9 @@ async def show_delay_message(message, msg_num):
         await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
 async def send_delay_message(message, msg_num):
-    try:
-        guild_id = message.guild.id
-    except:
-        return
-
     message_found = False
-    if guild_id in delayed_messages:
-        for msg in delayed_messages[guild_id]:
+    if message.guild.id in delayed_messages:
+        for msg in delayed_messages[message.guild.id]:
             if msg.id == msg_num:
                 msg.delivery_time = 0
 
@@ -312,11 +302,6 @@ async def send_delay_message(message, msg_num):
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def edit_delay_message(message, message_id, delay, channel, content):
-    try:
-        guild_id = message.guild.id
-    except:
-        return
-
     if not delay and not channel and not message:
         await show_help(message.channel)
         return
@@ -353,8 +338,8 @@ async def edit_delay_message(message, message_id, delay, channel, content):
 
     message_found = False
 
-    if guild_id in delayed_messages:
-        for msg in delayed_messages[guild_id]:
+    if message.guild.id in delayed_messages:
+        for msg in delayed_messages[message.guild.id]:
             if msg.id == message_id:
                 embed = discord.Embed(description="Message edited", color=0x00ff00)
                 if channel:
@@ -368,7 +353,7 @@ async def edit_delay_message(message, message_id, delay, channel, content):
                         delayed_messages[message.guild.id].append(newMessage)
                     else:
                         delayed_messages[message.guild.id] = [newMessage]
-                    delayed_messages[guild_id].remove(msg)
+                    delayed_messages[message.guild.id].remove(msg)
                     if delivery_time == 0:
                         embed.add_field(name="Deliver", value="Now", inline=False)
                     else:
@@ -430,18 +415,13 @@ async def cancel_all_delay_message(confirmation_request):
         await confirmation_request.confirmation_message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def cancel_delay_message(message, msg_num):
-    try:
-        guild_id = message.guild.id
-    except:
-        return
-
     message_found = False
-    if guild_id in delayed_messages:
-        for msg in delayed_messages[guild_id]:
+    if message.guild.id in delayed_messages:
+        for msg in delayed_messages[message.guild.id]:
             if msg.id == msg_num:
-                delayed_messages[guild_id].remove(msg)
-                if len(delayed_messages[guild_id]) < 1:
-                    del delayed_messages[guild_id]
+                delayed_messages[message.guild.id].remove(msg)
+                if len(delayed_messages[message.guild.id]) < 1:
+                    del delayed_messages[message.guild.id]
                 await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
                 message_found = True
                 delete_from_db(msg.id)
