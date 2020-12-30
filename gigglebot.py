@@ -27,7 +27,7 @@ class DelayedMessage:
             self.id = md5((self.delivery_channel.name + str(delivery_time) + self.author.name + self.content + ctime()).encode('utf-8')).hexdigest()[:8]
 
 class ConfirmationRequest:
-    def __init__(self, confirmation_message, member)
+    def __init__(self, confirmation_message, member):
         self.confirmation_message = confirmation_message
         self.member = member
         self.result = False
@@ -353,7 +353,7 @@ async def edit_delay_message(message, message_id, delay, channel, content):
             return
 
     message_found = False
- 
+
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == message_id:
@@ -380,7 +380,7 @@ async def edit_delay_message(message, message_id, delay, channel, content):
 
                 message_found = True
                 await message.channel.send(embed=embed)
-                
+
                 if delay:
                     await schedule_delay_message(msg)
 
@@ -403,16 +403,16 @@ async def cancel_all_delay_message(message):
 
     confirmation_request = ConfirmationRequest(confirmation_message, message.author)
     confirmation_requests[confirmation_message.id] = confirmation_request
-    
-    await asyncio.sleep(int(20))
+
+    await asyncio.sleep(int(5))
 
     if confirmation_request.result == True:
-        #cancel the message here
-        pass
+        await message.channel.send(embed=discord.Embed(description="TODO:  Delete all messages", color=0x00ff00))
     else:
         await confirmation_message.remove_reaction('✅', client.user)
-        await confirmation_message.remove_reaction('❌'client.user)
-        
+        await confirmation_message.remove_reaction('❌', client.user)
+
+    confirmation_requests.remove(confirmation_message.id)
 
 async def cancel_delay_message(message, msg_num):
     try:
@@ -536,6 +536,10 @@ async def on_message(message):
 
 @client.event
 async def on_reaction_add(reaction, user):
+    if reaction.message.id in confirmation_requests:
+        users = await reaction.users().flatten()
+        if(reaction.emoji == '✅' and user in users):
+            confirmation_requests[reaction.message.id].result = True
     return
 
 @client.event
