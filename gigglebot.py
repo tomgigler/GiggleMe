@@ -411,10 +411,11 @@ async def cancel_all_delay_message_request(message):
     except:
         pass
 
-    requests_to_cancel_all.pop(confirmation_message.id)
+    requests_to_cancel_all.pop(confirmation_message.id, None)
 
 async def cancel_all_delay_message(confirmation_request):
-    await confirmation_request.confirmation_message.channel.send(embed=discord.Embed(description="TODO:  Implement cancel_all_delay_message", color=0x00ff00))
+    if confirmation_request:
+        await confirmation_request.confirmation_message.channel.send(embed=discord.Embed(description="TODO:  Implement cancel_all_delay_message", color=0x00ff00))
 
 async def cancel_delay_message(message, msg_num):
     try:
@@ -540,8 +541,17 @@ async def on_message(message):
 async def on_reaction_add(reaction, user):
     if reaction.message.id in requests_to_cancel_all:
         users = await reaction.users().flatten()
-        if(reaction.emoji == '✅' and user in users):
-            cancel_all_delay_message(requests_to_cancel_all.pop(reaction.message.id))
+        if(user in users):
+            if reaction.emoji == '✅':
+                cancel_all_delay_message(requests_to_cancel_all.pop(reaction.message.id, None))
+            else:
+                requests_to_cancel_all.pop(reaction.message.id, None)
+
+            try:
+                await confirmation_message.remove_reaction('✅', client.user)
+                await confirmation_message.remove_reaction('❌', client.user)
+            except:
+                pass
     return
 
 @client.event
