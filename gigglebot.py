@@ -11,6 +11,7 @@ import mysql.connector
 
 client = discord.Client()
 delayed_messages = {}
+requests_to_cancel_all = {}
 
 class DelayedMessage:
     def __init__(self, guild, delivery_channel, delivery_time, author, content, id=None):
@@ -24,6 +25,11 @@ class DelayedMessage:
             self.id = id
         else:
             self.id = md5((self.delivery_channel.name + str(delivery_time) + self.author.name + self.content + ctime()).encode('utf-8')).hexdigest()[:8]
+
+class ConfirmationRequest:
+    def __init__(self, confirmation_message, member):
+        self.confirmation_message = confirmation_message
+        self.member = member
 
 def insert_into_db(message):
     mydb = mysql.connector.connect(
@@ -346,7 +352,7 @@ async def edit_delay_message(message, message_id, delay, channel, content):
             return
 
     message_found = False
- 
+
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == message_id:
@@ -373,7 +379,7 @@ async def edit_delay_message(message, message_id, delay, channel, content):
 
                 message_found = True
                 await message.channel.send(embed=embed)
-                
+
                 if delay:
                     await schedule_delay_message(msg)
 
@@ -382,6 +388,46 @@ async def edit_delay_message(message, message_id, delay, channel, content):
 
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+
+async def cancel_all_delay_message_request(message):
+
+    # Confirm cancel all messages
+    confirmation_message = await message.channel.send(embed=discord.Embed(description="Cancel all messages?\n\n✅ Yes\n\n❌ No", color=0x0000ff))
+    await confirmation_message.add_reaction('✅')
+    await confirmation_message.add_reaction('❌')
+
+    confirmation_request = ConfirmationRequest(confirmation_message, message.author)
+    requests_to_cancel_all[confirmation_message.id] = confirmation_request
+
+    await asyncio.sleep(int(10))
+
+    try:
+        await confirmation_message.remove_reaction('✅', client.user)
+        await confirmation_message.remove_reaction('❌', client.user)
+    except:
+        pass
+
+    requests_to_cancel_all.pop(confirmation_message.id, None)
+
+async def cancel_all_delay_message(confirmation_request):
+    if confirmation_request:
+        guild_id = confirmation_request.confirmation_message.guild.id
+        message_count = 0
+        if guild_id in delayed_messages:
+            messages_to_remove = []
+            for msg in delayed_messages[guild_id]:
+                messages_to_remove.append(msg)
+            for msg in messages_to_remove:
+                if msg.author == confirmation_request.member:
+                    delayed_messages[guild_id].remove(msg)
+                    if len(delayed_messages[guild_id]) < 1:
+                        del delayed_messages[guild_id]
+                    message_count += 1
+                    delete_from_db(msg.id)
+    if message_count > 0:
+        await confirmation_request.confirmation_message.channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
+    else:
+        await confirmation_request.confirmation_message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def cancel_delay_message(message, msg_num):
     try:
@@ -441,6 +487,9 @@ async def show_help(channel):
     `~giggle cancel <message-id>`
     Cancel message identified by <message-id>
 
+    `~giggle cancel all`
+    Cancel all delayed messages scheduled by you.  You will be prompted for confirmation
+
     `~giggle help`
     Show this help"""
     await channel.send(embed=discord.Embed(description=helpOutput))
@@ -467,6 +516,11 @@ async def on_message(message):
     match = re.search(r'^~giggle +show +(\S+) *$', message.content)
     if match:
         await show_delay_message(message, match.group(1))
+        return
+
+    match = re.search(r'^~giggle +(cancel|delete|remove|clear) +all *$', message.content)
+    if match:
+        await cancel_all_delay_message_request(message)
         return
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', message.content)
@@ -497,6 +551,24 @@ async def on_message(message):
     if re.search(r'^~giggle', message.content):
         await show_help(message.channel)
         return
+
+@client.event
+async def on_reaction_add(reaction, user):
+    found = False
+    if reaction.message.id in requests_to_cancel_all:
+        if(user == requests_to_cancel_all[reaction.message.id].member):
+            found = True
+            if reaction.emoji == '✅':
+                await cancel_all_delay_message(requests_to_cancel_all.pop(reaction.message.id, None))
+            else:
+                confirmation_message = requests_to_cancel_all.pop(reaction.message.id, None)
+
+    if found:
+        try:
+            await reaction.message.remove_reaction('✅', client.user)
+            await reaction.message.remove_reaction('❌', client.user)
+        except:
+            pass
 
 @client.event
 async def on_guild_join(guild):
