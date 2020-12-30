@@ -109,16 +109,15 @@ async def load_from_db():
     mycursor.close()
     mydb.disconnect()
 
-async def process_delay_message(message):
+async def process_delay_message(message, delay, channel, content):
 
-    # get delivery_channel from the original message
-    try:
-        delivery_channel_name = re.search(r'channel=(.+)', message.content).group(1)
-        delivery_channel = discord.utils.get(message.guild.channels, name=delivery_channel_name)
+    # get channel if provided
+    if channel:
+        delivery_channel = discord.utils.get(message.guild.channels, name=channel)
         if not delivery_channel:
-            await message.channel.send(embed=discord.Embed(description=f"Cannot find {delivery_channel_name} channel", color=0xff0000))
+            await message.channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
             return
-    except:
+    else:
         # default to current channel
         delivery_channel = message.channel
 
@@ -131,26 +130,18 @@ async def process_delay_message(message):
 
     if not has_permission:
         await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {delivery_channel.name}", color=0xff0000))
-    else:
-        if not re.search(r'^~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content) and not re.search(r'^~giggle (\d+)[ \n]', message.content):
-            await show_help(message.channel)
-            return
 
-        # if message.content matches things like "~giggle 2020-12-25 12:00"
-        if re.search(r'^~giggle \d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}', message.content):
-
-            # capture things like "~giggle (2020-12-25 12:00)\n(.*)"
-            match = re.search(r'^~giggle (\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2})[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
-            delivery_time = datetime.strptime(match.group(1), '%Y-%m-%d %H:%M').timestamp()
-        else:
-            # capture things like "~giggle (15)\n(.*)"
-            match = re.search(r'^~giggle (\d+)[^\n]*[\n](.*)', message.content, re.MULTILINE|re.DOTALL)
-            if match.group(1) == '0':
+        if re.search(r'^\d+$', delay):
+            if delay == '0':
                 delivery_time = 0
             else:
-                delivery_time = float(time()) + int(match.group(1)) * 60
-
-        content = match.group(2)
+                delivery_time = float(time()) + int(delay) * 60
+        else:
+            try:
+                delivery_time = datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp()
+            except:
+                await message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                return
 
         #Make sure {roles} exist
         try:
@@ -493,8 +484,9 @@ async def on_message(message):
         await edit_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10))
         return
 
-    if re.search(r'^~giggle \d+.*\n.', message.content):
-        await process_delay_message(message)
+    match = re.search(r'^~giggle\s+(\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{1,2}|\d+)((\s+channel=)(\S+))?\s*((\n)(.+))$', message.content, re.MULTILINE|re.DOTALL)
+    if match:
+        await process_delay_message(message, match.group(1), match.group(4), match.group(7))
         return
 
     if re.search(r'^~giggle\s+resume\s*$', message.content) and message.author.id == 669370838478225448:
