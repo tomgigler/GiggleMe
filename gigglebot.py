@@ -540,16 +540,14 @@ async def on_message(message):
 @client.event
 async def on_reaction_add(reaction, user):
     if reaction.message.id in requests_to_cancel_all:
-        users = await reaction.users().flatten()
-        if(user in users):
-            if reaction.emoji == '✅':
-                cancel_all_delay_message(requests_to_cancel_all.pop(reaction.message.id, None))
+        if(user == requests_to_cancel_all[reaction.message.id].member):
+            if reaction.emoji == 'â ':
+                await cancel_all_delay_message(requests_to_cancel_all.pop(reaction.message.id, None))
             else:
-                requests_to_cancel_all.pop(reaction.message.id, None)
-
+                confirmation_message = requests_to_cancel_all.pop(reaction.message.id, None)
             try:
-                await confirmation_message.remove_reaction('✅', client.user)
-                await confirmation_message.remove_reaction('❌', client.user)
+                await reaction.message.remove_reaction('â ', client.user)
+                await reaction.message.remove_reaction('â ', client.user)
             except:
                 pass
     return
