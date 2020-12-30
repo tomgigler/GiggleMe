@@ -456,40 +456,40 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if re.search(r'^~giggle\s+listall\s*$', message.content) and message.author.id == 669370838478225448:
+    if re.search(r'^~giggle +listall *$', message.content) and message.author.id == 669370838478225448:
         await list_all_delay_messages(message)
         return
 
-    if re.search(r'^~giggle\s+list\s*$', message.content):
+    if re.search(r'^~giggle +list *$', message.content):
         await list_delay_messages(message)
         return
 
-    match = re.search(r'^~giggle\s+show\s+(\S+)\s*$', message.content)
+    match = re.search(r'^~giggle +show +(\S+) *$', message.content)
     if match:
         await show_delay_message(message, match.group(1))
         return
 
-    match = re.search(r'^~giggle\s+(cancel|delete|remove|clear)\s+(\S+)\s*$', message.content)
+    match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', message.content)
     if match:
         await cancel_delay_message(message, match.group(2))
         return
 
-    match = re.search(r'^~giggle\s+send\s+(\S+)\s*$', message.content)
+    match = re.search(r'^~giggle +send +(\S+) *$', message.content)
     if match:
         await send_delay_message(message, match.group(1))
         return
 
-    match = re.search(r'^~giggle\s+edit\s+(\S+)((\s+)(\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{1,2}|\d+))?((\s+channel=)(\S+))?\s*((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|\d+))?(( +channel=)(\S+))? *((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
     if match:
         await edit_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10))
         return
 
-    match = re.search(r'^~giggle\s+(\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{1,2}|\d+)((\s+channel=)(\S+))?\s*((\n)(.+))$', message.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|\d+)(( +channel=)(\S+))? *((\n)(.+))$', message.content, re.MULTILINE|re.DOTALL)
     if match:
         await process_delay_message(message, match.group(1), match.group(4), match.group(7))
         return
 
-    if re.search(r'^~giggle\s+resume\s*$', message.content) and message.author.id == 669370838478225448:
+    if re.search(r'^~giggle +resume *$', message.content) and message.author.id == 669370838478225448:
         await load_from_db()
         await list_all_delay_messages(message)
         return
