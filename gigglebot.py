@@ -326,7 +326,7 @@ async def edit_delay_message(message):
     match_time = re.search(r'^~giggle edit +\S+ +(\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2})', message.content)
     time_is_delay = False
     if not match_time:
-        match_time = re.search(r'^~giggle edit +\S+ +(\d+)( |$)', message.content)
+        match_time = re.search(r'^~giggle edit +\S+ +(\d+)( |$|\n)', message.content)
         if match_time:
             time_is_delay = True
     match_channel = re.search(r'^~giggle edit +\S+ +[^\n]*channel=([^\n]+)', message.content)
