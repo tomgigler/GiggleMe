@@ -390,10 +390,6 @@ async def edit_delay_message(message, message_id, delay, channel, content):
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def cancel_all_delay_message_request(message):
-    try:
-        guild_id = message.guild.id
-    except:
-        return
 
     # Confirm cancel all messages
     confirmation_message = await message.channel.send(embed=discord.Embed(description="Cancel all messages?\n\n✅ Yes\n\n❌ No", color=0x0000ff))
@@ -418,7 +414,10 @@ async def cancel_all_delay_message(confirmation_request):
         guild_id = confirmation_request.confirmation_message.guild.id
         message_count = 0
         if guild_id in delayed_messages:
+            messages_to_remove = []
             for msg in delayed_messages[guild_id]:
+                messages_to_remove.append(msg)
+            for msg in messages_to_remove:
                 if msg.author == confirmation_request.member:
                     delayed_messages[guild_id].remove(msg)
                     if len(delayed_messages[guild_id]) < 1:
