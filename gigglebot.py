@@ -404,15 +404,17 @@ async def cancel_all_delay_message(message):
     confirmation_request = ConfirmationRequest(confirmation_message, message.author)
     confirmation_requests[confirmation_message.id] = confirmation_request
 
-    await asyncio.sleep(int(5))
+    await asyncio.sleep(int(15))
+
+    await confirmation_message.remove_reaction('✅', client.user)
+    await confirmation_message.remove_reaction('❌', client.user)
 
     if confirmation_request.result == True:
         await message.channel.send(embed=discord.Embed(description="TODO:  Delete all messages", color=0x00ff00))
-    else:
-        await confirmation_message.remove_reaction('✅', client.user)
-        await confirmation_message.remove_reaction('❌', client.user)
 
-    confirmation_requests.remove(confirmation_message.id)
+    confirmation_requests.pop(confirmation_message.id)
+    
+    print(len(confirmation_requests))
 
 async def cancel_delay_message(message, msg_num):
     try:
