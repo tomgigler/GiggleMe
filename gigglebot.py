@@ -276,9 +276,8 @@ async def list_all_delay_messages(message):
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def show_delay_message(message):
+async def show_delay_message(message, msg_num):
     message_found = False
-    msg_num = re.search(r'^~giggle show +(\S+)', message.content).group(1)
     for guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
             if msg.id == msg_num:
@@ -294,13 +293,12 @@ async def show_delay_message(message):
     if not message_found:
         await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
-async def send_delay_message(message):
+async def send_delay_message(message, msg_num):
     try:
         guild_id = message.guild.id
     except:
         return
 
-    msg_num = re.search(r'^~giggle send +(\S+)', message.content).group(1)
     message_found = False
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
@@ -394,13 +392,12 @@ async def edit_delay_message(message, message_id, delay, channel, content):
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def cancel_delay_message(message):
+async def cancel_delay_message(message, msg_num):
     try:
         guild_id = message.guild.id
     except:
         return
 
-    msg_num = re.search(r'^~giggle (cancel|delete|remove|clear) +(\S+)', message.content).group(2)
     message_found = False
     if guild_id in delayed_messages:
         for msg in delayed_messages[guild_id]:
@@ -476,16 +473,19 @@ async def on_message(message):
         await list_delay_messages(message)
         return
 
-    if re.search(r'^~giggle\s+show\s+(\S+)\s*$', message.content):
-        await show_delay_message(message)
+    match = re.search(r'^~giggle\s+show\s+(\S+)\s*$', message.content)
+    if match:
+        await show_delay_message(message, match.group(1))
         return
 
-    if re.search(r'^~giggle\s+(cancel|delete|remove|clear)\s+(\S+)\s*$', message.content):
-        await cancel_delay_message(message)
+    match = re.search(r'^~giggle\s+(cancel|delete|remove|clear)\s+(\S+)\s*$', message.content)
+    if match:
+        await cancel_delay_message(message, match.group(2))
         return
 
-    if re.search(r'^~giggle\s+send\s+(\S+)\s*$', message.content):
-        await send_delay_message(message)
+    match = re.search(r'^~giggle\s+send\s+(\S+)\s*$', message.content)
+    if match:
+        await send_delay_message(message, match.group(1))
         return
 
     match = re.search(r'^~giggle\s+edit\s+(\S+)((\s+)(\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{1,2}|\d+))?((\s+channel=)(\S+))?\s*((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
