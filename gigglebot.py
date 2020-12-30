@@ -14,17 +14,13 @@ delayed_messages = {}
 requests_to_cancel_all = {}
 
 class DelayedMessage:
-    def __init__(self, guild, delivery_channel, delivery_time, author, content, id=None):
+    def __init__(self, id, guild, delivery_channel, delivery_time, author, content):
+        self.id = id
         self.guild = guild
         self.delivery_channel = delivery_channel
-        self.delivery_time = float(delivery_time)
+        self.delivery_time = delivery_time
         self.author = author
         self.content = content
-
-        if id:
-            self.id = id
-        else:
-            self.id = md5((self.delivery_channel.name + str(delivery_time) + self.author.name + self.content + ctime()).encode('utf-8')).hexdigest()[:8]
 
 class ConfirmationRequest:
     def __init__(self, confirmation_message, member):
@@ -73,7 +69,7 @@ def delete_from_db(id):
             )
 
     mycursor = mydb.cursor()
-    mycursor.execute(f"DELETE FROM messages WHERE id='{id}'")
+    mycursor.execute(f"DELETE FROM messages WHERE id={id}")
     mydb.commit()
     mycursor.close()
     mydb.disconnect()
@@ -172,10 +168,7 @@ async def process_delay_message(message, delay, channel, content):
             embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
             await message.channel.send(embed=embed)
 
-        if message.guild.id in delayed_messages:
-            delayed_messages[message.guild.id].append(newMessage)
-        else:
-            delayed_messages[message.guild.id] = [newMessage]
+            delayed_messages[message.guild.id][message.id] = newMessage
 
         await schedule_delay_message(newMessage)
 
@@ -212,7 +205,7 @@ async def schedule_delay_message(message):
 
     # after sleep, make sure message has not been canceled
     if guild.id in delayed_messages:
-        if message in delayed_messages[guild.id]:
+        if message.id in delayed_messages[guild.id]:
 
             # we have to replace mentions now because the content may have changed while we were sleeping
             content = message.content
@@ -222,7 +215,7 @@ async def schedule_delay_message(message):
                 # At this point, we'll just leave {role} in the message
                 pass
             await message.delivery_channel.send(content)
-            delayed_messages[guild.id].remove(message)
+            delayed_messages[guild.id].remove(message.id)
             if len(delayed_messages[guild.id]) < 1:
                 del delayed_messages[guild.id]
             delete_from_db(message.id)
