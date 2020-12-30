@@ -528,8 +528,12 @@ async def on_message(message):
         await list_all_delay_messages(message)
         return
 
-    if re.search(r'^~giggle', message.content):
+    if re.search(r'^~giggle +help *$', message.content):
         await show_help(message.channel)
+        return
+
+    if re.search(r'^~giggle', message.content):
+        await channel.send(embed=discord.Embed(description="Invalid command\n\nTo see help type:\n\n~giggle help"))
         return
 
 @client.event
