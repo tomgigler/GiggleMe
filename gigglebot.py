@@ -87,30 +87,36 @@ async def load_from_db():
             charset='utf8mb4'
             )
 
+    message_id_list = list()
+    for guild_id in delayed_messages:
+        for message in delayed_messages[guild_id]:
+            message_id_list.append(message.id)
     loop = asyncio.get_event_loop()
     mycursor = mydb.cursor()
 
     mycursor.execute("select * from messages")
 
     for msg in mycursor.fetchall():
-        guild_id = msg[1]
-        delivery_channel_id = msg[2]
-        delivery_time = msg[3]
-        author_id = msg[4]
-        content = msg[5]
+        message_id = msg[0]
+        if message_id not in message_id_list:
+            guild_id = msg[1]
+            delivery_channel_id = msg[2]
+            delivery_time = msg[3]
+            author_id = msg[4]
+            content = msg[5]
 
-        guild = discord.utils.get(client.guilds, id=int(guild_id))
-        delivery_channel = discord.utils.get(guild.text_channels, id=int(delivery_channel_id))
-        author = client.get_user(int(author_id))
+            guild = discord.utils.get(client.guilds, id=int(guild_id))
+            delivery_channel = discord.utils.get(guild.text_channels, id=int(delivery_channel_id))
+            author = client.get_user(int(author_id))
 
-        newMessage =  DelayedMessage(guild, delivery_channel, float(delivery_time), author, content, msg[0])
+            newMessage =  DelayedMessage(guild, delivery_channel, float(delivery_time), author, content, message_id)
 
-        if int(guild_id) in delayed_messages:
-            delayed_messages[int(guild_id)].append(newMessage)
-        else:
-            delayed_messages[int(guild_id)] = [newMessage]
+            if int(guild_id) in delayed_messages:
+                delayed_messages[int(guild_id)].append(newMessage)
+            else:
+                delayed_messages[int(guild_id)] = [newMessage]
 
-        loop.create_task(schedule_delay_message(newMessage))
+            loop.create_task(schedule_delay_message(newMessage))
 
     mycursor.close()
     mydb.disconnect()
