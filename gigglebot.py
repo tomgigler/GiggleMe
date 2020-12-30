@@ -11,6 +11,7 @@ import mysql.connector
 
 client = discord.Client()
 delayed_messages = {}
+confirmation_requests = {}
 
 class DelayedMessage:
     def __init__(self, guild, delivery_channel, delivery_time, author, content, id=None):
@@ -24,6 +25,12 @@ class DelayedMessage:
             self.id = id
         else:
             self.id = md5((self.delivery_channel.name + str(delivery_time) + self.author.name + self.content + ctime()).encode('utf-8')).hexdigest()[:8]
+
+class ConfirmationRequest:
+    def __init__(self, confirmation_message, member)
+        self.confirmation_message = confirmation_message
+        self.member = member
+        self.result = False
 
 def insert_into_db(message):
     mydb = mysql.connector.connect(
@@ -390,9 +397,22 @@ async def cancel_all_delay_message(message):
         return
 
     # Confirm cancel all messages
-    confirmation_message = await message.channel.send(embed=discord.Embed(description="Cancel all messages?\n\n✅ Yes\n❌ No", color=0x0000ff))
-    client.add_reaction(confirmation_message, '✅')
-    client.add_reaction(confirmation_message, '❌')
+    confirmation_message = await message.channel.send(embed=discord.Embed(description="Cancel all messages?\n\n✅ Yes\n\n❌ No", color=0x0000ff))
+    await confirmation_message.add_reaction('✅')
+    await confirmation_message.add_reaction('❌')
+
+    confirmation_request = ConfirmationRequest(confirmation_message, message.author)
+    confirmation_requests[confirmation_message.id] = confirmation_request
+    
+    await asyncio.sleep(int(20))
+
+    if confirmation_request.result == True:
+        #cancel the message here
+        pass
+    else:
+        await confirmation_message.remove_reaction('✅', client.user)
+        await confirmation_message.remove_reaction('❌'client.user)
+        
 
 async def cancel_delay_message(message, msg_num):
     try:
