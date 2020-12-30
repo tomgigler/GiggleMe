@@ -316,27 +316,27 @@ async def send_delay_message(message):
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def edit_delay_message(message, message_id, time, channel, content):
+async def edit_delay_message(message, message_id, delay, channel, content):
     try:
         guild_id = message.guild.id
     except:
         return
 
-    if not time and not channel and not message:
+    if not delay and not channel and not message:
         await show_help(message.channel)
         return
 
-    if time:
-        if re.search(r'^\d+$', time):
-            if time == '0':
+    if delay:
+        if re.search(r'^\d+$', delay):
+            if delay == '0':
                 delivery_time = 0
             else:
-                delivery_time = float(time()) + int(time) * 60
+                delivery_time = float(time()) + int(delay) * 60
         else:
             try:
-                delivery_time = datetime.strptime(time, '%Y-%m-%d %H:%M').timestamp()
+                delivery_time = datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp()
             except:
-                await message.channel.send(embed=discord.Embed(description=f"{time} is not a valid DateTime", color=0xff0000))
+                await message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
 
     if channel:
@@ -367,7 +367,7 @@ async def edit_delay_message(message, message_id, time, channel, content):
                     embed.add_field(name="Channel", value=f"{msg.delivery_channel.name}", inline=False)
                 if content:
                     msg.content = content
-                if time:
+                if delay:
                     newMessage =  DelayedMessage(msg.guild, msg.delivery_channel, float(delivery_time), msg.author, msg.content, msg.id)
                     if message.guild.id in delayed_messages:
                         delayed_messages[message.guild.id].append(newMessage)
@@ -385,7 +385,7 @@ async def edit_delay_message(message, message_id, time, channel, content):
                 message_found = True
                 await message.channel.send(embed=embed)
                 
-                if time:
+                if delay:
                     await schedule_delay_message(msg)
 
         if not message_found:
@@ -488,9 +488,9 @@ async def on_message(message):
         await send_delay_message(message)
         return
 
-    match = re.search(r'^~giggle edit\s+(\S+)\s+?(\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}|\d+)?((\s+)(channel=\S+))?[^\n]*((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle edit\s+(\S+)((\s+)(\d{4}-\d{1,2}-\d{1,2} \d{1,2}:\d{1,2}|\d+))?((\s+channel=)(\S+))?\s*((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
     if match:
-        await edit_delay_message(message, match.group(1), match.group(2), match.group(5), match.group(8))
+        await edit_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10))
         return
 
     if re.search(r'^~giggle \d+.*\n.', message.content):
