@@ -415,7 +415,20 @@ async def cancel_all_delay_message_request(message):
 
 async def cancel_all_delay_message(confirmation_request):
     if confirmation_request:
-        await confirmation_request.confirmation_message.channel.send(embed=discord.Embed(description="TODO:  Implement cancel_all_delay_message", color=0x00ff00))
+        guild_id = confirmation_request.confirmation_message.guild.id
+        message_count = 0
+        if guild_id in delayed_messages:
+            for msg in delayed_messages[guild_id]:
+                if msg.author == confirmation_request.member:
+                    delayed_messages[guild_id].remove(msg)
+                    if len(delayed_messages[guild_id]) < 1:
+                        del delayed_messages[guild_id]
+                    message_count += 1
+                    delete_from_db(msg.id)
+    if message_count > 0:
+        await message.channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
+    else:
+        await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def cancel_delay_message(message, msg_num):
     try:
@@ -539,18 +552,21 @@ async def on_message(message):
 
 @client.event
 async def on_reaction_add(reaction, user):
+    found = False
     if reaction.message.id in requests_to_cancel_all:
         if(user == requests_to_cancel_all[reaction.message.id].member):
+            found = True
             if reaction.emoji == '✅':
                 await cancel_all_delay_message(requests_to_cancel_all.pop(reaction.message.id, None))
             else:
                 confirmation_message = requests_to_cancel_all.pop(reaction.message.id, None)
-            try:
-                await reaction.message.remove_reaction('✅', client.user)
-                await reaction.message.remove_reaction('❌', client.user)
-            except:
-                pass
-    return
+
+    if found:
+        try:
+            await reaction.message.remove_reaction('✅', client.user)
+            await reaction.message.remove_reaction('❌', client.user)
+        except:
+            pass
 
 @client.event
 async def on_guild_join(guild):
