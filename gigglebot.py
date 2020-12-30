@@ -383,6 +383,16 @@ async def edit_delay_message(message, message_id, delay, channel, content):
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
+async def cancel_all_delay_message(message):
+    try:
+        guild_id = message.guild.id
+    except:
+        return
+
+    # Confirm cancel all messages
+    embed = discord.Embed(description="Cancel all messages?\n\nYes\nNo", color=0x0000ff)
+
+
 async def cancel_delay_message(message, msg_num):
     try:
         guild_id = message.guild.id
@@ -467,6 +477,11 @@ async def on_message(message):
     match = re.search(r'^~giggle +show +(\S+) *$', message.content)
     if match:
         await show_delay_message(message, match.group(1))
+        return
+
+    match = re.search(r'^~giggle +(cancel|delete|remove|clear) +all *$', message.content)
+    if match:
+        await cancel_all_delay_message(message)
         return
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', message.content)
