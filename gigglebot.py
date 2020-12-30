@@ -426,9 +426,9 @@ async def cancel_all_delay_message(confirmation_request):
                     message_count += 1
                     delete_from_db(msg.id)
     if message_count > 0:
-        await message.channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
+        await confirmation_request.confirmation_message.channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
     else:
-        await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+        await confirmation_request.confirmation_message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def cancel_delay_message(message, msg_num):
     try:
