@@ -487,6 +487,9 @@ async def show_help(channel):
     `~giggle cancel <message-id>`
     Cancel message identified by <message-id>
 
+    `~giggle cancel all`
+    Cancel all delayed messages scheduled by you.  You will be prompted for confirmation
+
     `~giggle help`
     Show this help"""
     await channel.send(embed=discord.Embed(description=helpOutput))
