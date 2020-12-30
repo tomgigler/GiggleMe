@@ -130,7 +130,7 @@ async def process_delay_message(message, delay, channel, content):
 
     if not has_permission:
         await message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {delivery_channel.name}", color=0xff0000))
-
+    else:
         if re.search(r'^\d+$', delay):
             if delay == '0':
                 delivery_time = 0
