@@ -390,8 +390,9 @@ async def cancel_all_delay_message(message):
         return
 
     # Confirm cancel all messages
-    embed = discord.Embed(description="Cancel all messages?\n\nYes\nNo", color=0x0000ff)
-
+    confirmation_message = await message.channel.send(embed=discord.Embed(description="Cancel all messages?\n\n✅ Yes\n❌ No", color=0x0000ff))
+    client.add_reaction(confirmation_message, '✅')
+    client.add_reaction(confirmation_message, '❌')
 
 async def cancel_delay_message(message, msg_num):
     try:
@@ -512,6 +513,10 @@ async def on_message(message):
     if re.search(r'^~giggle', message.content):
         await show_help(message.channel)
         return
+
+@client.event
+async def on_reaction_add(reaction, user):
+    return
 
 @client.event
 async def on_guild_join(guild):
