@@ -135,7 +135,7 @@ async def load_from_db():
                         if g_id not in delayed_messages:
                             delayed_messages[g_id] = {}
                         delayed_messages[g_id][message_id] = newMessage
-                        await schedule_delay_message(newMessage)
+                        loop.create_task(schedule_delay_message(newMessage))
 
     mycursor.close()
     mydb.disconnect()
