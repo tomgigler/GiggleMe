@@ -22,9 +22,9 @@ class DelayedMessage:
         self.author = author
         self.content = content
 
-        @staticmethod
-        def id_gen(id):
-            return md5((id).encode('utf-8')).hexdigest()[:8]
+    @staticmethod
+    def id_gen(id):
+        return md5((id).encode('utf-8')).hexdigest()[:8]
 
 class ConfirmationRequest:
     def __init__(self, confirmation_message, member):
