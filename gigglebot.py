@@ -112,7 +112,7 @@ async def load_from_db():
         
         if message_id not in message_id_list:
 
-            newMessage =  DelayedMessage(message_id, guild, delivery_channel, delivery_time, author, content, description)
+            newMessage =  DelayedMessage(message_id, guild, delivery_channel, delivery_time, author, description, content)
 
             if guild_id not in delayed_messages:
                 delayed_messages[guild_id] = {}
@@ -134,7 +134,7 @@ async def load_from_db():
                     if delayed_messages[g_id][message_id].delivery_time != delivery_time:
                         delayed_messages[g_id][message_id].delivery_time = delivery_time
 
-                        newMessage =  DelayedMessage(message_id, guild, delivery_channel, delivery_time, author, content)
+                        newMessage =  DelayedMessage(message_id, guild, delivery_channel, delivery_time, author, description, content)
                         if g_id not in delayed_messages:
                             delayed_messages[g_id] = {}
                         delayed_messages[g_id][message_id] = newMessage
@@ -185,7 +185,7 @@ async def process_delay_message(message, delay, channel, description, content):
             return
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(DelayedMessage.id_gen(message.id), message.guild, delivery_channel, delivery_time, message.author, content, description)
+        newMessage =  DelayedMessage(DelayedMessage.id_gen(message.id), message.guild, delivery_channel, delivery_time, message.author, description, content)
         insert_into_db(newMessage)
         if delivery_time == 0:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
@@ -366,7 +366,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
             if content:
                 msg.content = content
             if delay:
-                newMessage =  DelayedMessage(msg.id, msg.guild, msg.delivery_channel, delivery_time, msg.author, msg.content)
+                newMessage =  DelayedMessage(msg.id, msg.guild, msg.delivery_channel, delivery_time, msg.author, msg.description, msg.content)
                 if message.guild.id not in delayed_messages:
                     delayed_messages[message.guild.id] = {}
                 delayed_messages[message.guild.id][msg.id] = newMessage
