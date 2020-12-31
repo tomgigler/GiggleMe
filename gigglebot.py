@@ -288,17 +288,16 @@ async def show_delay_message(message, msg_num):
         await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
 async def send_delay_message(message, msg_num):
-    message_found = False
     if message.guild.id in delayed_messages:
         for msg in delayed_messages[message.guild.id]:
-            if msg.id == msg_num:
-                msg.delivery_time = 0
+        if int(msg_num) in delayed_messages[message.guild.id]:
+            msg = delayed_messages[message.guild.id][int(msg_num)]
+            msg.delivery_time = 0
 
-                await schedule_delay_message(msg)
+            await schedule_delay_message(msg)
 
-                await message.channel.send(embed=discord.Embed(description="Message sent", color=0x00ff00))
-                message_found = True
-        if not message_found:
+            await message.channel.send(embed=discord.Embed(description="Message sent", color=0x00ff00))
+        else:
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
