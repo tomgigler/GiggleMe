@@ -207,7 +207,7 @@ async def schedule_delay_message(message):
 
     # after sleep, make sure message has not been canceled
     if guild.id in delayed_messages:
-        if message.id in delayed_messages[guild.id] and delayed_messages[guild.id][message.id] = message:
+        if message.id in delayed_messages[guild.id] and delayed_messages[guild.id][message.id] == message:
 
             # we have to replace mentions now because the content may have changed while we were sleeping
             content = message.content
