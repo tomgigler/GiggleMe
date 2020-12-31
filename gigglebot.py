@@ -225,9 +225,10 @@ async def schedule_delay_message(message):
 async def list_delay_messages(message):
     if message.guild.id in delayed_messages and len(delayed_messages[message.guild.id]) > 0:
         embed=discord.Embed(title="Scheduled Messages ==================================")
-        delayed_messages[message.guild.id].sort(key=attrgetter('delivery_time'))
+        # delayed_messages[message.guild.id].sort(key=attrgetter('delivery_time'))
         count = 0
-        for msg in delayed_messages[message.guild.id]:
+        for msg_id in delayed_messages[message.guild.id]:
+            msg = delayed_messages[message.guild.id][msg_id]
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
             embed.add_field(name="Author", value=f"{msg.author.name}", inline=True)
             embed.add_field(name="Channel", value=f"{msg.delivery_channel.name}", inline=True)
@@ -250,8 +251,9 @@ async def list_all_delay_messages(message):
         embed=discord.Embed(title="Scheduled Messages ==================================")
         count = 0
         for guild_id in delayed_messages:
-            delayed_messages[guild_id].sort(key=attrgetter('delivery_time'))
-            for msg in delayed_messages[guild_id]:
+            # delayed_messages[guild_id].sort(key=attrgetter('delivery_time'))
+            for msg_id in delayed_messages[guild_id]:
+                msg = delayed_messages[guild_id][msg_id]
                 embed.add_field(name="ID", value=f"{msg.id}", inline=True)
                 embed.add_field(name="Author", value=f"{msg.author.name}", inline=True)
                 embed.add_field(name="Server - Channel", value=f"{client.get_guild(guild_id)} - {msg.delivery_channel.name}", inline=True)
@@ -400,11 +402,11 @@ async def cancel_all_delay_message(confirmation_request):
         message_count = 0
         if guild_id in delayed_messages:
             messages_to_remove = []
-            for msg in delayed_messages[guild_id]:
-                messages_to_remove.append(msg)
+            for msg_id in delayed_messages[guild_id]:
+                messages_to_remove.append(delayed_messages[guild_id][msg_id])
             for msg in messages_to_remove:
                 if msg.author == confirmation_request.member:
-                    delayed_messages[guild_id].remove(msg)
+                    delayed_messages[guild_id].pop(msg.id)
                     if len(delayed_messages[guild_id]) < 1:
                         del delayed_messages[guild_id]
                     message_count += 1
