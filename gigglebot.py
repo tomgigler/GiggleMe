@@ -24,7 +24,7 @@ class DelayedMessage:
 
     @staticmethod
     def id_gen(id):
-        return md5((id).encode('utf-8')).hexdigest()[:8]
+        return md5((str(id)).encode('utf-8')).hexdigest()[:8]
 
 class ConfirmationRequest:
     def __init__(self, confirmation_message, member):
