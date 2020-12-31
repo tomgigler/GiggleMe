@@ -305,7 +305,7 @@ async def send_delay_message(message, msg_num):
 
 async def edit_delay_message(message, message_id, delay, channel, content):
     if not delay and not channel and not message:
-        await show_help(message.channel)
+        await message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
         return
 
     if delay:
@@ -338,39 +338,32 @@ async def edit_delay_message(message, message_id, delay, channel, content):
             await message.channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
             return
 
-    message_found = False
-
     if message.guild.id in delayed_messages:
-        for msg in delayed_messages[message.guild.id]:
-            if msg.id == message_id:
-                embed = discord.Embed(description="Message edited", color=0x00ff00)
-                if channel:
-                    msg.delivery_channel = delivery_channel
-                    embed.add_field(name="Channel", value=f"{msg.delivery_channel.name}", inline=False)
-                if content:
-                    msg.content = content
-                if delay:
-                    newMessage =  DelayedMessage(msg.guild, msg.delivery_channel, float(delivery_time), msg.author, msg.content, msg.id)
-                    if message.guild.id in delayed_messages:
-                        delayed_messages[message.guild.id].append(newMessage)
-                    else:
-                        delayed_messages[message.guild.id] = [newMessage]
-                    delayed_messages[message.guild.id].remove(msg)
-                    if delivery_time == 0:
-                        embed.add_field(name="Deliver", value="Now", inline=False)
-                    else:
-                        embed.add_field(name="Deliver", value=f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", inline=False)
-                    msg = newMessage
+        if int(message_id) in delayed_messages[message.guild.id]:
+            msg = delayed_messages[message.guild.id][int(message_id)]
+            embed = discord.Embed(description="Message edited", color=0x00ff00)
+            if channel:
+                msg.delivery_channel = delivery_channel
+                embed.add_field(name="Channel", value=f"{msg.delivery_channel.name}", inline=False)
+            if content:
+                msg.content = content
+            if delay:
+                newMessage =  DelayedMessage(msg.id, msg.guild, msg.delivery_channel, float(delivery_time), msg.author, msg.content)
+                if message.guild.id not in delayed_messages:
+                    delayed_messages[message.guild.id] = {}
+                delayed_messages[message.guild.id][message_id] = newMessage
+                if delivery_time == 0:
+                    embed.add_field(name="Deliver", value="Now", inline=False)
+                else:
+                    embed.add_field(name="Deliver", value=f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", inline=False)
+                msg = newMessage
+                await schedule_delay_message(msg)
 
-                update_db(msg)
+            update_db(msg)
 
-                message_found = True
-                await message.channel.send(embed=embed)
+            await message.channel.send(embed=embed)
 
-                if delay:
-                    await schedule_delay_message(msg)
-
-        if not message_found:
+        else:
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
     else:
