@@ -417,15 +417,14 @@ async def cancel_all_delay_message(confirmation_request):
 async def cancel_delay_message(message, msg_num):
     message_found = False
     if message.guild.id in delayed_messages:
-        for msg in delayed_messages[message.guild.id]:
-            if msg.id == msg_num:
-                delayed_messages[message.guild.id].remove(msg)
-                if len(delayed_messages[message.guild.id]) < 1:
-                    del delayed_messages[message.guild.id]
-                await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
-                message_found = True
-                delete_from_db(msg.id)
-        if not message_found:
+        if int(msg_num) in delayed_messages[message.guild.id]:
+            msg = delayed_messages[message.guild.id][int(msg_num)]
+            delayed_messages[message.guild.id].pop(int(msg_num))
+            if len(delayed_messages[message.guild.id]) < 1:
+                del delayed_messages[message.guild.id]
+            await message.channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
+            delete_from_db(msg.id)
+        else:
             await message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
