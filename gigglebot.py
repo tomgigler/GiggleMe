@@ -348,18 +348,18 @@ async def edit_delay_message(message, message_id, delay, channel, content):
             if content:
                 msg.content = content
             if delay:
-                newMessage =  DelayedMessage(msg.id, msg.guild, msg.delivery_channel, float(delivery_time), msg.author, msg.content)
+                newMessage =  DelayedMessage(msg.id, msg.guild, msg.delivery_channel, delivery_time, msg.author, msg.content)
                 if message.guild.id not in delayed_messages:
                     delayed_messages[message.guild.id] = {}
-                delayed_messages[message.guild.id][message_id] = newMessage
+                delayed_messages[message.guild.id][msg.id] = newMessage
                 if delivery_time == 0:
                     embed.add_field(name="Deliver", value="Now", inline=False)
                 else:
                     embed.add_field(name="Deliver", value=f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", inline=False)
-                msg = newMessage
-                await schedule_delay_message(msg)
-
-            update_db(msg)
+                await schedule_delay_message(newMessage)
+                update_db(newMessage)
+            else:
+                update_db(msg)
 
             await message.channel.send(embed=embed)
 
