@@ -247,7 +247,7 @@ async def schedule_delay_message(message):
 
 async def list_delay_messages(message):
     if message.guild.id in delayed_messages and len(delayed_messages[message.guild.id]) > 0:
-        output="> **================ Scheduled Messages ================**\n"
+        output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
         sorted_messages = {k: v for k, v in sorted(delayed_messages[message.guild.id].items(), key=lambda item: item[1].delivery_time)}
 
         for msg_id in sorted_messages:
@@ -259,13 +259,13 @@ async def list_delay_messages(message):
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
                 output += f"> **Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
-        await message.channel.send(output)
+        await message.channel.send(output + "> \n> **====================**\n")
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def list_all_delay_messages(message):
     if len(delayed_messages) > 0:
-        output = "> **================ Scheduled Messages ==================**\n")
+        output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
         count = 0
         for guild_id in delayed_messages:
             for msg_id in delayed_messages[guild_id]:
@@ -278,7 +278,7 @@ async def list_all_delay_messages(message):
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
                     output += f"> **Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
-        await message.channel.send(output)
+        await message.channel.send(output + "> \n> **====================**\n")
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
