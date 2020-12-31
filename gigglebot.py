@@ -140,7 +140,7 @@ async def load_from_db():
     mycursor.close()
     mydb.disconnect()
 
-async def process_delay_message(message, delay, channel, content):
+async def process_delay_message(message, delay, channel, description, content):
 
     # get channel if provided
     if channel:
@@ -314,7 +314,7 @@ async def send_delay_message(message, msg_num):
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def edit_delay_message(message, message_id, delay, channel, content):
+async def edit_delay_message(message, message_id, delay, channel, description, content):
     if not delay and not channel and not channel:
         await message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
         return
@@ -436,18 +436,17 @@ async def cancel_delay_message(message, msg_num):
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_help(channel):
-    helpOutput = """To schedule <message> to be delivered to <channel> in <minutes>:
+    helpOutput = """To schedule <message> to be delivered to <channel> at <time>:
 
-    `~giggle <minutes> channel=<channel>`
+    `~giggle <time> channel=<channel> desc="<brief description>"`
     `<message>`
 
-    To schedule <message> to be delivered to <channel> at <date-time>:
-
-    `~giggle <date-time> channel=<channel>`
-    `<message>`
-
-    The format for <date-time> is YYYY-MM-DD HH:MM
+    <time> may be either a number of minutes from now
+    or a DateTime of the format YYYY-MM-DD HH:MM
     All times are UTC
+    
+    desc is an optional description of the message
+    If included, it must come after channel
 
     The following commands may be used to manage scheduled messages:
 
@@ -518,14 +517,14 @@ async def on_message(message):
         await send_delay_message(message, match.group(1))
         return
 
-    match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))? *((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")(\S+)")? *((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
     if match:
-        await edit_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10))
+        await edit_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10), match.group(13))
         return
 
-    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+)(( +channel=)(\S+))? *((\n)(.+))$', message.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+)(( +channel=)(\S+))?(( +desc=")(\S+)")? *((\n)(.+))$', message.content, re.MULTILINE|re.DOTALL)
     if match:
-        await process_delay_message(message, match.group(1), match.group(4), match.group(7))
+        await process_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10))
         return
 
     if re.search(r'^~giggle +resume *$', message.content) and message.author.id == 669370838478225448:
