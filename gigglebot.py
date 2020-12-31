@@ -109,7 +109,7 @@ async def load_from_db():
         guild = discord.utils.get(client.guilds, id=guild_id)
         delivery_channel = discord.utils.get(guild.text_channels, id=delivery_channel_id)
         author = client.get_user(author_id)
-        
+
         if message_id not in message_id_list:
 
             newMessage =  DelayedMessage(message_id, guild, delivery_channel, delivery_time, author, description, content)
@@ -451,7 +451,7 @@ async def show_help(channel):
     <time> may be either a number of minutes from now
     or a DateTime of the format YYYY-MM-DD HH:MM
     All times are UTC
-    
+
     desc is an optional description of the message
     If included, it must come after channel
 
