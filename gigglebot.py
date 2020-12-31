@@ -159,7 +159,7 @@ async def process_delay_message(message, delay, channel, content):
             return
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(message.guild, delivery_channel, float(delivery_time), message.author, content)
+        newMessage =  DelayedMessage(message.id, message.guild, delivery_channel, delivery_time, message.author, content)
         insert_into_db(newMessage)
         if delivery_time == 0:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
@@ -168,7 +168,9 @@ async def process_delay_message(message, delay, channel, content):
             embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
             await message.channel.send(embed=embed)
 
-            delayed_messages[message.guild.id][message.id] = newMessage
+        if message.guild.id not in delayed_messages:
+            delayed_messages[message.guild.id] = {}
+        delayed_messages[message.guild.id][message.id] = newMessage
 
         await schedule_delay_message(newMessage)
 
@@ -215,7 +217,7 @@ async def schedule_delay_message(message):
                 # At this point, we'll just leave {role} in the message
                 pass
             await message.delivery_channel.send(content)
-            delayed_messages[guild.id].remove(message.id)
+            delayed_messages[guild.id].pop(message.id)
             if len(delayed_messages[guild.id]) < 1:
                 del delayed_messages[guild.id]
             delete_from_db(message.id)
