@@ -467,12 +467,13 @@ async def show_help(channel):
     Send message identified by <message-id>
     immediately and remove it from the queue
 
-    `~giggle edit <message-id> <date-time> channel=<channel>`
+    `~giggle edit <message-id> <date-time> channel=<channel> desc="<desc>"`
     `<message>`
     Edit message identified by <message-id>.
     <date-time> may be either a date as specified above or a number of minutes from now.
     If not specified, the current delivery time will be used.
     channel=<channel> is optional.  If not specified, the current delivery channel will be used.
+    desc="<desc>" is optional.  If both channel and desc are included, desc must come after channel
     <message> is optional.  If specified, it will replace the body of the current message.
 
     `~giggle cancel <message-id>`
