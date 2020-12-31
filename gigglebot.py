@@ -121,11 +121,21 @@ async def load_from_db():
         else:
             for g_id in delayed_messages:
                 if message_id in delayed_messages[g_id]:
+                    # TODO:  If guild_id changes in the database, we need to move the message in the dict
+                    # that may have an impact on the code dealing with delivery_time change below
                     delayed_messages[g_id][message_id].guild_id = guild_id
                     delayed_messages[g_id][message_id].delivery_channel_id = delivery_channel_id
-                    delayed_messages[g_id][message_id].delivery_time = delivery_time
                     delayed_messages[g_id][message_id].author_id = author_id
                     delayed_messages[g_id][message_id].content = content
+
+                    if delayed_messages[g_id][message_id].delivery_time != delivery_time:
+                        delayed_messages[g_id][message_id].delivery_time = delivery_time
+
+                        newMessage =  DelayedMessage(message_id, guild, delivery_channel, delivery_time, author, content)
+                        if g_id not in delayed_messages:
+                            delayed_messages[g_id] = {}
+                        delayed_messages[g_id][message_id] = newMessage
+                        await schedule_delay_message(newMessage)
 
     mycursor.close()
     mydb.disconnect()
