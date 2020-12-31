@@ -517,12 +517,12 @@ async def on_message(message):
         await send_delay_message(message, match.group(1))
         return
 
-    match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")(\S+)")? *((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', message.content, re.MULTILINE|re.DOTALL)
     if match:
         await edit_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10), match.group(13))
         return
 
-    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+)(( +channel=)(\S+))?(( +desc=")(\S+)")? *((\n)(.+))$', message.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', message.content, re.MULTILINE|re.DOTALL)
     if match:
         await process_delay_message(message, match.group(1), match.group(4), match.group(7), match.group(10))
         return
