@@ -272,8 +272,9 @@ async def list_all_delay_messages(message):
 async def show_delay_message(message, msg_num):
     message_found = False
     for guild_id in delayed_messages:
-        for msg in delayed_messages[guild_id]:
-            if msg.id == msg_num:
+        for msg_id in delayed_messages[guild_id]:
+            if msg_id == int(msg_num):
+                msg = delayed_messages[guild_id][msg_id]
                 content = f"**Author:**  {msg.author.name}\n"
                 content += f"**Deliver to:**  {msg.delivery_channel.name}\n"
                 if round((msg.delivery_time - time())/60, 1) < 0:
