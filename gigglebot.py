@@ -105,20 +105,15 @@ async def load_from_db():
             author_id = msg[4]
             content = msg[5]
 
-            guild = discord.utils.get(client.guilds, id=int(guild_id))
-            delivery_channel = discord.utils.get(guild.text_channels, id=int(delivery_channel_id))
-            author = client.get_user(int(author_id))
+            guild = discord.utils.get(client.guilds, id=guild_id)
+            delivery_channel = discord.utils.get(guild.text_channels, id=delivery_channel_id)
+            author = client.get_user(author_id)
 
-            newMessage =  DelayedMessage(message_id, guild, delivery_channel, float(delivery_time), author, content)
+            newMessage =  DelayedMessage(message_id, guild, delivery_channel, delivery_time, author, content)
 
-            if int(guild_id) in delayed_messages:
-                delayed_messages[int(guild_id)].append(newMessage)
-            else:
-                delayed_messages[int(guild_id)] = [newMessage]
-
-            if int(guild_id) not in delayed_messages:
-                delayed_messages[int(guild_id)] = {}
-            delayed_messages[int(guild_id)][message_id] = newMessage
+            if guild_id not in delayed_messages:
+                delayed_messages[guild_id] = {}
+            delayed_messages[guild_id][message_id] = newMessage
 
             loop.create_task(schedule_delay_message(newMessage))
 
