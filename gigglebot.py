@@ -289,7 +289,6 @@ async def show_delay_message(message, msg_num):
 
 async def send_delay_message(message, msg_num):
     if message.guild.id in delayed_messages:
-        for msg in delayed_messages[message.guild.id]:
         if int(msg_num) in delayed_messages[message.guild.id]:
             msg = delayed_messages[message.guild.id][int(msg_num)]
             msg.delivery_time = 0
