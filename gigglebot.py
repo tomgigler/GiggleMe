@@ -536,6 +536,7 @@ async def on_message(message):
         return
 
     if re.search(r'^~giggle +resume *$', message.content) and message.author.id == 669370838478225448:
+        await client.change_presence(activity=discord.Game('with thegigler'))
         await load_from_db()
         await list_all_delay_messages(message)
         return
