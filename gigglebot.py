@@ -118,7 +118,7 @@ async def load_from_db():
 
             if int(guild_id) not in delayed_messages:
                 delayed_messages[int(guild_id)] = {}
-            delayed_messages[int(guild_id)][message.id] = newMessage
+            delayed_messages[int(guild_id)][message_id] = newMessage
 
             loop.create_task(schedule_delay_message(newMessage))
 
@@ -178,7 +178,7 @@ async def process_delay_message(message, delay, channel, content):
 
         if message.guild.id not in delayed_messages:
             delayed_messages[message.guild.id] = {}
-        delayed_messages[message.guild.id][message.id] = newMessage
+        delayed_messages[message.guild.id][DelayedMessage.id_gen(message.id)] = newMessage
 
         await schedule_delay_message(newMessage)
 
