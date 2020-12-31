@@ -320,7 +320,7 @@ async def send_delay_message(message, msg_num):
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def edit_delay_message(message, message_id, delay, channel, description, content):
-    if not delay and not channel and not description and not channel:
+    if not delay and not channel and not description and not content:
         await message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
         return
 
