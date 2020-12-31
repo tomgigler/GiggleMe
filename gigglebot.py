@@ -98,16 +98,17 @@ async def load_from_db():
 
     for msg in mycursor.fetchall():
         message_id = msg[0]
-        if message_id not in message_id_list:
-            guild_id = msg[1]
-            delivery_channel_id = msg[2]
-            delivery_time = msg[3]
-            author_id = msg[4]
-            content = msg[5]
+        guild_id = msg[1]
+        delivery_channel_id = msg[2]
+        delivery_time = msg[3]
+        author_id = msg[4]
+        content = msg[5]
 
-            guild = discord.utils.get(client.guilds, id=guild_id)
-            delivery_channel = discord.utils.get(guild.text_channels, id=delivery_channel_id)
-            author = client.get_user(author_id)
+        guild = discord.utils.get(client.guilds, id=guild_id)
+        delivery_channel = discord.utils.get(guild.text_channels, id=delivery_channel_id)
+        author = client.get_user(author_id)
+        
+        if message_id not in message_id_list:
 
             newMessage =  DelayedMessage(message_id, guild, delivery_channel, delivery_time, author, content)
 
@@ -116,6 +117,15 @@ async def load_from_db():
             delayed_messages[guild_id][message_id] = newMessage
 
             loop.create_task(schedule_delay_message(newMessage))
+
+        else:
+            for g_id in delayed_messages:
+                if message_id in delayed_messages[g_id]:
+                    delayed_messages[g_id][message_id].guild_id = guild_id
+                    delayed_messages[g_id][message_id].delivery_channel_id = delivery_channel_id
+                    delayed_messages[g_id][message_id].delivery_time = delivery_time
+                    delayed_messages[g_id][message_id].author_id = author_id
+                    delayed_messages[g_id][message_id].content = content
 
     mycursor.close()
     mydb.disconnect()
@@ -228,9 +238,10 @@ async def schedule_delay_message(message):
 async def list_delay_messages(message):
     if message.guild.id in delayed_messages and len(delayed_messages[message.guild.id]) > 0:
         embed=discord.Embed(title="Scheduled Messages ==================================")
-        # delayed_messages[message.guild.id].sort(key=attrgetter('delivery_time'))
+        sorted_messages = {k: v for k, v in sorted(delayed_messages[message.guild.id].items(), key=lambda item: item[1].delivery_time)}
+
         count = 0
-        for msg_id in delayed_messages[message.guild.id]:
+        for msg_id in sorted_messages:
             msg = delayed_messages[message.guild.id][msg_id]
             embed.add_field(name="ID", value=f"{msg.id}", inline=True)
             embed.add_field(name="Author", value=f"{msg.author.name}", inline=True)
