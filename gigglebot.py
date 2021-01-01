@@ -48,7 +48,7 @@ def local_time_to_utc(user_id, time):
 
 def display_localized_time(user_id, time):
     if user_id in user_timezones:
-        return f"{ctime(time + 3600 * timezones[user_timezones[user_id]]).offset} {user_timezones[user_id]}"
+        return f"{ctime(time + 3600 * timezones[user_timezones[user_id]].)offset} {user_timezones[user_id]}"
     else:
         return f"{ctime(time)} {localtime(time).tm_zone}"
 
@@ -326,7 +326,7 @@ async def display_timezones(message):
 
 async def show_user_timezone(message):
     if message.author.id in user_timezones:
-        output = f"Your time zone is currently set to:  **{user_timezones[message.author.id]}"
+        output = f"Your time zone is currently set to:  **{user_timezones[message.author.id]}**"
     else:
         output = "Your time zone is not set.  You are using the default time zone (UTC)"
     await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
@@ -337,7 +337,7 @@ async def set_user_timezone(message, tz):
         # TODO: update user timezone in the database in the database
         await message.channel.send(embed=discord.Embed(description=f"Time zone set to {tz}", color=0x00ff00))
     else:
-        await message.channel.send(embed=discord.Embed(description=f"Time zone {tz} not found\nDM **{client.user.name}** and ask me to add it!", color=0xff0000))
+        await message.channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
 
 async def show_delay_message(message, msg_num):
     message_found = False
@@ -598,10 +598,10 @@ async def on_message(message):
         await show_help(message.channel)
         return
 
-    match = re.search(r'^~giggle +timezone( +([A-Z]{3}))? *$', message.content):
-    if re.search(r'^~giggle +timezone *$', message.content):
-        if len(match):
-            await set_user_timezone(message, match[0])
+    match = re.search(r'^~giggle +timezone( +([A-Z][A-Z][A-Z]))? *$', message.content)
+    if match:
+        if match[2]:
+            await set_user_timezone(message, match[2])
         else:
             await show_user_timezone(message)
         return
