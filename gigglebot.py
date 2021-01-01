@@ -341,10 +341,10 @@ async def set_user_timezone(message, tz):
     if tz in timezones:
         mydb = giggleDB()
 
-        if message.author.id in user_timezones:
+        if message.author.id in users:
             sql = "UPDATE users SET timezone = %s, name = % WHERE user = %s"
         else:
-            sql = "INSERT INTO user_timezones ( timezone, name, user ) values ( %s, %s )"
+            sql = "INSERT INTO users ( timezone, name, user ) values ( %s, %s )"
 
         mycursor = mydb.cursor()
         mycursor.execute(sql, (tz, message.author.name, message.author.id))
