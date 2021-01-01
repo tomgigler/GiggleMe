@@ -94,7 +94,7 @@ def local_time_to_utc(user_id, time):
         return time
 
 def display_localized_time(user_id, time):
-    if users[user_id].timezone:
+    if user_id in users and users[user_id].timezone:
         return f"{ctime(time + 3600 * timezones[users[user_id].timezone].offset)} {users[user_id].timezone}"
     else:
         return f"{ctime(time)} {localtime(time).tm_zone}"
