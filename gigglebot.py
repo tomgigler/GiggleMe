@@ -276,7 +276,7 @@ async def schedule_delay_message(message):
             except:
                 # At this point, we'll just leave {role} in the message
                 pass
-            await message.delivery_channel.send(content)
+            await message.delivery_channel().send(content)
             delayed_messages[guild.id].pop(message.id)
             if len(delayed_messages[guild.id]) < 1:
                 del delayed_messages[guild.id]
