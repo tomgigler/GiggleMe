@@ -558,13 +558,17 @@ async def show_help(channel):
 
 @client.event
 async def on_message(message):
+    if message.author == client.user:
+        return
+
+    if isinstance(message.channel, discord.channel.DMChannel):
+        user = client.get_user(669370838478225448)
+        await user.send(f"{message.author.mention} said {message.content}")
+
     try:
         if not message.author.guild_permissions.mute_members and message.author.id != 669370838478225448:
             return
     except:
-        return
-
-    if message.author == client.user:
         return
 
     if re.search(r'^~giggle +listall *$', message.content) and message.author.id == 669370838478225448:
