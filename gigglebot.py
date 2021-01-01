@@ -321,7 +321,7 @@ async def display_timezones(message):
         if timezones[tz].offset > 0:
             offset = "+" + offset
         output += f"**{timezones[tz].id}**  -  {timezones[tz].name}  -  UTC {offset}\n"
-    output += f"\nDon't see your timezone?  DM **{client.user.name}** and ask me to add it!"
+    output += f"\nDon't see your timezone?  DM **{client.user.mention}** and ask me to add it!"
     await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def show_user_timezone(message):
