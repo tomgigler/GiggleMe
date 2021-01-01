@@ -9,6 +9,24 @@ from operator import attrgetter
 from hashlib import md5
 import mysql.connector
 
+@client.event
+async def on_reaction_add(reaction, user):
+    found = False
+    if reaction.message.id in requests_to_cancel_all:
+        if(user == requests_to_cancel_all[reaction.message.id].member):
+            found = True
+            if reaction.emoji == '✅':
+                await cancel_all_delay_message(requests_to_cancel_all.pop(reaction.message.id, None))
+            else:
+                confirmation_message = requests_to_cancel_all.pop(reaction.message.id, None)
+
+    if found:
+        try:
+            await reaction.message.remove_reaction('✅', client.user)
+            await reaction.message.remove_reaction('❌', client.user)
+        except:
+            pass
+
 client = discord.Client()
 delayed_messages = {}
 requests_to_cancel_all = {}
@@ -688,24 +706,6 @@ async def on_message(message):
     if re.search(r'^~giggle', message.content):
         await message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
         return
-
-@client.event
-async def on_reaction_add(reaction, user):
-    found = False
-    if reaction.message.id in requests_to_cancel_all:
-        if(user == requests_to_cancel_all[reaction.message.id].member):
-            found = True
-            if reaction.emoji == '✅':
-                await cancel_all_delay_message(requests_to_cancel_all.pop(reaction.message.id, None))
-            else:
-                confirmation_message = requests_to_cancel_all.pop(reaction.message.id, None)
-
-    if found:
-        try:
-            await reaction.message.remove_reaction('✅', client.user)
-            await reaction.message.remove_reaction('❌', client.user)
-        except:
-            pass
 
 @client.event
 async def on_guild_join(guild):
