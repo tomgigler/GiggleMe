@@ -194,7 +194,7 @@ async def process_delay_message(message, delay, channel, description, content):
                 delivery_time = float(time()) + int(delay) * 60
         else:
             try:
-                delivery_time = local_time_to_utc(datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
+                delivery_time = local_time_to_utc(message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
             except:
                 await message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
@@ -354,7 +354,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
                 delivery_time = float(time()) + int(delay) * 60
         else:
             try:
-                delivery_time = local_time_to_utc(datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
+                delivery_time = local_time_to_utc(message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
             except:
                 await message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
