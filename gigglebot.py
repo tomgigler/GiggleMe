@@ -13,7 +13,7 @@ client = discord.Client()
 delayed_messages = {}
 requests_to_cancel_all = {}
 timezones = {}
-user_timezones = {}
+users = {}
 
 class DelayedMessage:
     def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, description, content):
@@ -45,10 +45,15 @@ class ConfirmationRequest:
         self.member = member
 
 class TimeZone:
-    def __init__(self, id, offset, name):
-        self.id = id
+    def __init__(self, offset, name):
         self.offset = offset
         self.name = name
+
+class User:
+    def __init__(self, name, timezone, last_message_id=None):
+        self.name = name
+        self.timezone = timezone
+        self.last_message_id = last_message_id
 
 def giggleDB():
     return mysql.connector.connect(
@@ -60,14 +65,14 @@ def giggleDB():
             )
 
 def local_time_to_utc(user_id, time):
-    if user_id in user_timezones:
-        return time - 3600 * timezones[user_timezones[user_id]].offset
+    if users[user_id].timezone:
+        return time - 3600 * timezones[users[user_id].timezone].offset
     else:
         return time
 
 def display_localized_time(user_id, time):
-    if user_id in user_timezones:
-        return f"{ctime(time + 3600 * timezones[user_timezones[user_id]].offset)} {user_timezones[user_id]}"
+    if users[user_id].timezone:
+        return f"{ctime(time + 3600 * timezones[users[user_id].timezone].offset)} {users[user_id].timezone}"
     else:
         return f"{ctime(time)} {localtime(time).tm_zone}"
 
@@ -154,20 +159,20 @@ async def load_from_db():
     mycursor.close()
     mydb.disconnect()
 
-    load_timezones()
+    load_timezones_and_users()
 
-def load_timezones():
+def load_timezones_and_users():
     mydb = giggleDB()
 
     mycursor = mydb.cursor()
 
     mycursor.execute("select * from timezones")
     for tz in mycursor.fetchall():
-        timezones[tz[0]] = TimeZone(tz[0], tz[1], tz[2])
+        timezones[tz[0]] = TimeZone(tz[1], tz[2])
 
-    mycursor.execute("select * from user_timezones")
-    for user_tz in mycursor.fetchall():
-        user_timezones[user_tz[0]] = user_tz[1]
+    mycursor.execute("select * from users")
+    for user in mycursor.fetchall():
+        users[user[0]] = User(user[1], user[2], user[3])
 
     mycursor.close()
     mydb.disconnect()
@@ -321,13 +326,13 @@ async def display_timezones(message):
         offset = f"{timezones[tz].offset}"
         if timezones[tz].offset > 0:
             offset = "+" + offset
-        output += f"**{timezones[tz].id}**  -  {timezones[tz].name}  -  UTC {offset}\n"
+        output += f"**{tz}**  -  {timezones[tz].name}  -  UTC {offset}\n"
     output += f"\nDon't see your time zone?  DM **{client.user.mention}** and ask me to add it!"
     await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def show_user_timezone(message):
-    if message.author.id in user_timezones:
-        output = f"Your time zone is currently set to:  **{user_timezones[message.author.id]}**"
+    if message.author.id in users and users[message.author.id].timezone:
+        output = f"Your time zone is currently set to:  **{users[message.author.id].timezone}**"
     else:
         output = "Your time zone is not set.  You are using the default time zone (UTC)"
     await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
@@ -336,18 +341,20 @@ async def set_user_timezone(message, tz):
     if tz in timezones:
         mydb = giggleDB()
 
-        if message.author.id in user_timezones:
-            sql = "UPDATE user_timezones SET timezone = %s WHERE user = %s"
+        if message.author.id in users:
+            sql = "UPDATE users SET timezone = %s, name = %s WHERE user = %s"
         else:
-            sql = "INSERT INTO user_timezones ( timezone, user ) values ( %s, %s )"
+            sql = "INSERT INTO users ( timezone, name, user ) values ( %s, %s, %s )"
 
         mycursor = mydb.cursor()
-        mycursor.execute(sql, (tz, message.author.id))
+        mycursor.execute(sql, (tz, message.author.name, message.author.id))
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
 
-        user_timezones[message.author.id] = tz
+        if message.author.id not in users:
+            users[message.author.id] = User(message.author.name, tz)
+        users[message.author.id].timezone = tz
         await message.channel.send(embed=discord.Embed(description=f"Your time zone has been set to {tz}", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
@@ -664,6 +671,6 @@ async def on_guild_join(guild):
     user = client.get_user(669370838478225448)
     await user.send(f"{client.user.name} bot joined {guild.name}")
 
-load_timezones()
+load_timezones_and_users()
 
 client.run(settings.bot_token)
