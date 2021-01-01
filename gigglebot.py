@@ -50,7 +50,7 @@ class TimeZone:
         self.name = name
 
 class User:
-    def __init__(self, name, timezone, last_message_id):
+    def __init__(self, name, timezone, last_message_id=None):
         self.name = name
         self.timezone = timezone
         self.last_message_id = last_message_id
@@ -352,6 +352,8 @@ async def set_user_timezone(message, tz):
         mycursor.close()
         mydb.disconnect()
 
+        if message.author.id not in users:
+            users[message.author.id] = User(message.author.name, tz)
         users[message.author.id].timezone = tz
         await message.channel.send(embed=discord.Embed(description=f"Your time zone has been set to {tz}", color=0x00ff00))
     else:
