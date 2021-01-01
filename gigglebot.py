@@ -25,14 +25,14 @@ class DelayedMessage:
         self.description = description
         self.content = content
 
-    async def guild(self):
+    def guild(self):
         return discord.utils.get(client.guilds, id=self.guild_id)
 
-    async def delivery_channel(self):
+    def delivery_channel(self):
         guild = discord.utils.get(client.guilds, id=self.guild_id)
         return discord.utils.get(guild.text_channels, id=self.delivery_channel_id)
 
-    async def author(self):
+    def author(self):
         return client.get_user(self.author_id)
 
     @staticmethod
@@ -255,8 +255,7 @@ def replace_mentions(content, guild_id):
 
 async def schedule_delay_message(message):
 
-    guild = await message.guild()
-    delivery_channel = await message.delivery_channel()
+    guild = message.guild()
 
     if message.delivery_time == 0:
         delay = 0
@@ -277,7 +276,7 @@ async def schedule_delay_message(message):
             except:
                 # At this point, we'll just leave {role} in the message
                 pass
-            await delivery_channel.send(content)
+            await message.delivery_channel.send(content)
             delayed_messages[guild.id].pop(message.id)
             if len(delayed_messages[guild.id]) < 1:
                 del delayed_messages[guild.id]
@@ -290,15 +289,13 @@ async def list_delay_messages(message):
 
         for msg_id in sorted_messages:
             msg = delayed_messages[message.guild.id][msg_id]
-            author = await msg.author()
-            delivery_channel = await msg.delivery_channel()
             output += f"> \n> **ID:**  {msg.id}\n"
-            output += f"> **Author:**  {author.name}\n"
-            output += f"> **Channel:**  {delivery_channel.name}\n"
+            output += f"> **Author:**  {msg.author().name}\n"
+            output += f"> **Channel:**  {msg.delivery_channel().name}\n"
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                output += f"> **Deliver:**  {display_localized_time(author.id, msg.delivery_time)}\n"
+                output += f"> **Deliver:**  {display_localized_time(message.author.id, msg.delivery_time)}\n"
             output += f"> **Description:**  {msg.description}\n"
         await message.channel.send(output + "> \n> **====================**\n")
     else:
@@ -311,12 +308,10 @@ async def list_all_delay_messages(message):
         for guild_id in delayed_messages:
             for msg_id in delayed_messages[guild_id]:
                 msg = delayed_messages[guild_id][msg_id]
-                author = await msg.author()
-                delivery_channel = await msg.delivery_channel()
                 output += f"> \n> **ID:**  {msg.id}\n"
-                output += f"> **Author:**  {author.name}\n"
-                output += f"> **Server:**  {client.get_guild(guild_id)}\n"
-                output += f"> **Channel:**  {delivery_channel.name}\n"
+                output += f"> **Author:**  {msg.author().name}\n"
+                output += f"> **Server:**  {msg.guild().name)}\n"
+                output += f"> **Channel:**  {msg.delivery_channel().name}\n"
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
@@ -373,10 +368,8 @@ async def show_delay_message(message, msg_num):
         for msg_id in delayed_messages[guild_id]:
             if msg_id == msg_num:
                 msg = delayed_messages[guild_id][msg_id]
-                author = await msg.author()
-                delivery_channel = await msg.delivery_channel()
-                content = f"**Author:**  {author.name}\n"
-                content += f"**Deliver to:**  {delivery_channel.name}\n"
+                content = f"**Author:**  {msg.author().name}\n"
+                content += f"**Deliver to:**  {msg.delivery_channel().name}\n"
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
