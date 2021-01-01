@@ -352,7 +352,7 @@ async def set_user_timezone(message, tz):
         mydb.disconnect()
 
         user_timezones[message.author.id] = tz
-        await message.channel.send(embed=discord.Embed(description=f"Time zone set to {tz}", color=0x00ff00))
+        await message.channel.send(embed=discord.Embed(description=f"Your time zone has been set to {tz}", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
 
