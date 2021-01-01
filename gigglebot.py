@@ -34,15 +34,21 @@ class ConfirmationRequest:
         self.confirmation_message = confirmation_message
         self.member = member
 
+class TimeZone:
+    def __init__(self, id, offset, name):
+        self.id = id
+        self.offset = offset
+        self.name = name
+
 def local_time_to_utc(user_id, time):
     if user_id in user_timezones:
-        return time - 3600 * timezones[user_timezones[user_id]]
+        return time - 3600 * timezones[user_timezones[user_id]].offset
     else:
         return time
 
 def display_localized_time(user_id, time):
     if user_id in user_timezones:
-        return f"{ctime(time + 3600 * timezones[user_timezones[user_id]])} {user_timezones[user_id]}"
+        return f"{ctime(time + 3600 * timezones[user_timezones[user_id]]).offset} {user_timezones[user_id]}"
     else:
         return f"{ctime(time)} {localtime(time).tm_zone}"
 
@@ -156,7 +162,7 @@ async def load_from_db():
 
     mycursor.execute("select * from timezones")
     for tz in mycursor.fetchall():
-        timezones[tz[0]] = tz[1]
+        timezones[tz[0]] = TimeZone(tz[0], tz[1], tz[2])
 
     mycursor.execute("select * from user_timezones")
     for user_tz in mycursor.fetchall():
@@ -307,6 +313,12 @@ async def list_all_delay_messages(message):
         await message.channel.send(output + "> \n> **====================**\n")
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+
+async def display_timezones(message):
+    output = "Available TimeZones\n===================\n\n"
+    for tz in timezones:
+        output += f"{tz.id} - {tz.name}\n"
+    message.channel.send(output)
 
 async def show_delay_message(message, msg_num):
     message_found = False
@@ -565,6 +577,10 @@ async def on_message(message):
 
     if re.search(r'^~giggle +help *$', message.content):
         await show_help(message.channel)
+        return
+
+    if re.search(r'^~giggle +timezones *$', message.content):
+        await display_timezones(message)
         return
 
     if re.search(r'^~giggle', message.content):
