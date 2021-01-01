@@ -166,6 +166,20 @@ async def load_from_db():
                         delayed_messages[g_id][message_id] = newMessage
                         loop.create_task(schedule_delay_message(newMessage))
 
+    mycursor.close()
+    mydb.disconnect()
+
+def load_timezones():
+    mydb = mysql.connector.connect(
+            host="localhost",
+            user=settings.db_user,
+            password=settings.db_password,
+            database=settings.database,
+            charset='utf8mb4'
+            )
+
+    mycursor = mydb.cursor()
+
     mycursor.execute("select * from timezones")
     for tz in mycursor.fetchall():
         timezones[tz[0]] = TimeZone(tz[0], tz[1], tz[2])
@@ -673,5 +687,7 @@ async def on_reaction_add(reaction, user):
 async def on_guild_join(guild):
     user = client.get_user(669370838478225448)
     await user.send(f"{client.user.name} bot joined {guild.name}")
+
+load_timezones()
 
 client.run(settings.bot_token)
