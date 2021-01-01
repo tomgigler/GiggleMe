@@ -25,15 +25,15 @@ class DelayedMessage:
         self.description = description
         self.content = content
 
-    async def guild():
+    async def guild(self):
         return discord.utils.get(client.guilds, id=self.guild_id)
 
-    async def delivery_channel():
+    async def delivery_channel(self):
         guild = discord.utils.get(client.guilds, id=self.guild_id)
         return discord.utils.get(guild.text_channels, id=self.delivery_channel_id)
 
-    async def author():
-        return client.get_user(author_id)
+    async def author(self):
+        return client.get_user(self.author_id)
 
     @staticmethod
     def id_gen(id):
@@ -308,10 +308,12 @@ async def list_all_delay_messages(message):
         for guild_id in delayed_messages:
             for msg_id in delayed_messages[guild_id]:
                 msg = delayed_messages[guild_id][msg_id]
+                author = await msg.author()
+                delivery_channel = await msg.delivery_channel()
                 output += f"> \n> **ID:**  {msg.id}\n"
-                output += f"> **Author:**  {msg.author().name}\n"
+                output += f"> **Author:**  {author.name}\n"
                 output += f"> **Server:**  {client.get_guild(guild_id)}\n"
-                output += f"> **Channel:**  {msg.delivery_channel().name}\n"
+                output += f"> **Channel:**  {delivery_channel.name}\n"
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
