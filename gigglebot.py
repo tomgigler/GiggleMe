@@ -552,6 +552,15 @@ async def show_help(channel):
     `~giggle cancel all`
     Cancel all delayed messages scheduled by you.  You will be prompted for confirmation
 
+    `~giggle timezone <time zone>`
+    Set your time zone to <time zone>
+
+    `~giggle timezone`
+    Display your current time zone
+
+    `~giggle timezones`
+    Display a list of available time zones
+
     `~giggle help`
     Show this help"""
     await channel.send(embed=discord.Embed(description=helpOutput))
