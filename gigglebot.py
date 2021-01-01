@@ -63,7 +63,7 @@ class User:
         self.name = name
         self.timezone = timezone
         self.last_message_id = last_message_id
-        
+
     def set_last_message(self, user_id, message_id):
         mydb = giggleDB()
 
@@ -260,7 +260,7 @@ async def process_delay_message(message, delay, channel, description, content):
             users[message.author.id].save(message.author.id)
 
         users[message.author.id].set_last_message(message.author.id, newMessage.id)
-        
+
         await schedule_delay_message(newMessage)
 
 def replace_mentions(content, guild_id):
@@ -493,7 +493,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
                 users[message.author.id].save(message.author.id)
 
             users[message.author.id].set_last_message(message.author.id, newMessage.id)
-        
+
             await message.channel.send(embed=embed)
 
         else:
