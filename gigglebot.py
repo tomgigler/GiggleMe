@@ -324,6 +324,21 @@ async def display_timezones(message):
     output += f"\nDon't see your timezone?  DM **{client.user.name}** and ask me to add it!"
     await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
+async def show_user_timezone(message):
+    if message.author.id in user_timezones:
+        output = f"Your time zone is currently set to:  **{user_timezones[message.author.id]}"
+    else:
+        output = "Your time zone is not set.  You are using the default time zone (UTC)"
+    await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+
+async def set_user_timezone(message, tz):
+    if tz in timezones:
+        user_timezones[message.author.id] = tz
+        # TODO: update user timezone in the database in the database
+        await message.channel.send(embed=discord.Embed(description=f"Time zone set to {tz}", color=0x00ff00))
+    else:
+        await message.channel.send(embed=discord.Embed(description=f"Time zone {tz} not found\nDM **{client.user.name}** and ask me to add it!", color=0xff0000))
+
 async def show_delay_message(message, msg_num):
     message_found = False
     for guild_id in delayed_messages:
@@ -581,6 +596,14 @@ async def on_message(message):
 
     if re.search(r'^~giggle +help *$', message.content):
         await show_help(message.channel)
+        return
+
+    match = re.search(r'^~giggle +timezone( +([A-Z]{3}))? *$', message.content):
+    if re.search(r'^~giggle +timezone *$', message.content):
+        if len(match):
+            await set_user_timezone(message, match[0])
+        else:
+            await show_user_timezone(message)
         return
 
     if re.search(r'^~giggle +timezones *$', message.content):
