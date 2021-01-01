@@ -34,6 +34,12 @@ class ConfirmationRequest:
         self.confirmation_message = confirmation_message
         self.member = member
 
+def local_time_to_utc(user_id, time):
+    if user_id in user_timezones:
+        return time - 3600 * timezones[user_timezones[user_id]]
+    else:
+        return time
+
 def display_localized_time(user_id, time):
     if user_id in user_timezones:
         return f"{ctime(time + 3600 * timezones[user_timezones[user_id]])} {user_timezones[user_id]}"
@@ -188,7 +194,7 @@ async def process_delay_message(message, delay, channel, description, content):
                 delivery_time = float(time()) + int(delay) * 60
         else:
             try:
-                delivery_time = datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp()
+                delivery_time = local_time_to_utc(datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
             except:
                 await message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
@@ -348,7 +354,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
                 delivery_time = float(time()) + int(delay) * 60
         else:
             try:
-                delivery_time = datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp()
+                delivery_time = local_time_to_utc(datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
             except:
                 await message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
