@@ -298,7 +298,7 @@ async def list_delay_messages(message):
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                output += f"> **Deliver:**  {display_localized_time(message.author().id, msg.delivery_time)}\n"
+                output += f"> **Deliver:**  {display_localized_time(author.id, msg.delivery_time)}\n"
             output += f"> **Description:**  {msg.description}\n"
         await message.channel.send(output + "> \n> **====================**\n")
     else:
@@ -443,12 +443,14 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
             embed = discord.Embed(description="Message edited", color=0x00ff00)
             if channel:
                 msg.delivery_channel_id = delivery_channel.id
-                embed.add_field(name="Channel", value=f"{msg.delivery_channel.name}", inline=False)
+                embed.add_field(name="Channel", value=f"{delivery_channel.name}", inline=False)
             if description:
                 msg.description = description
+                embed.add_field(name="Description", value=f"{description}", inline=False)
             if content:
                 msg.content = content
             if delay:
+                loop = asyncio.get_event_loop()
                 newMessage =  DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.description, msg.content)
                 if message.guild.id not in delayed_messages:
                     delayed_messages[message.guild.id] = {}
@@ -457,7 +459,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
                     embed.add_field(name="Deliver", value="Now", inline=False)
                 else:
                     embed.add_field(name="Deliver", value=f"{display_localized_time(message.author.id, newMessage.delivery_time)}", inline=False)
-                await schedule_delay_message(newMessage)
+                loop.create_task(schedule_delay_message(newMessage))
                 update_db(newMessage)
             else:
                 update_db(msg)
