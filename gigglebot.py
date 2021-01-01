@@ -34,6 +34,13 @@ class ConfirmationRequest:
         self.confirmation_message = confirmation_message
         self.member = member
 
+def display_localized_time(user_id, time):
+    if user_id in user_timezones:
+        return = f"{ctime(time - 3600 * timezones[user_timezones[user_id]])} {user_timezones[user_id]}"
+    else:
+        local_delivery_time = f"{ctime(time)} {localtime(time).tm_zone}"
+
+
 def insert_into_db(message):
     mydb = mysql.connector.connect(
             host="localhost",
@@ -200,11 +207,7 @@ async def process_delay_message(message, delay, channel, description, content):
         if delivery_time == 0:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
         else:
-            if message.user.id in user_timezones:
-                local_delivery_time = f"{ctime(newMessage.delivery_time - 3600 * timezones[user_timezones[message.user.id]])} {user_timezones[message.user.id]}"
-            else:
-                local_delivery_time = f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}"
-            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server {local_delivery_time}", color=0x00ff00)
+            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server {display_localized_time(message.author.id, newMessage.delivery_time)}", color=0x00ff00)
             embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
             await message.channel.send(embed=embed)
 
@@ -275,7 +278,7 @@ async def list_delay_messages(message):
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                output += f"> **Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
+                output += f"> **Deliver:**  {display_localized_time(message.author.id, msg.delivery_time)}\n"
             output += f"> **Description:**  {msg.description}\n"
         await message.channel.send(output + "> \n> **====================**\n")
     else:
@@ -295,7 +298,7 @@ async def list_all_delay_messages(message):
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
-                    output += f"> **Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
+                    output += f"> **Deliver:**  {display_localized_time(message.author.id, msg.delivery_time)}\n"
         await message.channel.send(output + "> \n> **====================**\n")
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
@@ -311,7 +314,7 @@ async def show_delay_message(message, msg_num):
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
-                    content += f"**Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
+                    content += f"**Deliver:**  {display_localized_time(message.author.id, msg.delivery_time)}\n"
                 content += f"**Description:**  {msg.description}\n"
                 content += msg.content
                 await message.channel.send(content)
@@ -387,7 +390,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
                 if delivery_time == 0:
                     embed.add_field(name="Deliver", value="Now", inline=False)
                 else:
-                    embed.add_field(name="Deliver", value=f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", inline=False)
+                    embed.add_field(name="Deliver", value=f"{display_localized_time(message.author.id, newMessage.delivery_time)}", inline=False)
                 await schedule_delay_message(newMessage)
                 update_db(newMessage)
             else:
