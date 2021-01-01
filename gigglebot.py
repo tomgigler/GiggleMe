@@ -15,6 +15,15 @@ requests_to_cancel_all = {}
 timezones = {}
 users = {}
 
+def giggleDB():
+    return mysql.connector.connect(
+            host="localhost",
+            user=settings.db_user,
+            password=settings.db_password,
+            database=settings.database,
+            charset='utf8mb4'
+            )
+
 class DelayedMessage:
     def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, description, content):
         self.id = id
@@ -54,15 +63,28 @@ class User:
         self.name = name
         self.timezone = timezone
         self.last_message_id = last_message_id
+        
+    def set_last_message(self, id):
+        mydb = giggleDB()
 
-def giggleDB():
-    return mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
+        sql = "UPDATE users SET last_message_id = %s WHERE user = %s"
+
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, (id, self.id))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
+
+    def save(self):
+        mydb = giggleDB()
+
+        sql = "INSERT into users values ( %s, %s, %s, %s )"
+
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, (self.id, self.name, self.timezone, self.last_message_id))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
 
 def local_time_to_utc(user_id, time):
     if users[user_id].timezone:
@@ -230,8 +252,14 @@ async def process_delay_message(message, delay, channel, description, content):
 
         if message.guild.id not in delayed_messages:
             delayed_messages[message.guild.id] = {}
-        delayed_messages[message.guild.id][DelayedMessage.id_gen(message.id)] = newMessage
+        delayed_messages[message.guild.id][newMessage.id] = newMessage
 
+        if message.author.id not in users:
+            users[message.author.id] = User(message.author.name, None)
+            users[message.author.id].save()
+
+        users[message.author.id].set_last_message(newMessage.id)
+        
         await schedule_delay_message(newMessage)
 
 def replace_mentions(content, guild_id):
