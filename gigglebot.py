@@ -64,24 +64,24 @@ class User:
         self.timezone = timezone
         self.last_message_id = last_message_id
         
-    def set_last_message(self, id):
+    def set_last_message(self, user_id, message_id):
         mydb = giggleDB()
 
         sql = "UPDATE users SET last_message_id = %s WHERE user = %s"
 
         mycursor = mydb.cursor()
-        mycursor.execute(sql, (id, self.id))
+        mycursor.execute(sql, (message_id, user_id))
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
 
-    def save(self):
+    def save(self, user_id):
         mydb = giggleDB()
 
         sql = "INSERT into users values ( %s, %s, %s, %s )"
 
         mycursor = mydb.cursor()
-        mycursor.execute(sql, (self.id, self.name, self.timezone, self.last_message_id))
+        mycursor.execute(sql, (user_id, self.name, self.timezone, self.last_message_id))
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
@@ -256,9 +256,9 @@ async def process_delay_message(message, delay, channel, description, content):
 
         if message.author.id not in users:
             users[message.author.id] = User(message.author.name, None)
-            users[message.author.id].save()
+            users[message.author.id].save(message.author.id)
 
-        users[message.author.id].set_last_message(newMessage.id)
+        users[message.author.id].set_last_message(message.author.id, newMessage.id)
         
         await schedule_delay_message(newMessage)
 
