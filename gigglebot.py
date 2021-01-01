@@ -326,13 +326,13 @@ async def display_timezones(message):
         offset = f"{timezones[tz].offset}"
         if timezones[tz].offset > 0:
             offset = "+" + offset
-        output += f"**{timezones[tz].id}**  -  {timezones[tz].name}  -  UTC {offset}\n"
+        output += f"**{timezones[tz]}**  -  {timezones[tz].name}  -  UTC {offset}\n"
     output += f"\nDon't see your time zone?  DM **{client.user.mention}** and ask me to add it!"
     await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def show_user_timezone(message):
-    if message.author.id in user_timezones:
-        output = f"Your time zone is currently set to:  **{user_timezones[message.author.id]}**"
+    if message.author.id in users and users[message.author.id].timezone:
+        output = f"Your time zone is currently set to:  **{users[message.author.id].timezone}**"
     else:
         output = "Your time zone is not set.  You are using the default time zone (UTC)"
     await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
@@ -352,7 +352,7 @@ async def set_user_timezone(message, tz):
         mycursor.close()
         mydb.disconnect()
 
-        user_timezones[message.author.id] = tz
+        users[message.author.id].timezone = tz
         await message.channel.send(embed=discord.Embed(description=f"Your time zone has been set to {tz}", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
