@@ -389,6 +389,9 @@ async def set_user_timezone(message, tz):
 
 async def show_delay_message(message, msg_num):
     message_found = False
+    if msg_num == 'last':
+        if message.author.id in users:
+            msg_num = users[message.author.id].last_message_id
     for guild_id in delayed_messages:
         for msg_id in delayed_messages[guild_id]:
             if msg_id == msg_num:
@@ -482,6 +485,12 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
             else:
                 update_db(msg)
 
+            if message.author.id not in users:
+                users[message.author.id] = User(message.author.name, None)
+                users[message.author.id].save(message.author.id)
+
+            users[message.author.id].set_last_message(message.author.id, newMessage.id)
+        
             await message.channel.send(embed=embed)
 
         else:
