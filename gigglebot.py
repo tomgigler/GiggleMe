@@ -36,9 +36,9 @@ class ConfirmationRequest:
 
 def display_localized_time(user_id, time):
     if user_id in user_timezones:
-        return = f"{ctime(time - 3600 * timezones[user_timezones[user_id]])} {user_timezones[user_id]}"
+        return f"{ctime(time - 3600 * timezones[user_timezones[user_id]])} {user_timezones[user_id]}"
     else:
-        local_delivery_time = f"{ctime(time)} {localtime(time).tm_zone}"
+        return local_delivery_time = f"{ctime(time)} {localtime(time).tm_zone}"
 
 
 def insert_into_db(message):
