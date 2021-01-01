@@ -315,10 +315,14 @@ async def list_all_delay_messages(message):
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def display_timezones(message):
-    output = "Available TimeZones\n===================\n\n"
+    output = "**Available Time Zones**\n**=============================**\n"
     for tz in timezones:
-        output += f"{timezones[tz].id} - {timezones[tz].name}\n"
-    message.channel.send(output)
+        offset = f"{timezones[tz].offset}"
+        if timezones[tz].offset > 0:
+            offset = "+" + offset
+        output += f"**{timezones[tz].id}**  -  {timezones[tz].name}  -  UTC {offset}\n"
+    output += f"\nDon't see your timezone?  DM **{client.user.name}** and ask me to add it!"
+    await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def show_delay_message(message, msg_num):
     message_found = False
