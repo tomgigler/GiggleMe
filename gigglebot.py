@@ -310,7 +310,7 @@ async def list_all_delay_messages(message):
                 msg = delayed_messages[guild_id][msg_id]
                 output += f"> \n> **ID:**  {msg.id}\n"
                 output += f"> **Author:**  {msg.author().name}\n"
-                output += f"> **Server:**  {msg.guild().name)}\n"
+                output += f"> **Server:**  {msg.guild().name}\n"
                 output += f"> **Channel:**  {msg.delivery_channel().name}\n"
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
