@@ -333,8 +333,25 @@ async def show_user_timezone(message):
 
 async def set_user_timezone(message, tz):
     if tz in timezones:
+        mydb = mysql.connector.connect(
+                host="localhost",
+                user=settings.db_user,
+                password=settings.db_password,
+                database=settings.database,
+                charset='utf8mb4'
+                )
+        if message.author.id in user_timezones:
+            sql = "UPDATE user_timezones SET timezone = %s WHERE user = %s"
+        else:
+            sql = "INSERT INTO user_timezones ( timezone, user ) values ( %s, %s )"
+
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, (tz, message.author.id))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
+
         user_timezones[message.author.id] = tz
-        # TODO: update user timezone in the database in the database
         await message.channel.send(embed=discord.Embed(description=f"Time zone set to {tz}", color=0x00ff00))
     else:
         await message.channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
