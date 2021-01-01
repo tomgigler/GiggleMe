@@ -200,7 +200,11 @@ async def process_delay_message(message, delay, channel, description, content):
         if delivery_time == 0:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
         else:
-            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server {ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", color=0x00ff00)
+            if message.user.id in user_timezones:
+                local_delivery_time = f"{ctime(newMessage.delivery_time - 3600 * timezones[user_timezones[message.user.id]])} {user_timezones[message.user.id]}"
+            else:
+                local_delivery_time = f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}"
+            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server {local_delivery_time}", color=0x00ff00)
             embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
             await message.channel.send(embed=embed)
 
