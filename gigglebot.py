@@ -12,6 +12,8 @@ import mysql.connector
 client = discord.Client()
 delayed_messages = {}
 requests_to_cancel_all = {}
+timezones = {}
+user_timezones = {}
 
 class DelayedMessage:
     def __init__(self, id, guild, delivery_channel, delivery_time, author, description, content):
@@ -31,6 +33,24 @@ class ConfirmationRequest:
     def __init__(self, confirmation_message, member):
         self.confirmation_message = confirmation_message
         self.member = member
+
+class TimeZone:
+    def __init__(self, id, offset, name):
+        self.id = id
+        self.offset = offset
+        self.name = name
+
+def local_time_to_utc(user_id, time):
+    if user_id in user_timezones:
+        return time - 3600 * timezones[user_timezones[user_id]].offset
+    else:
+        return time
+
+def display_localized_time(user_id, time):
+    if user_id in user_timezones:
+        return f"{ctime(time + 3600 * timezones[user_timezones[user_id]].offset)} {user_timezones[user_id]}"
+    else:
+        return f"{ctime(time)} {localtime(time).tm_zone}"
 
 def insert_into_db(message):
     mydb = mysql.connector.connect(
@@ -140,6 +160,14 @@ async def load_from_db():
                         delayed_messages[g_id][message_id] = newMessage
                         loop.create_task(schedule_delay_message(newMessage))
 
+    mycursor.execute("select * from timezones")
+    for tz in mycursor.fetchall():
+        timezones[tz[0]] = TimeZone(tz[0], tz[1], tz[2])
+
+    mycursor.execute("select * from user_timezones")
+    for user_tz in mycursor.fetchall():
+        user_timezones[user_tz[0]] = user_tz[1]
+
     mycursor.close()
     mydb.disconnect()
 
@@ -172,7 +200,7 @@ async def process_delay_message(message, delay, channel, description, content):
                 delivery_time = float(time()) + int(delay) * 60
         else:
             try:
-                delivery_time = datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp()
+                delivery_time = local_time_to_utc(message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
             except:
                 await message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
@@ -190,7 +218,7 @@ async def process_delay_message(message, delay, channel, description, content):
         if delivery_time == 0:
             await message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server now", color=0x00ff00))
         else:
-            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server {ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", color=0x00ff00)
+            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {message.guild.name} server {display_localized_time(message.author.id, newMessage.delivery_time)}", color=0x00ff00)
             embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
             await message.channel.send(embed=embed)
 
@@ -261,7 +289,7 @@ async def list_delay_messages(message):
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                output += f"> **Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
+                output += f"> **Deliver:**  {display_localized_time(message.author.id, msg.delivery_time)}\n"
             output += f"> **Description:**  {msg.description}\n"
         await message.channel.send(output + "> \n> **====================**\n")
     else:
@@ -281,10 +309,52 @@ async def list_all_delay_messages(message):
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
-                    output += f"> **Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
+                    output += f"> **Deliver:**  {display_localized_time(message.author.id, msg.delivery_time)}\n"
         await message.channel.send(output + "> \n> **====================**\n")
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+
+async def display_timezones(message):
+    output = "**Available Time Zones**\n**=============================**\n"
+    for tz in timezones:
+        offset = f"{timezones[tz].offset}"
+        if timezones[tz].offset > 0:
+            offset = "+" + offset
+        output += f"**{timezones[tz].id}**  -  {timezones[tz].name}  -  UTC {offset}\n"
+    output += f"\nDon't see your timezone?  DM **{client.user.name}** and ask me to add it!"
+    await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+
+async def show_user_timezone(message):
+    if message.author.id in user_timezones:
+        output = f"Your time zone is currently set to:  **{user_timezones[message.author.id]}**"
+    else:
+        output = "Your time zone is not set.  You are using the default time zone (UTC)"
+    await message.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+
+async def set_user_timezone(message, tz):
+    if tz in timezones:
+        mydb = mysql.connector.connect(
+                host="localhost",
+                user=settings.db_user,
+                password=settings.db_password,
+                database=settings.database,
+                charset='utf8mb4'
+                )
+        if message.author.id in user_timezones:
+            sql = "UPDATE user_timezones SET timezone = %s WHERE user = %s"
+        else:
+            sql = "INSERT INTO user_timezones ( timezone, user ) values ( %s, %s )"
+
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, (tz, message.author.id))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
+
+        user_timezones[message.author.id] = tz
+        await message.channel.send(embed=discord.Embed(description=f"Time zone set to {tz}", color=0x00ff00))
+    else:
+        await message.channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
 
 async def show_delay_message(message, msg_num):
     message_found = False
@@ -297,7 +367,7 @@ async def show_delay_message(message, msg_num):
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
-                    content += f"**Deliver:**  {ctime(msg.delivery_time)} {localtime(msg.delivery_time).tm_zone}\n"
+                    content += f"**Deliver:**  {display_localized_time(message.author.id, msg.delivery_time)}\n"
                 content += f"**Description:**  {msg.description}\n"
                 content += msg.content
                 await message.channel.send(content)
@@ -332,7 +402,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
                 delivery_time = float(time()) + int(delay) * 60
         else:
             try:
-                delivery_time = datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp()
+                delivery_time = local_time_to_utc(message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
             except:
                 await message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
@@ -373,7 +443,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
                 if delivery_time == 0:
                     embed.add_field(name="Deliver", value="Now", inline=False)
                 else:
-                    embed.add_field(name="Deliver", value=f"{ctime(newMessage.delivery_time)} {localtime(newMessage.delivery_time).tm_zone}", inline=False)
+                    embed.add_field(name="Deliver", value=f"{display_localized_time(message.author.id, newMessage.delivery_time)}", inline=False)
                 await schedule_delay_message(newMessage)
                 update_db(newMessage)
             else:
@@ -488,13 +558,17 @@ async def show_help(channel):
 
 @client.event
 async def on_message(message):
+    if message.author == client.user:
+        return
+
+    if isinstance(message.channel, discord.channel.DMChannel):
+        user = client.get_user(669370838478225448)
+        await user.send(f"{message.author.mention} said {message.content}")
+
     try:
         if not message.author.guild_permissions.mute_members and message.author.id != 669370838478225448:
             return
     except:
-        return
-
-    if message.author == client.user:
         return
 
     if re.search(r'^~giggle +listall *$', message.content) and message.author.id == 669370838478225448:
@@ -543,6 +617,18 @@ async def on_message(message):
 
     if re.search(r'^~giggle +help *$', message.content):
         await show_help(message.channel)
+        return
+
+    match = re.search(r'^~giggle +timezone( +([A-Z][A-Z][A-Z]))? *$', message.content)
+    if match:
+        if match[2]:
+            await set_user_timezone(message, match[2])
+        else:
+            await show_user_timezone(message)
+        return
+
+    if re.search(r'^~giggle +timezones *$', message.content):
+        await display_timezones(message)
         return
 
     if re.search(r'^~giggle', message.content):
