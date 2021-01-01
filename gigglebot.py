@@ -50,6 +50,15 @@ class TimeZone:
         self.offset = offset
         self.name = name
 
+def giggleDB():
+    return mysql.connector.connect(
+            host="localhost",
+            user=settings.db_user,
+            password=settings.db_password,
+            database=settings.database,
+            charset='utf8mb4'
+            )
+
 def local_time_to_utc(user_id, time):
     if user_id in user_timezones:
         return time - 3600 * timezones[user_timezones[user_id]].offset
@@ -63,13 +72,7 @@ def display_localized_time(user_id, time):
         return f"{ctime(time)} {localtime(time).tm_zone}"
 
 def insert_into_db(message):
-    mydb = mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
+    mydb = giggleDB()
 
     mycursor = mydb.cursor()
     sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s)"
@@ -79,13 +82,7 @@ def insert_into_db(message):
     mydb.disconnect()
 
 def update_db(message):
-    mydb = mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
+    mydb = giggleDB()
 
     mycursor = mydb.cursor()
     sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s, description = %s WHERE id = %s"
@@ -95,13 +92,7 @@ def update_db(message):
     mydb.disconnect()
 
 def delete_from_db(id):
-    mydb = mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
+    mydb = giggleDB()
 
     mycursor = mydb.cursor()
     mycursor.execute(f"DELETE FROM messages WHERE id='{id}'")
@@ -110,13 +101,7 @@ def delete_from_db(id):
     mydb.disconnect()
 
 async def load_from_db():
-    mydb = mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
+    mydb = giggleDB()
 
     message_id_list = list()
     for guild_id in delayed_messages:
@@ -169,14 +154,10 @@ async def load_from_db():
     mycursor.close()
     mydb.disconnect()
 
+    load_timezones()
+
 def load_timezones():
-    mydb = mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
+    mydb = giggleDB()
 
     mycursor = mydb.cursor()
 
@@ -353,13 +334,8 @@ async def show_user_timezone(message):
 
 async def set_user_timezone(message, tz):
     if tz in timezones:
-        mydb = mysql.connector.connect(
-                host="localhost",
-                user=settings.db_user,
-                password=settings.db_password,
-                database=settings.database,
-                charset='utf8mb4'
-                )
+        mydb = giggleDB()
+
         if message.author.id in user_timezones:
             sql = "UPDATE user_timezones SET timezone = %s WHERE user = %s"
         else:
