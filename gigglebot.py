@@ -344,7 +344,7 @@ async def set_user_timezone(message, tz):
         if message.author.id in users:
             sql = "UPDATE users SET timezone = %s, name = % WHERE user = %s"
         else:
-            sql = "INSERT INTO users ( timezone, name, user ) values ( %s, %s )"
+            sql = "INSERT INTO users ( timezone, name, user ) values ( %s, %s, %s )"
 
         mycursor = mydb.cursor()
         mycursor.execute(sql, (tz, message.author.name, message.author.id))
