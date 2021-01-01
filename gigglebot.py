@@ -15,6 +15,15 @@ requests_to_cancel_all = {}
 timezones = {}
 users = {}
 
+def giggleDB():
+    return mysql.connector.connect(
+            host="localhost",
+            user=settings.db_user,
+            password=settings.db_password,
+            database=settings.database,
+            charset='utf8mb4'
+            )
+
 class DelayedMessage:
     def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, description, content):
         self.id = id
@@ -54,15 +63,28 @@ class User:
         self.name = name
         self.timezone = timezone
         self.last_message_id = last_message_id
+        
+    def set_last_message(self, user_id, message_id):
+        mydb = giggleDB()
 
-def giggleDB():
-    return mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
+        sql = "UPDATE users SET last_message_id = %s WHERE user = %s"
+
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, (message_id, user_id))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
+
+    def save(self, user_id):
+        mydb = giggleDB()
+
+        sql = "INSERT into users values ( %s, %s, %s, %s )"
+
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, (user_id, self.name, self.timezone, self.last_message_id))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
 
 def local_time_to_utc(user_id, time):
     if users[user_id].timezone:
@@ -230,8 +252,14 @@ async def process_delay_message(message, delay, channel, description, content):
 
         if message.guild.id not in delayed_messages:
             delayed_messages[message.guild.id] = {}
-        delayed_messages[message.guild.id][DelayedMessage.id_gen(message.id)] = newMessage
+        delayed_messages[message.guild.id][newMessage.id] = newMessage
 
+        if message.author.id not in users:
+            users[message.author.id] = User(message.author.name, None)
+            users[message.author.id].save(message.author.id)
+
+        users[message.author.id].set_last_message(message.author.id, newMessage.id)
+        
         await schedule_delay_message(newMessage)
 
 def replace_mentions(content, guild_id):
@@ -361,6 +389,9 @@ async def set_user_timezone(message, tz):
 
 async def show_delay_message(message, msg_num):
     message_found = False
+    if msg_num == 'last':
+        if message.author.id in users:
+            msg_num = users[message.author.id].last_message_id
     for guild_id in delayed_messages:
         for msg_id in delayed_messages[guild_id]:
             if msg_id == msg_num:
@@ -454,6 +485,12 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
             else:
                 update_db(msg)
 
+            if message.author.id not in users:
+                users[message.author.id] = User(message.author.name, None)
+                users[message.author.id].save(message.author.id)
+
+            users[message.author.id].set_last_message(message.author.id, newMessage.id)
+        
             await message.channel.send(embed=embed)
 
         else:
@@ -536,6 +573,7 @@ async def show_help(channel):
 
     `~giggle show <message-id>`
     Show the contents of the message identified by <message-id>
+    Note:  `last` may be used as <message-id> to reference your most recently scheduled message
 
     `~giggle send <message-id>`
     Send message identified by <message-id>
