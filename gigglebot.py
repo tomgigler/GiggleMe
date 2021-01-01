@@ -226,7 +226,7 @@ async def process_delay_message(message, delay, channel, description, content):
             if delay == '0':
                 delivery_time = 0
             else:
-                delivery_time = float(time()) + int(delay) * 60
+                delivery_time = time() + int(delay) * 60
         else:
             try:
                 delivery_time = local_time_to_utc(message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
@@ -289,8 +289,8 @@ async def schedule_delay_message(message):
     if message.delivery_time == 0:
         delay = 0
     else:
-        delay = float(message.delivery_time) - float(time())
-    if float(delay) < 0:
+        delay = message.delivery_time - time()
+    if delay < 0:
         return
     await asyncio.sleep(int(delay))
 
@@ -436,7 +436,7 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
             if delay == '0':
                 delivery_time = 0
             else:
-                delivery_time = float(time()) + int(delay) * 60
+                delivery_time = time() + int(delay) * 60
         else:
             try:
                 delivery_time = local_time_to_utc(message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
