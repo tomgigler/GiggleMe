@@ -573,6 +573,7 @@ async def show_help(channel):
 
     `~giggle show <message-id>`
     Show the contents of the message identified by <message-id>
+    Note:  `last` may be used as <message-id> to reference your most recently scheduled message
 
     `~giggle send <message-id>`
     Send message identified by <message-id>
@@ -586,9 +587,6 @@ async def show_help(channel):
     channel=<channel> is optional.  If not specified, the current delivery channel will be used.
     desc="<desc>" is optional.  If both channel and desc are included, desc must come after channel
     <message> is optional.  If specified, it will replace the body of the current message.
-
-    Note:  `last` may be used as <message-id> in `show`, `send`, or `edit` to reference
-    your most recently scheduled message
 
     `~giggle cancel <message-id>`
     Cancel message identified by <message-id>
