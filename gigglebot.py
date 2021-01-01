@@ -71,6 +71,7 @@ class User:
 
         mycursor = mydb.cursor()
         mycursor.execute(sql, (message_id, user_id))
+        self.last_message_id = message_id
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
