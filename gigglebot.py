@@ -317,7 +317,7 @@ async def list_all_delay_messages(message):
 async def display_timezones(message):
     output = "Available TimeZones\n===================\n\n"
     for tz in timezones:
-        output += f"{tz.id} - {tz.name}\n"
+        output += f"{timezones[tz].id} - {timezones[tz].name}\n"
     message.channel.send(output)
 
 async def show_delay_message(message, msg_num):
