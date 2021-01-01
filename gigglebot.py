@@ -12,6 +12,8 @@ import mysql.connector
 client = discord.Client()
 delayed_messages = {}
 requests_to_cancel_all = {}
+timezones = {}
+user_timezones = {}
 
 class DelayedMessage:
     def __init__(self, id, guild, delivery_channel, delivery_time, author, description, content):
@@ -139,6 +141,14 @@ async def load_from_db():
                             delayed_messages[g_id] = {}
                         delayed_messages[g_id][message_id] = newMessage
                         loop.create_task(schedule_delay_message(newMessage))
+
+    mycursor.execute("select * from timezones")
+    for tz in mycursor.fetchall():
+        timezones[tz[0]] = tz[1]
+
+    mycursor.execute("select * from user_timezones")
+    for user_tz in mycursor.fetchall():
+        user_timezones[user_tz[0]] = user_tz[1]
 
     mycursor.close()
     mydb.disconnect()
