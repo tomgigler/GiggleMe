@@ -617,7 +617,7 @@ async def on_message(message):
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +all *$', message.content)
     if match:
-        await confirm_request(message.channel, message.author, "Cancel all messages?", 10, cancel_all_delay_message, {'guild': message.guild, 'member': message.author, 'channel': message.channel}, client)
+        await confirm.confirm_request(message.channel, message.author, "Cancel all messages?", 10, cancel_all_delay_message, {'guild': message.guild, 'member': message.author, 'channel': message.channel}, client)
         return
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', message.content)
@@ -668,7 +668,7 @@ async def on_message(message):
 
 @client.event
 async def on_reaction_add(reaction, user):
-    await confirmation_process_reaction(reaction, user, client)
+    await confirm.confirmation_process_reaction(reaction, user, client)
 
 @client.event
 async def on_guild_join(guild):
