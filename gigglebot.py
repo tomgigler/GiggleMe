@@ -416,7 +416,6 @@ async def send_delay_message(params):
         await channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
 async def edit_delay_message(params):
-    delayed_messages = params['delayed_messages']
     discord_message = params['discord_message']
     message_id = params['message_id']
     delay = params['delay']
@@ -431,8 +430,8 @@ async def edit_delay_message(params):
 
     if message_id == 'last' and author.id in users and users[author.id].last_message_id:
         message_id = users[author.id].last_message_id
-        await confirm.confirm_request(channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
-            {'delayed_messages': delayed_messages, 'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
+        await confirm.confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
+            {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
         return
 
     if delay:
@@ -479,8 +478,6 @@ async def edit_delay_message(params):
         if delay:
             loop = asyncio.get_event_loop()
             newMessage =  DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.description, msg.content)
-            if discord_message.guild.id not in delayed_messages:
-                delayed_messages = {}
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
@@ -494,8 +491,6 @@ async def edit_delay_message(params):
         if discord_message.author.id not in users:
             users[discord_message.author.id] = User(discord_message.author.name, None)
             users[discord_message.author.id].save(discord_message.author.id)
-
-        users[discord_message.author.id].set_last_message(discord_message.author.id, newMessage.id)
 
         await discord_message.channel.send(embed=embed)
 
@@ -635,7 +630,7 @@ async def on_message(msg):
 
     match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
     if match:
-        await edit_delay_message({'delayed_messages': delayed_messages, 'discord_message': msg, 'message_id': match.group(1), 'delay': match.group(4),
+        await edit_delay_message({'discord_message': msg, 'message_id': match.group(1), 'delay': match.group(4),
             'channel': match.group(7), 'description': match.group(10), 'content': match.group(13), 'author': msg.author})
         return
 
