@@ -395,7 +395,16 @@ async def show_delayed_message(channel, author_id, msg_num):
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0x00ff00))
 
-async def send_delay_message(channel, msg_num):
+async def send_delay_message(params):
+    channel = params['channel']
+    author = params['author']
+    msg_num = params['msg_num']
+
+    if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
+        msg_num = users[author.id].last_message_id
+        await confirm.confirm_request(channel, author, f"Send message {msg_num} now?", 10, send_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
+        return
+
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
         msg.delivery_time = 0
@@ -406,9 +415,23 @@ async def send_delay_message(channel, msg_num):
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
-async def edit_delay_message(delayed_messages, discord_message, message_id, delay, channel, description, content):
+async def edit_delay_message(params):
+    discord_message = params['discord_message']
+    message_id = params['message_id']
+    delay = params['delay']
+    channel = params['channel']
+    description = params['description']
+    content = params['content']
+    author = params['author']
+
     if not delay and not channel and not description and not content:
         await discord_message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
+        return
+
+    if message_id == 'last' and author.id in users and users[author.id].last_message_id:
+        message_id = users[author.id].last_message_id
+        await confirm.confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
+            {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
         return
 
     if delay:
@@ -455,8 +478,6 @@ async def edit_delay_message(delayed_messages, discord_message, message_id, dela
         if delay:
             loop = asyncio.get_event_loop()
             newMessage =  DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.description, msg.content)
-            if discord_message.guild.id not in delayed_messages:
-                delayed_messages = {}
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
@@ -470,8 +491,6 @@ async def edit_delay_message(delayed_messages, discord_message, message_id, dela
         if discord_message.author.id not in users:
             users[discord_message.author.id] = User(discord_message.author.name, None)
             users[discord_message.author.id].save(discord_message.author.id)
-
-        users[discord_message.author.id].set_last_message(discord_message.author.id, newMessage.id)
 
         await discord_message.channel.send(embed=embed)
 
@@ -496,9 +515,17 @@ async def cancel_all_delay_message(params):
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def cancel_delay_message(channel, author, msg_num):
+async def cancel_delay_message(params):
+    channel = params['channel']
+    author = params['author']
+    msg_num = params['msg_num']
     if msg_num == 'all':
         await confirm.confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
+        return
+
+    if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
+        msg_num = users[author.id].last_message_id
+        await confirm.confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
 
     message_found = False
@@ -593,17 +620,18 @@ async def on_message(msg):
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', msg.content)
     if match:
-        await cancel_delay_message(msg.channel, msg.author, match.group(2))
+        await cancel_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
         return
 
     match = re.search(r'^~giggle +send +(\S+) *$', msg.content)
     if match:
-        await send_delay_message(msg.channel, match.group(1))
+        await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(1)})
         return
 
     match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
     if match:
-        await edit_delay_message(delayed_messages, msg, match.group(1), match.group(4), match.group(7), match.group(10), match.group(13))
+        await edit_delay_message({'discord_message': msg, 'message_id': match.group(1), 'delay': match.group(4),
+            'channel': match.group(7), 'description': match.group(10), 'content': match.group(13), 'author': msg.author})
         return
 
     match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
