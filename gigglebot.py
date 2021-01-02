@@ -504,10 +504,9 @@ async def cancel_delay_message(params):
         await confirm.confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
         return
 
-    if msg_num == 'last':
-        if author.id in users:
-            msg_num = users[author.id].last_message_id
-        await confirm.confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delay_message, {{'channel': msg.channel, 'author': msg.author, 'msg_num': msg_num}, client)
+    if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
+        msg_num = users[author.id].last_message_id
+        await confirm.confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
 
     message_found = False
