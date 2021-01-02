@@ -520,6 +520,10 @@ async def cancel_all_delay_message(params):
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def cancel_delay_message(message, msg_num):
+    if msg_num == 'all':
+        await confirm.confirm_request(message.channel, message.author, "Cancel all messages?", 10, cancel_all_delay_message, {'guild': message.guild, 'member': message.author, 'channel': message.channel}, client)
+        return
+        
     message_found = False
     if message.guild.id in delayed_messages:
         if msg_num in delayed_messages[message.guild.id]:
@@ -613,11 +617,6 @@ async def on_message(message):
     match = re.search(r'^~giggle +show +(\S+) *$', message.content)
     if match:
         await show_delay_message(message, match.group(1))
-        return
-
-    match = re.search(r'^~giggle +(cancel|delete|remove|clear) +all *$', message.content)
-    if match:
-        await confirm.confirm_request(message.channel, message.author, "Cancel all messages?", 10, cancel_all_delay_message, {'guild': message.guild, 'member': message.author, 'channel': message.channel}, client)
         return
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', message.content)
