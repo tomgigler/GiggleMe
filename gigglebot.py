@@ -395,7 +395,16 @@ async def show_delayed_message(channel, author_id, msg_num):
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0x00ff00))
 
-async def send_delay_message(channel, msg_num):
+async def send_delay_message(params):
+    channel = params['channel']
+    author = params['author']
+    msg_num = params['msg_num']
+
+    if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
+        msg_num = users[author.id].last_message_id
+        await confirm.confirm_request(channel, author, f"Send message {msg_num} now?", 10, send_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
+        return
+
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
         msg.delivery_time = 0
@@ -606,7 +615,7 @@ async def on_message(msg):
 
     match = re.search(r'^~giggle +send +(\S+) *$', msg.content)
     if match:
-        await send_delay_message(msg.channel, match.group(1))
+        await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(1)})
         return
 
     match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
