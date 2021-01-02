@@ -423,15 +423,16 @@ async def edit_delay_message(params):
     channel = params['channel']
     description = params['description']
     content = params['content']
+    author = params['author']
 
     if not delay and not channel and not description and not content:
         await discord_message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
         return
 
-    if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
-        msg_num = users[author.id].last_message_id
-        await confirm.confirm_request(channel, author, f"Edit message {msg_num}?", 10, edit_delay_message,
-            {'delayed_messages': delayed_messages, 'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content}, client)
+    if message_id == 'last' and author.id in users and users[author.id].last_message_id:
+        message_id = users[author.id].last_message_id
+        await confirm.confirm_request(channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
+            {'delayed_messages': delayed_messages, 'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
         return
 
     if delay:
@@ -634,9 +635,8 @@ async def on_message(msg):
 
     match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
     if match:
-        await edit_delay_message(delayed_messages, msg, match.group(1), match.group(4), match.group(7), match.group(10), match.group(13))
         await edit_delay_message({'delayed_messages': delayed_messages, 'discord_message': msg, 'message_id': match.group(1), 'delay': match.group(4),
-            'channel': match.group(7), 'description': match.group(10), 'content': match.group(13)})
+            'channel': match.group(7), 'description': match.group(10), 'content': match.group(13), 'author': msg.author})
         return
 
     match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
