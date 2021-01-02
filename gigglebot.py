@@ -382,6 +382,8 @@ async def show_delay_message(channel, author_id, msg_num):
         msg = delayed_messages[msg_num]
         content += f"**Author:**  {msg.author().name}\n"
         content += f"**Deliver to:**  {msg.delivery_channel().name}\n"
+        if channel.guild.id != msg.guild().id:
+            content += f"**Deliver in:**  {channel.guild.name}\n"
         if round((msg.delivery_time - time())/60, 1) < 0:
             content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
         else:
