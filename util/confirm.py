@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import discord
+import asyncio
 
 confirmation_requests = {}
 
@@ -9,7 +11,7 @@ class ConfirmationRequest:
         self.func = func
         self.params = params
 
-async def confirm_request(channel, member, prompt, timeout, func, params):
+async def confirm_request(channel, member, prompt, timeout, func, params, client):
     confirmation_message = await channel.send(embed=discord.Embed(description=f"{prompt}\n\n✅ Yes\n\n❌ No", color=0x0000ff))
     await confirmation_message.add_reaction('✅')
     await confirmation_message.add_reaction('❌')
@@ -26,7 +28,7 @@ async def confirm_request(channel, member, prompt, timeout, func, params):
 
     confirmation_requests.pop(confirmation_message.id, None)
 
-async def confirmation_process_reaction(reaction, user):
+async def confirmation_process_reaction(reaction, user, client):
     found = False
     if reaction.message.id in confirmation_requests:
         if(user == confirmation_requests[reaction.message.id].member):

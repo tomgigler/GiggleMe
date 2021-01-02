@@ -7,30 +7,8 @@ from datetime import datetime
 from time import time, ctime, localtime
 from operator import attrgetter
 from hashlib import md5
-import util.confirm
+import util.confirm as confirm
 import mysql.connector
-
-async def cancel_all_delay_message(params):
-    guild = params['guild']
-    member = params['member']
-    channel = params['channel']
-    
-    message_count = 0
-    if guild.id in delayed_messages:
-        messages_to_remove = []
-        for msg_id in delayed_messages[guild.id]:
-            messages_to_remove.append(delayed_messages[guild.id][msg_id])
-        for msg in messages_to_remove:
-            if msg.author_id == member.id:
-                delayed_messages[guild.id].pop(msg.id)
-                if len(delayed_messages[guild.id]) < 1:
-                    del delayed_messages[guild.id]
-                message_count += 1
-                delete_from_db(msg.id)
-    if message_count > 0:
-        await channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
-    else:
-        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 client = discord.Client()
 delayed_messages = {}
@@ -519,6 +497,28 @@ async def edit_delay_message(message, message_id, delay, channel, description, c
     else:
         await message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
+async def cancel_all_delay_message(params):
+    guild = params['guild']
+    member = params['member']
+    channel = params['channel']
+    
+    message_count = 0
+    if guild.id in delayed_messages:
+        messages_to_remove = []
+        for msg_id in delayed_messages[guild.id]:
+            messages_to_remove.append(delayed_messages[guild.id][msg_id])
+        for msg in messages_to_remove:
+            if msg.author_id == member.id:
+                delayed_messages[guild.id].pop(msg.id)
+                if len(delayed_messages[guild.id]) < 1:
+                    del delayed_messages[guild.id]
+                message_count += 1
+                delete_from_db(msg.id)
+    if message_count > 0:
+        await channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
+    else:
+        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+
 async def cancel_delay_message(message, msg_num):
     message_found = False
     if message.guild.id in delayed_messages:
@@ -617,7 +617,7 @@ async def on_message(message):
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +all *$', message.content)
     if match:
-        await confirm_request(message.channel, message.author, "Cancel all messages?", 10, cancel_all_delay_message, {'guild': message.guild, 'member': message.author, 'channel': message.channel})
+        await confirm_request(message.channel, message.author, "Cancel all messages?", 10, cancel_all_delay_message, {'guild': message.guild, 'member': message.author, 'channel': message.channel}, client)
         return
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', message.content)
@@ -668,7 +668,7 @@ async def on_message(message):
 
 @client.event
 async def on_reaction_add(reaction, user):
-    await confirmation_process_reaction(reaction, user)
+    await confirmation_process_reaction(reaction, user, client)
 
 @client.event
 async def on_guild_join(guild):
