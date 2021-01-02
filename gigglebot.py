@@ -124,6 +124,7 @@ def delete_from_db(id):
     mydb.disconnect()
 
 async def load_from_db():
+    global delayed_messages
     mydb = giggleDB()
 
     loop = asyncio.get_event_loop()
@@ -140,7 +141,7 @@ async def load_from_db():
         content = msg[5]
         description = msg[6]
 
-        if message_id not in delayed_messages:
+        if message_id in delayed_messages:
 
             # TODO:  If guild_id changes in the database, we need to move the delayed_message in the dict
             # that may have an impact on the code dealing with delivery_time change below
@@ -405,6 +406,7 @@ async def send_delay_message(channel, guild_id, msg_num):
         await channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
 async def edit_delay_message(discord_message, message_id, delay, channel, description, content):
+    global delayed_messages
     if not delay and not channel and not description and not content:
         await discord_message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
         return
