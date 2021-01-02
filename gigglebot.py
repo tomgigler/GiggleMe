@@ -123,8 +123,7 @@ def delete_from_db(id):
     mycursor.close()
     mydb.disconnect()
 
-async def load_from_db():
-    global delayed_messages
+async def load_from_db(delayed_messages):
     mydb = giggleDB()
 
     loop = asyncio.get_event_loop()
@@ -405,8 +404,7 @@ async def send_delay_message(channel, guild_id, msg_num):
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
-async def edit_delay_message(discord_message, message_id, delay, channel, description, content):
-    global delayed_messages
+async def edit_delay_message(delayed_messages, discord_message, message_id, delay, channel, description, content):
     if not delay and not channel and not description and not content:
         await discord_message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
         return
@@ -604,7 +602,7 @@ async def on_message(msg):
 
     match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
     if match:
-        await edit_delay_message(msg, match.group(1), match.group(4), match.group(7), match.group(10), match.group(13))
+        await edit_delay_message(delayed_messages, msg, match.group(1), match.group(4), match.group(7), match.group(10), match.group(13))
         return
 
     match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
@@ -614,7 +612,7 @@ async def on_message(msg):
 
     if re.search(r'^~giggle +resume *$', msg.content) and msg.author.id == 669370838478225448:
         await client.change_presence(activity=discord.Game('with thegigler'))
-        await load_from_db()
+        await load_from_db(delayed_messages)
         await list_all_delay_messages(msg.channel, msg.author.id)
         return
 
