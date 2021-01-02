@@ -293,27 +293,27 @@ async def schedule_delay_message(delayed_message):
         delayed_messages.pop(delayed_message.id)
         delete_from_db(delayed_message.id)
 
-async def list_delay_messages(discord_message):
+async def list_delay_messages(channel, author_id):
     count = 0
     output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
     sorted_messages = {k: v for k, v in sorted(delayed_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
         msg = delayed_messages[msg_id]
-        if msg.guild().id == discord_message.guild.id:
+        if msg.guild().id == channel.guild.id:
             output += f"> \n> **ID:**  {msg.id}\n"
             output += f"> **Author:**  {msg.author().name}\n"
             output += f"> **Channel:**  {msg.delivery_channel().name}\n"
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                output += f"> **Deliver:**  {display_localized_time(discord_message.author.id, msg.delivery_time)}\n"
+                output += f"> **Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
             output += f"> **Description:**  {msg.description}\n"
             count += 1
     if count > 0:
-        await discord_message.channel.send(output + "> \n> **====================**\n")
+        await channel.send(output + "> \n> **====================**\n")
     else:
-        await discord_message.channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def list_all_delay_messages(channel, author_id):
     if len(delayed_messages) > 0:
@@ -395,7 +395,7 @@ async def show_delay_message(channel, author_id, msg_num):
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0x00ff00))
 
-async def send_delay_message(channel, guild_id, msg_num):
+async def send_delay_message(channel, msg_num):
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
         msg.delivery_time = 0
@@ -479,7 +479,6 @@ async def edit_delay_message(delayed_messages, discord_message, message_id, dela
         await discord_message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
 async def cancel_all_delay_message(params):
-    guild = params['guild']
     member = params['member']
     channel = params['channel']
     
@@ -497,9 +496,9 @@ async def cancel_all_delay_message(params):
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def cancel_delay_message(channel, author, guild, msg_num):
+async def cancel_delay_message(channel, author, msg_num):
     if msg_num == 'all':
-        await confirm.confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'guild': guild, 'member': author, 'channel': channel}, client)
+        await confirm.confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
         return
 
     message_found = False
@@ -584,7 +583,7 @@ async def on_message(msg):
         return
 
     if re.search(r'^~giggle +list *$', msg.content):
-        await list_delay_messages(msg)
+        await list_delay_messages(msg.channel, msg.author.id)
         return
 
     match = re.search(r'^~giggle +show +(\S+) *$', msg.content)
@@ -594,12 +593,12 @@ async def on_message(msg):
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', msg.content)
     if match:
-        await cancel_delay_message(msg.channel, msg.author, msg.guild, match.group(2))
+        await cancel_delay_message(msg.channel, msg.author, match.group(2))
         return
 
     match = re.search(r'^~giggle +send +(\S+) *$', msg.content)
     if match:
-        await send_delay_message(msg.channel, msg.guild.id, match.group(1))
+        await send_delay_message(msg.channel, match.group(1))
         return
 
     match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
