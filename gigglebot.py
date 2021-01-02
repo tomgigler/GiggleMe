@@ -42,7 +42,7 @@ async def confirmation_process_reaction(reaction, user):
             found = True
             if reaction.emoji == '✅':
                 confirmation_request = confirmation_requests.pop(reaction.message.id, None)
-                await confirmation_request.func(confirmation_request.func)
+                await confirmation_request.func(confirmation_request.params)
             else:
                 confirmation_message = confirmation_requests.pop(reaction.message.id, None)
 
