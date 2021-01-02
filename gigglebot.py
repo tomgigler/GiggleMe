@@ -487,7 +487,7 @@ async def cancel_all_delay_message(params):
     for msg_id in delayed_messages:
         messages_to_remove.append(delayed_messages[msg_id])
     for msg in messages_to_remove:
-        if msg.author_id == member.id:
+        if msg.author_id == member.id  and msg.delivery_channel.id == channel.id:
             delayed_messages.pop(msg.id)
             message_count += 1
             delete_from_db(msg.id)
