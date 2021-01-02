@@ -142,23 +142,22 @@ async def load_from_db():
 
         if message_id not in delayed_messages:
 
-            if message_id in delayed_messages:
-                # TODO:  If guild_id changes in the database, we need to move the delayed_message in the dict
-                # that may have an impact on the code dealing with delivery_time change below
-                delayed_messages[message_id].guild_id = guild_id
-                delayed_messages[message_id].delivery_channel_id = delivery_channel_id
-                delayed_messages[message_id].author_id = author_id
-                delayed_messages[message_id].content = content
-                delayed_messages[message_id].description = description
+            # TODO:  If guild_id changes in the database, we need to move the delayed_message in the dict
+            # that may have an impact on the code dealing with delivery_time change below
+            delayed_messages[message_id].guild_id = guild_id
+            delayed_messages[message_id].delivery_channel_id = delivery_channel_id
+            delayed_messages[message_id].author_id = author_id
+            delayed_messages[message_id].content = content
+            delayed_messages[message_id].description = description
 
-                if delayed_messages[message_id].delivery_time != delivery_time:
-                    delayed_messages[message_id].delivery_time = delivery_time
+            if delayed_messages[message_id].delivery_time != delivery_time:
+                delayed_messages[message_id].delivery_time = delivery_time
 
-                    newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, description, content)
-                    if g_id not in delayed_messages:
-                        delayed_messages = {}
-                    delayed_messages[message_id] = newMessage
-                    loop.create_task(schedule_delay_message(newMessage))
+                newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, description, content)
+                if g_id not in delayed_messages:
+                    delayed_messages = {}
+                delayed_messages[message_id] = newMessage
+                loop.create_task(schedule_delay_message(newMessage))
         else:
 
             newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, description, content)
@@ -301,7 +300,7 @@ async def list_delay_messages(discord_message):
 
     for msg_id in sorted_messages:
         msg = delayed_messages[msg_id]
-        if msg.guild.id == discord_message.guild.id:
+        if msg.guild().id == discord_message.guild.id:
             output += f"> \n> **ID:**  {msg.id}\n"
             output += f"> **Author:**  {msg.author().name}\n"
             output += f"> **Channel:**  {msg.delivery_channel().name}\n"
