@@ -94,22 +94,22 @@ def display_localized_time(user_id, time):
     else:
         return f"{ctime(time)} {localtime(time).tm_zone}"
 
-def insert_into_db(message):
+def insert_into_db(delayed_message):
     mydb = giggleDB()
 
     mycursor = mydb.cursor()
     sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s)"
-    mycursor.execute(sql, (message.id, message.guild_id, message.delivery_channel_id, message.delivery_time, message.author_id, message.content, message.description))
+    mycursor.execute(sql, (delayed_message.id, delayed_message.guild_id, delayed_message.delivery_channel_id, delayed_message.delivery_time, delayed_message.author_id, delayed_message.content, delayed_message.description))
     mydb.commit()
     mycursor.close()
     mydb.disconnect()
 
-def update_db(message):
+def update_db(delayed_message):
     mydb = giggleDB()
 
     mycursor = mydb.cursor()
     sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s, description = %s WHERE id = %s"
-    mycursor.execute(sql, (message.guild_id, message.delivery_channel_id, message.delivery_time, message.author_id, message.content, message.description, message.id))
+    mycursor.execute(sql, (delayed_message.guild_id, delayed_message.delivery_channel_id, delayed_message.delivery_time, delayed_message.author_id, delayed_message.content, delayed_message.description, delayed_message.id))
     mydb.commit()
     mycursor.close()
     mydb.disconnect()
@@ -157,7 +157,7 @@ async def load_from_db():
         else:
             for g_id in delayed_messages:
                 if message_id in delayed_messages[g_id]:
-                    # TODO:  If guild_id changes in the database, we need to move the message in the dict
+                    # TODO:  If guild_id changes in the database, we need to move the delayed_message in the dict
                     # that may have an impact on the code dealing with delivery_time change below
                     delayed_messages[g_id][message_id].guild_id = guild_id
                     delayed_messages[g_id][message_id].delivery_channel_id = delivery_channel_id
@@ -277,34 +277,34 @@ def replace_mentions(content, guild_id):
 
         return content
 
-async def schedule_delay_message(message):
+async def schedule_delay_message(delayed_message):
 
-    guild = message.guild()
+    guild = delayed_message.guild()
 
-    if message.delivery_time == 0:
+    if delayed_message.delivery_time == 0:
         delay = 0
     else:
-        delay = message.delivery_time - time()
+        delay = delayed_message.delivery_time - time()
     if delay < 0:
         return
     await asyncio.sleep(int(delay))
 
-    # after sleep, make sure message has not been canceled
+    # after sleep, make sure delayed_message has not been canceled
     if guild.id in delayed_messages:
-        if message.id in delayed_messages[guild.id] and delayed_messages[guild.id][message.id] == message:
+        if delayed_message.id in delayed_messages[guild.id] and delayed_messages[guild.id][delayed_message.id] == delayed_message:
 
             # we have to replace mentions now because the content may have changed while we were sleeping
-            content = message.content
+            content = delayed_message.content
             try:
                 content = replace_mentions(content, guild.id)
             except:
-                # At this point, we'll just leave {role} in the message
+                # At this point, we'll just leave {role} in the content
                 pass
-            await message.delivery_channel().send(content)
-            delayed_messages[guild.id].pop(message.id)
+            await delayed_message.delivery_channel().send(content)
+            delayed_messages[guild.id].pop(delayed_message.id)
             if len(delayed_messages[guild.id]) < 1:
                 del delayed_messages[guild.id]
-            delete_from_db(message.id)
+            delete_from_db(delayed_message.id)
 
 async def list_delay_messages(message):
     if message.guild.id in delayed_messages and len(delayed_messages[message.guild.id]) > 0:
@@ -523,7 +523,7 @@ async def cancel_delay_message(message, msg_num):
     if msg_num == 'all':
         await confirm.confirm_request(message.channel, message.author, "Cancel all messages?", 10, cancel_all_delay_message, {'guild': message.guild, 'member': message.author, 'channel': message.channel}, client)
         return
-        
+
     message_found = False
     if message.guild.id in delayed_messages:
         if msg_num in delayed_messages[message.guild.id]:
