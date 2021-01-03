@@ -2,12 +2,10 @@
 import discord
 import re
 import asyncio
-import settings
+from settings import bot_token
 from datetime import datetime
-from time import time, ctime, localtime
+from time import time
 from operator import attrgetter
-from hashlib import md5
-import mysql.connector
 import help
 from confirm import confirm_request, process_reaction
 import gigtz
@@ -508,4 +506,4 @@ async def on_guild_join(guild):
 gigtz.load_timezones()
 load_users()
 
-client.run(settings.bot_token)
+client.run(bot_token)
