@@ -9,6 +9,7 @@ from operator import attrgetter
 from hashlib import md5
 import util.confirm as confirm
 import mysql.connector
+import help
 
 client = discord.Client()
 delayed_messages = {}
@@ -542,60 +543,6 @@ async def cancel_delay_message(params):
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
-async def show_help(channel):
-    helpOutput = """To schedule <message> to be delivered to <channel> at <time>:
-
-    `~giggle <time> channel=<channel> desc="<brief description>"`
-    `<message>`
-
-    <time> may be either a number of minutes from now
-    or a DateTime of the format YYYY-MM-DD HH:MM
-    All times are UTC
-
-    desc is an optional description of the message
-    If included, it must come after channel
-
-    The following commands may be used to manage scheduled messages:
-
-    `~giggle list`
-    Display a list of currently scheduled messages
-
-    `~giggle show <message-id>`
-    Show the contents of the message identified by <message-id>
-    Note:  `last` may be used as <message-id> to reference your most recently scheduled message
-
-    `~giggle send <message-id>`
-    Send message identified by <message-id>
-    immediately and remove it from the queue
-
-    `~giggle edit <message-id> <date-time> channel=<channel> desc="<desc>"`
-    `<message>`
-    Edit message identified by <message-id>.
-    <date-time> may be either a date as specified above or a number of minutes from now.
-    If not specified, the current delivery time will be used.
-    channel=<channel> is optional.  If not specified, the current delivery channel will be used.
-    desc="<desc>" is optional.  If both channel and desc are included, desc must come after channel
-    <message> is optional.  If specified, it will replace the body of the current message.
-
-    `~giggle cancel <message-id>`
-    Cancel message identified by <message-id>
-
-    `~giggle cancel all`
-    Cancel all delayed messages scheduled by you.  You will be prompted for confirmation
-
-    `~giggle timezone <time zone>`
-    Set your time zone to <time zone>
-
-    `~giggle timezone`
-    Display your current time zone
-
-    `~giggle timezones`
-    Display a list of available time zones
-
-    `~giggle help`
-    Show this help"""
-    await channel.send(embed=discord.Embed(description=helpOutput))
-
 @client.event
 async def on_message(msg):
     if msg.author == client.user:
@@ -651,8 +598,9 @@ async def on_message(msg):
         await list_all_delay_messages(msg.channel, msg.author.id)
         return
 
-    if re.search(r'^~giggle +help *$', msg.content):
-        await show_help(msg.channel)
+    match = re.search(r'^~giggle +help (\S+)?*$', msg.content)
+    if match:
+        await channel.send(embed=discord.Embed(description=help.show_help(match.group(1))))
         return
 
     match = re.search(r'^~giggle +timezone( +([A-Z][A-Z][A-Z]))? *$', msg.content)
