@@ -8,6 +8,7 @@ from time import time, ctime, localtime
 from operator import attrgetter
 from hashlib import md5
 import util.confirm as confirm
+import util.gigtz as gittz
 import mysql.connector
 import help
 
@@ -48,11 +49,6 @@ class DelayedMessage:
     @staticmethod
     def id_gen(id):
         return md5((str(id)).encode('utf-8')).hexdigest()[:8]
-
-class TimeZone:
-    def __init__(self, offset, name):
-        self.offset = offset
-        self.name = name
 
 class User:
     def __init__(self, name, timezone, last_message_id=None):
@@ -179,7 +175,7 @@ def load_timezones_and_users():
 
     mycursor.execute("select * from timezones")
     for tz in mycursor.fetchall():
-        timezones[tz[0]] = TimeZone(tz[1], tz[2])
+        timezones[tz[0]] = gittz.TimeZone(tz[1], tz[2])
 
     mycursor.execute("select * from users")
     for user in mycursor.fetchall():
