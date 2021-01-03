@@ -23,7 +23,11 @@ def display_timezones(mention):
 
 def local_time_str_to_utc(time_str, timezone):
     # convert local time string to UTC timestamp
-    time = datetime.strptime(time_str, '%Y-%m-%d %H:%M').timestamp()
+    try:
+        time = datetime.strptime(time_str, '%Y-%m-%d %H:%M').timestamp()
+    except:
+        time = datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S').timestamp()
+
     if timezone:
         return time - 3600 * timezones[timezone].offset
     else:

@@ -191,11 +191,8 @@ async def process_delay_message(discord_message, delay, channel, description, co
             try:
                 delivery_time = gigtz.local_time_str_to_utc(delay, users[discord_message.author.id].timezone)
             except:
-                try:
-                    delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M:%S').timestamp())
-                except:
-                    await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                    return
+                await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                return
 
         #Make sure {roles} exist
         try:
@@ -426,11 +423,8 @@ async def edit_delay_message(params):
             try:
                 delivery_time = gigtz.local_time_str_to_utc(delay, users[discord_message.author.id].timezone)
             except:
-                try:
-                    delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M:%S').timestamp())
-                except:
-                    await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                    return
+                await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                return
 
     if channel:
         try:
