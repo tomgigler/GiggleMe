@@ -392,8 +392,8 @@ async def show_delayed_message(channel, author_id, msg_num):
         else:
             content += f"**Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
         content += f"**Description:**  {msg.description}\n"
-        content += msg.content
         await channel.send(content)
+        await channel.send(msg.content)
         message_found = True
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0x00ff00))
