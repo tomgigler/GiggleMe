@@ -218,8 +218,11 @@ async def process_delay_message(discord_message, delay, channel, description, co
             try:
                 delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
             except:
-                await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                return
+                try:
+                    delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M:%S').timestamp())
+                except:
+                    await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                    return
 
         #Make sure {roles} exist
         try:
@@ -628,15 +631,15 @@ async def on_message(msg):
         await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(1)})
         return
 
-    match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
     if match:
         await edit_delay_message({'discord_message': msg, 'message_id': match.group(1), 'delay': match.group(4),
-            'channel': match.group(7), 'description': match.group(10), 'content': match.group(13), 'author': msg.author})
+            'channel': match.group(8), 'description': match.group(11), 'content': match.group(14), 'author': msg.author})
         return
 
-    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?)?|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
     if match:
-        await process_delay_message(msg, match.group(1), match.group(4), match.group(7), match.group(10))
+        await process_delay_message(msg, match.group(1), match.group(5), match.group(8), match.group(11))
         return
 
     if re.search(r'^~giggle +resume *$', msg.content) and msg.author.id == 669370838478225448:
