@@ -396,7 +396,7 @@ async def cancel_all_delay_message(params):
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def cancel_delay_message(params):
+async def cancel_delayed_message(params):
     channel = params['channel']
     author = params['author']
     msg_num = params['msg_num']
@@ -406,7 +406,7 @@ async def cancel_delay_message(params):
 
     if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
         msg_num = users[author.id].last_message_id
-        await confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
+        await confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
 
     message_found = False
@@ -450,7 +450,7 @@ async def on_message(msg):
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', msg.content)
     if match:
-        await cancel_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
+        await cancel_delayed_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
         return
 
     match = re.search(r'^~giggle +send +(\S+) *$', msg.content)
