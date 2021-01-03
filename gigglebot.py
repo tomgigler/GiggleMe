@@ -9,10 +9,10 @@ from operator import attrgetter
 from hashlib import md5
 import mysql.connector
 import help
-import confirm
+from confirm import confirm_request, process_reaction
 import gigtz
-import gigdb
-import giguser
+from gigdb import db_connect
+from giguser import User, load_users
 
 client = discord.Client()
 delayed_messages = {}
@@ -42,7 +42,7 @@ class DelayedMessage:
         return md5((str(id)).encode('utf-8')).hexdigest()[:8]
 
 def insert_into_db(delayed_message):
-    mydb = gigdb.db_connect()
+    mydb = db_connect()
 
     mycursor = mydb.cursor()
     sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s)"
@@ -52,7 +52,7 @@ def insert_into_db(delayed_message):
     mydb.disconnect()
 
 def update_db(delayed_message):
-    mydb = gigdb.db_connect()
+    mydb = db_connect()
 
     mycursor = mydb.cursor()
     sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s, description = %s WHERE id = %s"
@@ -62,7 +62,7 @@ def update_db(delayed_message):
     mydb.disconnect()
 
 def delete_from_db(id):
-    mydb = gigdb.db_connect()
+    mydb = db_connect()
 
     mycursor = mydb.cursor()
     mycursor.execute(f"DELETE FROM messages WHERE id='{id}'")
@@ -71,7 +71,7 @@ def delete_from_db(id):
     mydb.disconnect()
 
 async def load_from_db(delayed_messages):
-    mydb = gigdb.db_connect()
+    mydb = db_connect()
 
     loop = asyncio.get_event_loop()
     mycursor = mydb.cursor()
@@ -287,7 +287,7 @@ async def show_user_timezone(channel, author_id):
 
 async def set_user_timezone(channel, author, tz):
     if tz in gigtz.timezones:
-        mydb = gigdb.db_connect()
+        mydb = db_connect()
 
         if author.id in giguser.users:
             sql = "UPDATE users SET timezone = %s, name = %s WHERE user = %s"
@@ -339,7 +339,7 @@ async def send_delay_message(params):
 
     if msg_num == 'last' and author.id in giguser.users and giguser.users[author.id].last_message_id:
         msg_num = giguser.users[author.id].last_message_id
-        await confirm.confirm_request(channel, author, f"Send message {msg_num} now?", 10, send_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
+        await confirm_request(channel, author, f"Send message {msg_num} now?", 10, send_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
 
     if msg_num in delayed_messages:
@@ -367,7 +367,7 @@ async def edit_delay_message(params):
 
     if message_id == 'last' and author.id in giguser.users and giguser.users[author.id].last_message_id:
         message_id = giguser.users[author.id].last_message_id
-        await confirm.confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
+        await confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
             {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
         return
 
@@ -453,12 +453,12 @@ async def cancel_delay_message(params):
     author = params['author']
     msg_num = params['msg_num']
     if msg_num == 'all':
-        await confirm.confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
+        await confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
         return
 
     if msg_num == 'last' and author.id in giguser.users and giguser.users[author.id].last_message_id:
         msg_num = giguser.users[author.id].last_message_id
-        await confirm.confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
+        await confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
 
     message_found = False
@@ -551,7 +551,7 @@ async def on_message(msg):
 
 @client.event
 async def on_reaction_add(reaction, user):
-    await confirm.confirmation_process_reaction(reaction, user, client)
+    await process_reaction(reaction, user, client)
 
 @client.event
 async def on_guild_join(guild):

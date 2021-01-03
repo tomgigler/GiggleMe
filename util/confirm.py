@@ -28,7 +28,7 @@ async def confirm_request(channel, member, prompt, timeout, func, params, client
 
     confirmation_requests.pop(confirmation_message.id, None)
 
-async def confirmation_process_reaction(reaction, user, client):
+async def process_reaction(reaction, user, client):
     found = False
     if reaction.message.id in confirmation_requests:
         if(user == confirmation_requests[reaction.message.id].member):
