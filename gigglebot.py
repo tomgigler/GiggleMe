@@ -8,7 +8,7 @@ from time import time, ctime, localtime
 from operator import attrgetter
 from hashlib import md5
 import util.confirm as confirm
-import util.gigtz as gittz
+import util.gigtz as gigtz
 import mysql.connector
 import help
 
@@ -80,7 +80,7 @@ class User:
 
 def local_time_to_utc(user_id, time):
     if users[user_id].timezone:
-        return time - 3600 * gittz.timezones[users[user_id].timezone].offset
+        return time - 3600 * gigtz.timezones[users[user_id].timezone].offset
     else:
         return time
 
@@ -174,7 +174,7 @@ def load_timezones_and_users():
 
     mycursor.execute("select * from timezones")
     for tz in mycursor.fetchall():
-        gigtz.timezones[tz[0]] = gittz.TimeZone(tz[1], tz[2])
+        gigtz.timezones[tz[0]] = gigtz.TimeZone(tz[1], tz[2])
 
     mycursor.execute("select * from users")
     for user in mycursor.fetchall():
