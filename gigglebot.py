@@ -299,6 +299,7 @@ async def schedule_delay_message(delayed_message):
 
 async def list_delay_messages(channel, author_id):
     count = 0
+    total = 0
     output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
     sorted_messages = {k: v for k, v in sorted(delayed_messages.items(), key=lambda item: item[1].delivery_time)}
 
@@ -314,7 +315,14 @@ async def list_delay_messages(channel, author_id):
                 output += f"> **Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
             output += f"> **Description:**  {msg.description}\n"
             count += 1
+            total += 1
+            if count == 4:
+                await channel.send(output)
+                output = ""
+                count = 0
     if count > 0:
+        await channel.send(output)
+    if total > 0:
         await channel.send(output + "> \n> **====================**\n")
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
@@ -323,6 +331,7 @@ async def list_all_delay_messages(channel, author_id):
     if len(delayed_messages) > 0:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
         sorted_messages = {k: v for k, v in sorted(delayed_messages.items(), key=lambda item: item[1].delivery_time)}
+        count = 0
         for msg_id in sorted_messages:
             msg = delayed_messages[msg_id]
             output += f"> \n> **ID:**  {msg.id}\n"
@@ -334,7 +343,14 @@ async def list_all_delay_messages(channel, author_id):
             else:
                 output += f"> **Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
             output += f"> **Description:**  {msg.description}\n"
-        await channel.send(output + "> \n> **====================**\n")
+            count += 1
+            if count == 4:
+                await channel.send(output)
+                output = ""
+                count = 0
+        if count != 0:
+            await channel.send(output)
+        await channel.send("> \n> **====================**\n")
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
