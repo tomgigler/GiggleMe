@@ -35,7 +35,7 @@ def show_help(command):
 
         Show the contents of the message identified by <message-id>
 
-        '~giggle show raw <message-id>'
+        `~giggle show raw <message-id>`
 
         Show the raw (Markdown) message
 
