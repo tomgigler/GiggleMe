@@ -285,7 +285,7 @@ async def send_delay_message(params):
 
     if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
         msg_num = users[author.id].last_message_id
-        await confirm_request(channel, author, f"Send message {msg_num} now?", 10, send_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
+        await confirm_request(channel, author, f"Send message {msg_num} now?", 15, send_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
 
     if msg_num in delayed_messages:
@@ -404,7 +404,7 @@ async def cancel_delayed_message(params):
 
     if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
         msg_num = users[author.id].last_message_id
-        await confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
+        await confirm_request(channel, author, f"Cancel message {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
 
     message_found = False
