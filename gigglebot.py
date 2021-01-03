@@ -446,6 +446,7 @@ async def edit_delay_message(params):
         else:
             try:
                 delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
+            except:
                 try:
                     delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M:%S').timestamp())
                 except:
