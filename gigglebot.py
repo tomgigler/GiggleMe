@@ -162,7 +162,7 @@ async def process_delay_message(discord_message, delay, channel, description, co
 
         # create new DelayedMessage
         newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, description, content)
-        insert_into_db(newMessage)
+        newMessage.insert_into_db()
         if delivery_time == 0:
             await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
         else:
@@ -219,7 +219,7 @@ async def schedule_delay_message(delayed_message):
             pass
         await delayed_message.delivery_channel(client).send(content)
         delayed_messages.pop(delayed_message.id)
-        delete_from_db(delayed_message.id)
+        delayed_message.delete_from_db()
 
 async def list_delay_messages(channel, author_id):
     count = 0
@@ -421,9 +421,9 @@ async def edit_delay_message(params):
             else:
                 embed.add_field(name="Deliver", value=f"{gigtz.display_localized_time(newMessage.delivery_time, users[discord_message.author.id].timezone)}", inline=False)
             loop.create_task(schedule_delay_message(newMessage))
-            update_db(newMessage)
+            newMessage.update_db()
         else:
-            update_db(msg)
+            msg.update_db()
 
         await discord_message.channel.send(embed=embed)
 
@@ -442,7 +442,7 @@ async def cancel_all_delay_message(params):
         if msg.author_id == member.id  and msg.delivery_channel_id == channel.id:
             delayed_messages.pop(msg.id)
             message_count += 1
-            delete_from_db(msg.id)
+            msg.delete_from_db()
     if message_count > 0:
         await channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
     else:
@@ -463,9 +463,8 @@ async def cancel_delay_message(params):
 
     message_found = False
     if msg_num in delayed_messages:
-        delayed_messages.pop(msg_num)
+        delayed_messages.pop(msg_num).delete_from_db()
         await channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
-        delete_from_db(msg_num)
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
 
