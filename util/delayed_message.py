@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import discord
 from hashlib import md5
-import gigdb
+from gigdb import db_connect
 
 class DelayedMessage:
     def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, description, content):
