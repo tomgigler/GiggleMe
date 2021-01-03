@@ -12,7 +12,7 @@ import help
 from confirm import confirm_request, process_reaction
 import gigtz
 from gigdb import db_connect
-from giguser import User, load_users
+from giguser import User, load_users, users
 
 client = discord.Client()
 delayed_messages = {}
@@ -27,48 +27,48 @@ class DelayedMessage:
         self.description = description
         self.content = content
 
-    def guild(self):
+    def guild(self, client):
         return discord.utils.get(client.guilds, id=self.guild_id)
 
-    def delivery_channel(self):
+    def delivery_channel(self, client):
         guild = discord.utils.get(client.guilds, id=self.guild_id)
         return discord.utils.get(guild.text_channels, id=self.delivery_channel_id)
 
-    def author(self):
+    def author(self, client):
         return client.get_user(self.author_id)
 
     @staticmethod
     def id_gen(id):
         return md5((str(id)).encode('utf-8')).hexdigest()[:8]
 
-def insert_into_db(delayed_message):
-    mydb = db_connect()
+    def insert_into_db(self):
+        mydb = db_connect()
 
-    mycursor = mydb.cursor()
-    sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s)"
-    mycursor.execute(sql, (delayed_message.id, delayed_message.guild_id, delayed_message.delivery_channel_id, delayed_message.delivery_time, delayed_message.author_id, delayed_message.content, delayed_message.description))
-    mydb.commit()
-    mycursor.close()
-    mydb.disconnect()
+        mycursor = mydb.cursor()
+        sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s)"
+        mycursor.execute(sql, (self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.content, self.description))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
 
-def update_db(delayed_message):
-    mydb = db_connect()
+    def update_db(self):
+        mydb = db_connect()
 
-    mycursor = mydb.cursor()
-    sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s, description = %s WHERE id = %s"
-    mycursor.execute(sql, (delayed_message.guild_id, delayed_message.delivery_channel_id, delayed_message.delivery_time, delayed_message.author_id, delayed_message.content, delayed_message.description, delayed_message.id))
-    mydb.commit()
-    mycursor.close()
-    mydb.disconnect()
+        mycursor = mydb.cursor()
+        sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s, description = %s WHERE id = %s"
+        mycursor.execute(sql, (self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.content, self.description, self.id))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
 
-def delete_from_db(id):
-    mydb = db_connect()
+    def delete_from_db(self):
+        mydb = db_connect()
 
-    mycursor = mydb.cursor()
-    mycursor.execute(f"DELETE FROM messages WHERE id='{id}'")
-    mydb.commit()
-    mycursor.close()
-    mydb.disconnect()
+        mycursor = mydb.cursor()
+        mycursor.execute(f"DELETE FROM messages WHERE id='{self.id}'")
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
 
 async def load_from_db(delayed_messages):
     mydb = db_connect()
@@ -197,7 +197,7 @@ def replace_mentions(content, guild_id):
 
 async def schedule_delay_message(delayed_message):
 
-    guild = delayed_message.guild()
+    guild = delayed_message.guild(client)
 
     if delayed_message.delivery_time == 0:
         delay = 0
@@ -217,7 +217,7 @@ async def schedule_delay_message(delayed_message):
         except:
             # At this point, we'll just leave {role} in the content
             pass
-        await delayed_message.delivery_channel().send(content)
+        await delayed_message.delivery_channel(client).send(content)
         delayed_messages.pop(delayed_message.id)
         delete_from_db(delayed_message.id)
 
@@ -231,8 +231,8 @@ async def list_delay_messages(channel, author_id):
         msg = delayed_messages[msg_id]
         if msg.guild_id == channel.guild.id:
             output += f"> \n> **ID:**  {msg.id}\n"
-            output += f"> **Author:**  {msg.author().name}\n"
-            output += f"> **Channel:**  {msg.delivery_channel().name}\n"
+            output += f"> **Author:**  {msg.author(client).name}\n"
+            output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
@@ -259,9 +259,9 @@ async def list_all_delay_messages(channel, author_id):
         for msg_id in sorted_messages:
             msg = delayed_messages[msg_id]
             output += f"> \n> **ID:**  {msg.id}\n"
-            output += f"> **Author:**  {msg.author().name}\n"
-            output += f"> **Server:**  {msg.guild().name}\n"
-            output += f"> **Channel:**  {msg.delivery_channel().name}\n"
+            output += f"> **Author:**  {msg.author(client).name}\n"
+            output += f"> **Server:**  {msg.guild(client).name}\n"
+            output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
@@ -313,8 +313,8 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
             content += f"**ID:**  {msg_num}\n"
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
-        content += f"**Author:**  {msg.author().name}\n"
-        content += f"**Deliver to:**  {msg.delivery_channel().name}\n"
+        content += f"**Author:**  {msg.author(client).name}\n"
+        content += f"**Deliver to:**  {msg.delivery_channel(client).name}\n"
         if channel.guild.id != msg.guild_id:
             content += f"**Deliver in:**  {channel.guild.name}\n"
         if round((msg.delivery_time - time())/60, 1) < 0:
