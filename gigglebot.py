@@ -11,18 +11,11 @@ import util.confirm as confirm
 import util.gigtz as gigtz
 import mysql.connector
 import help
+import gigdb
 
 client = discord.Client()
 delayed_messages = {}
 users = {}
-
-def giggleDB():
-    return mysql.connector.connect(
-            host="localhost",            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
 
 class DelayedMessage:
     def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, description, content):
@@ -55,7 +48,7 @@ class User:
         self.last_message_id = last_message_id
 
     def set_last_message(self, user_id, message_id):
-        mydb = giggleDB()
+        mydb = gigdb.db_connect()
 
         sql = "UPDATE users SET last_message_id = %s WHERE user = %s"
 
@@ -67,7 +60,7 @@ class User:
         mydb.disconnect()
 
     def save(self, user_id):
-        mydb = giggleDB()
+        mydb = gigdb.db_connect()
 
         sql = "INSERT into users values ( %s, %s, %s, %s )"
 
@@ -78,7 +71,7 @@ class User:
         mydb.disconnect()
 
 def insert_into_db(delayed_message):
-    mydb = giggleDB()
+    mydb = gigdb.db_connect()
 
     mycursor = mydb.cursor()
     sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s)"
@@ -88,7 +81,7 @@ def insert_into_db(delayed_message):
     mydb.disconnect()
 
 def update_db(delayed_message):
-    mydb = giggleDB()
+    mydb = gigdb.db_connect()
 
     mycursor = mydb.cursor()
     sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s, description = %s WHERE id = %s"
@@ -98,7 +91,7 @@ def update_db(delayed_message):
     mydb.disconnect()
 
 def delete_from_db(id):
-    mydb = giggleDB()
+    mydb = gigdb.db_connect()
 
     mycursor = mydb.cursor()
     mycursor.execute(f"DELETE FROM messages WHERE id='{id}'")
@@ -107,7 +100,7 @@ def delete_from_db(id):
     mydb.disconnect()
 
 async def load_from_db(delayed_messages):
-    mydb = giggleDB()
+    mydb = gigdb.db_connect()
 
     loop = asyncio.get_event_loop()
     mycursor = mydb.cursor()
@@ -155,7 +148,7 @@ async def load_from_db(delayed_messages):
     load_timezones_and_users()
 
 def load_timezones_and_users():
-    mydb = giggleDB()
+    mydb = gigdb.db_connect()
 
     mycursor = mydb.cursor()
 
@@ -341,7 +334,7 @@ async def show_user_timezone(channel, author_id):
 
 async def set_user_timezone(channel, author, tz):
     if tz in timezones:
-        mydb = giggleDB()
+        mydb = gigdb.db_connect()
 
         if author.id in users:
             sql = "UPDATE users SET timezone = %s, name = %s WHERE user = %s"
