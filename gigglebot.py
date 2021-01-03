@@ -617,7 +617,7 @@ async def on_message(msg):
         return
 
     if re.search(r'^~giggle +timezones *$', msg.content):
-        await channel.send(embed=discord.Embed(description=output = gigtz.display_timezones(client.user.mention), color=0x00ff00))
+        await msg.channel.send(embed=discord.Embed(description=gigtz.display_timezones(client.user.mention), color=0x00ff00))
         return
 
     if re.search(r'^~giggle', msg.content):
