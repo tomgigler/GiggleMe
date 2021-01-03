@@ -446,9 +446,11 @@ async def edit_delay_message(params):
         else:
             try:
                 delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
-            except:
-                await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                return
+                try:
+                    delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M:%S').timestamp())
+                except:
+                    await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                    return
 
     if channel:
         try:
@@ -637,7 +639,7 @@ async def on_message(msg):
             'channel': match.group(8), 'description': match.group(11), 'content': match.group(14), 'author': msg.author})
         return
 
-    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?)?|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
     if match:
         await process_delay_message(msg, match.group(1), match.group(5), match.group(8), match.group(11))
         return
