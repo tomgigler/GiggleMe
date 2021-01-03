@@ -18,8 +18,7 @@ users = {}
 
 def giggleDB():
     return mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
+            host="localhost",            user=settings.db_user,
             password=settings.db_password,
             database=settings.database,
             charset='utf8mb4'
@@ -77,12 +76,6 @@ class User:
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
-
-def local_time_to_utc(user_id, time):
-    if users[user_id].timezone:
-        return time - 3600 * gigtz.timezones[users[user_id].timezone].offset
-    else:
-        return time
 
 def display_localized_time(user_id, time):
     if user_id in users and users[user_id].timezone:
@@ -212,7 +205,7 @@ async def process_delay_message(discord_message, delay, channel, description, co
                 delivery_time = time() + int(delay) * 60
         else:
             try:
-                delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
+                delivery_time = gigtz.local_time_str_to_utc(delay, users[discord_message.author.id].timezone)
             except:
                 try:
                     delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M:%S').timestamp())
@@ -238,10 +231,6 @@ async def process_delay_message(discord_message, delay, channel, description, co
             await discord_message.channel.send(embed=embed)
 
         delayed_messages[newMessage.id] = newMessage
-
-        if discord_message.author.id not in users:
-            users[discord_message.author.id] = User(discord_message.author.name, None)
-            users[discord_message.author.id].save(discord_message.author.id)
 
         users[discord_message.author.id].set_last_message(discord_message.author.id, newMessage.id)
 
@@ -451,7 +440,7 @@ async def edit_delay_message(params):
                 delivery_time = time() + int(delay) * 60
         else:
             try:
-                delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M').timestamp())
+                delivery_time = gigtz.local_time_str_to_utc(delay, users[discord_message.author.id].timezone)
             except:
                 try:
                     delivery_time = local_time_to_utc(discord_message.author.id, datetime.strptime(delay, '%Y-%m-%d %H:%M:%S').timestamp())
@@ -562,6 +551,10 @@ async def on_message(msg):
             return
     except:
         return
+
+    if msg.author.id not in users:
+        users[msg.author.id] = User(msg.author.name, None)
+        users[msg.author.id].save(msg.author.id)
 
     if re.search(r'^~giggle +listall *$', msg.content) and msg.author.id == 669370838478225448:
         await list_all_delay_messages(msg.channel, msg.author.id)
