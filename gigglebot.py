@@ -7,10 +7,10 @@ from datetime import datetime
 from time import time, ctime, localtime
 from operator import attrgetter
 from hashlib import md5
-import util.confirm as confirm
-import util.gigtz as gigtz
 import mysql.connector
 import help
+import confirm
+import gigtz
 import gigdb
 
 client = discord.Client()
