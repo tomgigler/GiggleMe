@@ -429,7 +429,7 @@ async def edit_delay_message(params):
     author = params['author']
 
     if not delay and not channel and not description and not content:
-        await discord_message.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`"))
+        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of time, channel, description, or content"))
         return
 
     if message_id == 'last' and author.id in users and users[author.id].last_message_id:
