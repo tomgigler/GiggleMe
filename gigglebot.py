@@ -330,7 +330,7 @@ async def show_user_timezone(channel, author_id):
     await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_user_timezone(channel, author, tz):
-    if tz in timezones:
+    if tz in gigtz.timezones:
         mydb = gigdb.db_connect()
 
         if author.id in users:

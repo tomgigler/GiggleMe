@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from datetime import datetime
 from time import ctime, localtime
+import gigdb
 
 timezones = {}
 
@@ -30,7 +31,7 @@ def local_time_str_to_utc(time_str, timezone):
 
 def display_localized_time(time, timezone):
     if timezone:
-        return f"{ctime(time + 3600 * gigtz.timezones[timezone].offset)} {timezone}"
+        return f"{ctime(time + 3600 * timezones[timezone].offset)} {timezone}"
     else:
         return f"{ctime(time)} {localtime(time).tm_zone}"
 
@@ -41,7 +42,7 @@ def load_timezones():
 
     mycursor.execute("select * from timezones")
     for tz in mycursor.fetchall():
-        gigtz.timezones[tz[0]] = gigtz.TimeZone(tz[1], tz[2])
+        timezones[tz[0]] = TimeZone(tz[1], tz[2])
 
     mycursor.close()
     mydb.disconnect()
