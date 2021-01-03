@@ -14,7 +14,6 @@ import help
 
 client = discord.Client()
 delayed_messages = {}
-timezones = {}
 users = {}
 
 def giggleDB():
@@ -81,13 +80,13 @@ class User:
 
 def local_time_to_utc(user_id, time):
     if users[user_id].timezone:
-        return time - 3600 * timezones[users[user_id].timezone].offset
+        return time - 3600 * gittz.timezones[users[user_id].timezone].offset
     else:
         return time
 
 def display_localized_time(user_id, time):
     if user_id in users and users[user_id].timezone:
-        return f"{ctime(time + 3600 * timezones[users[user_id].timezone].offset)} {users[user_id].timezone}"
+        return f"{ctime(time + 3600 * gigtz.timezones[users[user_id].timezone].offset)} {users[user_id].timezone}"
     else:
         return f"{ctime(time)} {localtime(time).tm_zone}"
 
@@ -175,7 +174,7 @@ def load_timezones_and_users():
 
     mycursor.execute("select * from timezones")
     for tz in mycursor.fetchall():
-        timezones[tz[0]] = gittz.TimeZone(tz[1], tz[2])
+        gigtz.timezones[tz[0]] = gittz.TimeZone(tz[1], tz[2])
 
     mycursor.execute("select * from users")
     for user in mycursor.fetchall():
@@ -349,16 +348,6 @@ async def list_all_delay_messages(channel, author_id):
         await channel.send("> \n> **====================**\n")
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
-
-async def display_timezones(channel):
-    output = "**Available Time Zones**\n**=============================**\n"
-    for tz in timezones:
-        offset = f"{timezones[tz].offset}"
-        if timezones[tz].offset > 0:
-            offset = "+" + offset
-        output += f"**{tz}**  -  {timezones[tz].name}  -  UTC {offset}\n"
-    output += f"\nDon't see your time zone?  DM **{client.user.mention}** and ask me to add it!"
-    await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def show_user_timezone(channel, author_id):
     if author_id in users and users[author_id].timezone:
@@ -628,7 +617,7 @@ async def on_message(msg):
         return
 
     if re.search(r'^~giggle +timezones *$', msg.content):
-        await display_timezones(msg.channel)
+        await channel.send(embed=discord.Embed(description=output = gigtz.display_timezones(client.user.mention), color=0x00ff00))
         return
 
     if re.search(r'^~giggle', msg.content):
