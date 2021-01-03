@@ -341,8 +341,6 @@ async def set_user_timezone(channel, author, tz):
         mycursor.close()
         mydb.disconnect()
 
-        if author.id not in users:
-            users[author.id] = User(author.name, tz)
         users[author.id].timezone = tz
         await channel.send(embed=discord.Embed(description=f"Your time zone has been set to {tz}", color=0x00ff00))
     else:
@@ -466,10 +464,6 @@ async def edit_delay_message(params):
             update_db(newMessage)
         else:
             update_db(msg)
-
-        if discord_message.author.id not in users:
-            users[discord_message.author.id] = User(discord_message.author.name, None)
-            users[discord_message.author.id].save(discord_message.author.id)
 
         await discord_message.channel.send(embed=embed)
 
