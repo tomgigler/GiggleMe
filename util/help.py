@@ -34,6 +34,11 @@ def show_help(command):
         return """`~giggle show <message-id>`
 
         Show the contents of the message identified by <message-id>
+
+        '~giggle show raw <message-id>'
+
+        Show the raw (Markdown) message
+
         Note:  `last` may be used as <message-id> to reference your most recently scheduled message
         """
 

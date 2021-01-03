@@ -393,7 +393,7 @@ async def set_user_timezone(channel, author, tz):
     else:
         await channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
 
-async def show_delayed_message(channel, author_id, msg_num):
+async def show_delayed_message(channel, author_id, msg_num, raw):
     content = ""
     if msg_num == 'last':
         if author_id in users:
@@ -411,7 +411,10 @@ async def show_delayed_message(channel, author_id, msg_num):
             content += f"**Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
         content += f"**Description:**  {msg.description}\n"
         await channel.send(content)
-        await channel.send(msg.content)
+        if raw:
+            await channel.send("```\n" + msg.content + "\n```")
+        else:
+            await channel.send(msg.content)
         message_found = True
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0x00ff00))
@@ -583,9 +586,9 @@ async def on_message(msg):
         await list_delay_messages(msg.channel, msg.author.id)
         return
 
-    match = re.search(r'^~giggle +show +(\S+) *$', msg.content)
+    match = re.search(r'^~giggle +show( +(raw))?( +(\S+)) *$', msg.content)
     if match:
-        await show_delayed_message(msg.channel, msg.author.id, match.group(1))
+        await show_delayed_message(msg.channel, msg.author.id, match.group(4), match.group(2))
         return
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', msg.content)
