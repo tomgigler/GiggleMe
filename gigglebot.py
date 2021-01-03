@@ -322,8 +322,8 @@ async def list_delay_messages(channel, author_id):
 async def list_all_delay_messages(channel, author_id):
     if len(delayed_messages) > 0:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
-        count = 0
-        for msg_id in delayed_messages:
+        sorted_messages = {k: v for k, v in sorted(delayed_messages.items(), key=lambda item: item[1].delivery_time)}
+        for msg_id in sorted_messages:
             msg = delayed_messages[msg_id]
             output += f"> \n> **ID:**  {msg.id}\n"
             output += f"> **Author:**  {msg.author().name}\n"
@@ -333,6 +333,7 @@ async def list_all_delay_messages(channel, author_id):
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
                 output += f"> **Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
+            output += f"> **Description:**  {msg.description}\n"
         await channel.send(output + "> \n> **====================**\n")
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
