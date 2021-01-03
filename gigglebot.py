@@ -145,16 +145,13 @@ async def load_from_db(delayed_messages):
     mycursor.close()
     mydb.disconnect()
 
-    load_timezones_and_users()
+    gigtz.load_timezones()
+    load_users()
 
-def load_timezones_and_users():
+def load_users():
     mydb = gigdb.db_connect()
 
     mycursor = mydb.cursor()
-
-    mycursor.execute("select * from timezones")
-    for tz in mycursor.fetchall():
-        gigtz.timezones[tz[0]] = gigtz.TimeZone(tz[1], tz[2])
 
     mycursor.execute("select * from users")
     for user in mycursor.fetchall():
@@ -613,6 +610,7 @@ async def on_guild_join(guild):
     user = client.get_user(669370838478225448)
     await user.send(f"{client.user.name} bot joined {guild.name}")
 
-load_timezones_and_users()
+gigtz.load_timezones()
+load_users()
 
 client.run(settings.bot_token)

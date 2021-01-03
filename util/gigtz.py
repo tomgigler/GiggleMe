@@ -34,3 +34,15 @@ def display_localized_time(time, timezone):
     else:
         return f"{ctime(time)} {localtime(time).tm_zone}"
 
+def load_timezones():
+    mydb = gigdb.db_connect()
+
+    mycursor = mydb.cursor()
+
+    mycursor.execute("select * from timezones")
+    for tz in mycursor.fetchall():
+        gigtz.timezones[tz[0]] = gigtz.TimeZone(tz[1], tz[2])
+
+    mycursor.close()
+    mydb.disconnect()
+
