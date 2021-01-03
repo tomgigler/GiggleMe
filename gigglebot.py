@@ -77,12 +77,6 @@ class User:
         mycursor.close()
         mydb.disconnect()
 
-def display_localized_time(user_id, time):
-    if user_id in users and users[user_id].timezone:
-        return f"{ctime(time + 3600 * gigtz.timezones[users[user_id].timezone].offset)} {users[user_id].timezone}"
-    else:
-        return f"{ctime(time)} {localtime(time).tm_zone}"
-
 def insert_into_db(delayed_message):
     mydb = giggleDB()
 
@@ -226,7 +220,7 @@ async def process_delay_message(discord_message, delay, channel, description, co
         if delivery_time == 0:
             await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
         else:
-            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server {display_localized_time(discord_message.author.id, newMessage.delivery_time)}", color=0x00ff00)
+            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server {gigtz.display_localized_time(newMessage.delivery_time, users[discord_message.author.id].timezone)}", color=0x00ff00)
             embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
             await discord_message.channel.send(embed=embed)
 
@@ -296,7 +290,7 @@ async def list_delay_messages(channel, author_id):
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                output += f"> **Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
+                output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
             output += f"> **Description:**  {msg.description}\n"
             count += 1
             total += 1
@@ -325,7 +319,7 @@ async def list_all_delay_messages(channel, author_id):
             if round((msg.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                output += f"> **Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
+                output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
             output += f"> **Description:**  {msg.description}\n"
             count += 1
             if count == 4:
@@ -382,7 +376,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         if round((msg.delivery_time - time())/60, 1) < 0:
             content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
         else:
-            content += f"**Deliver:**  {display_localized_time(author_id, msg.delivery_time)}\n"
+            content += f"**Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
         content += f"**Description:**  {msg.description}\n"
         await channel.send(content)
         if raw:
@@ -483,7 +477,7 @@ async def edit_delay_message(params):
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
             else:
-                embed.add_field(name="Deliver", value=f"{display_localized_time(discord_message.author.id, newMessage.delivery_time)}", inline=False)
+                embed.add_field(name="Deliver", value=f"{gigtz.display_localized_time(newMessage.delivery_time, users[discord_message.author.id].timezone)}", inline=False)
             loop.create_task(schedule_delay_message(newMessage))
             update_db(newMessage)
         else:

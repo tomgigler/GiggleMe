@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from datetime import datetime
+from time import ctime, localtime
 
 timezones = {}
 
@@ -26,4 +27,10 @@ def local_time_str_to_utc(time_str, timezone):
         return time - 3600 * timezones[timezone].offset
     else:
         return time
+
+def display_localized_time(time, timezone):
+    if timezone:
+        return f"{ctime(time + 3600 * gigtz.timezones[timezone].offset)} {timezone}"
+    else:
+        return f"{ctime(time)} {localtime(time).tm_zone}"
 
