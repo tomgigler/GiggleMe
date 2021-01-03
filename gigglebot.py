@@ -598,9 +598,9 @@ async def on_message(msg):
         await list_all_delay_messages(msg.channel, msg.author.id)
         return
 
-    match = re.search(r'^~giggle +help (\S+)?*$', msg.content)
+    match = re.search(r'^~giggle +help( +(\S+))? *$', msg.content)
     if match:
-        await channel.send(embed=discord.Embed(description=help.show_help(match.group(1))))
+        await msg.channel.send(embed=discord.Embed(description=help.show_help(match.group(2))))
         return
 
     match = re.search(r'^~giggle +timezone( +([A-Z][A-Z][A-Z]))? *$', msg.content)

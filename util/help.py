@@ -9,7 +9,7 @@ def show_help(command):
 
         <time> may be either a number of minutes from now
         or a DateTime of the format YYYY-MM-DD HH:MM(:SS)
-        All times are in UTC unless you have set your local
+        All times are UTC unless you have set your local
         time with the `~giggle timezone` command
 
         desc is an optional description of the message
@@ -45,17 +45,21 @@ def show_help(command):
         """
 
     if command == "edit":
-        return """`~giggle edit <message-id> <date-time> channel=<channel> desc="<desc>"`
+        return """`~giggle edit <message-id> <time> channel=<channel> desc="<desc>"`
         `<message>`
 
         Edit message identified by <message-id>.
-        <date-time> may be either a date as specified above or a number of minutes from now.
+        
+        <time> may be either a number of minutes from now or a DateTime of the format YYYY-MM-DD HH:MM(:SS)
         If not specified, the current delivery time will be used.
-        All times are in UTC unless you have set your local
-        time with the `~giggle timezone` command
+        All times are UTC unless you have set your local time with the `~giggle timezone` command
+
         channel=<channel> is optional.  If not specified, the current delivery channel will be used.
+
         desc="<desc>" is optional.  If both channel and desc are included, desc must come after channel
+
         <message> is optional.  If specified, it will replace the body of the current message.
+
         Note:  `last` may be used as <message-id> to reference your most recently scheduled message
         """
 
@@ -87,7 +91,7 @@ def show_help(command):
         """
 
     if command == "help":
-        return """~giggle help <command>
+        return """`~giggle help <command>`
 
         Show the help for <command>
 
