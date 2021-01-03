@@ -190,10 +190,8 @@ async def list_delay_messages(channel, author_id):
                 await channel.send(output)
                 output = ""
                 count = 0
-    if count > 0:
-        await channel.send(output)
     if total > 0:
-        await channel.send("> \n> **====================**\n")
+        await channel.send(output + "> \n> **====================**\n")
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
@@ -218,9 +216,7 @@ async def list_all_delay_messages(channel, author_id):
                 await channel.send(output)
                 output = ""
                 count = 0
-        if count != 0:
-            await channel.send(output)
-        await channel.send("> \n> **====================**\n")
+        await channel.send(output + "> \n> **====================**\n")
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
