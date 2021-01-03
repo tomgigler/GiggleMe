@@ -268,7 +268,6 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         else:
             content += f"**Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
         content += f"**Description:**  {msg.description}\n"
-        content += msg.content
         await channel.send(content)
         if raw:
             await channel.send("```\n" + msg.content + "\n```")
