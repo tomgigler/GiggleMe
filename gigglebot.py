@@ -323,7 +323,7 @@ async def list_delay_messages(channel, author_id):
     if count > 0:
         await channel.send(output)
     if total > 0:
-        await channel.send(output + "> \n> **====================**\n")
+        await channel.send("> \n> **====================**\n")
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
