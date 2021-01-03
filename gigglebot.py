@@ -279,7 +279,7 @@ async def list_all_delay_messages(channel, author_id):
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_user_timezone(channel, author_id):
-    if author_id in users and giguser.users[author_id].timezone:
+    if author_id in giguser.users and giguser.users[author_id].timezone:
         output = f"Your time zone is currently set to:  **{giguser.users[author_id].timezone}**"
     else:
         output = "Your time zone is not set.  You are using the default time zone (UTC)"
@@ -289,7 +289,7 @@ async def set_user_timezone(channel, author, tz):
     if tz in gigtz.timezones:
         mydb = gigdb.db_connect()
 
-        if author.id in users:
+        if author.id in giguser.users:
             sql = "UPDATE users SET timezone = %s, name = %s WHERE user = %s"
         else:
             sql = "INSERT INTO users ( timezone, name, user ) values ( %s, %s, %s )"
@@ -308,7 +308,7 @@ async def set_user_timezone(channel, author, tz):
 async def show_delayed_message(channel, author_id, msg_num, raw):
     content = ""
     if msg_num == 'last':
-        if author_id in users:
+        if author_id in giguser.users:
             msg_num = giguser.users[author_id].last_message_id
             content += f"**ID:**  {msg_num}\n"
     if msg_num in delayed_messages:
@@ -322,6 +322,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         else:
             content += f"**Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone)}\n"
         content += f"**Description:**  {msg.description}\n"
+        content += msg.content
         await channel.send(content)
         if raw:
             await channel.send("```\n" + msg.content + "\n```")
@@ -336,7 +337,7 @@ async def send_delay_message(params):
     author = params['author']
     msg_num = params['msg_num']
 
-    if msg_num == 'last' and author.id in users and giguser.users[author.id].last_message_id:
+    if msg_num == 'last' and author.id in giguser.users and giguser.users[author.id].last_message_id:
         msg_num = giguser.users[author.id].last_message_id
         await confirm.confirm_request(channel, author, f"Send message {msg_num} now?", 10, send_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
@@ -364,7 +365,7 @@ async def edit_delay_message(params):
         await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of time, channel, description, or content"))
         return
 
-    if message_id == 'last' and author.id in users and giguser.users[author.id].last_message_id:
+    if message_id == 'last' and author.id in giguser.users and giguser.users[author.id].last_message_id:
         message_id = giguser.users[author.id].last_message_id
         await confirm.confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
             {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
@@ -455,7 +456,7 @@ async def cancel_delay_message(params):
         await confirm.confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
         return
 
-    if msg_num == 'last' and author.id in users and giguser.users[author.id].last_message_id:
+    if msg_num == 'last' and author.id in giguser.users and giguser.users[author.id].last_message_id:
         msg_num = giguser.users[author.id].last_message_id
         await confirm.confirm_request(channel, author, f"Cancel message {msg_num}?", 10, cancel_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
         return
@@ -483,7 +484,7 @@ async def on_message(msg):
     except:
         return
 
-    if msg.author.id not in users:
+    if msg.author.id not in giguser.users:
         giguser.users[msg.author.id] = giguser.User(msg.author.name, None)
         giguser.users[msg.author.id].save(msg.author.id)
 
