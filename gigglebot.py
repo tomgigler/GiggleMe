@@ -468,7 +468,7 @@ async def on_message(msg):
         users[msg.author.id] = User(msg.author.name, None, time())
         users[msg.author.id].save(msg.author.id)
     else:
-        users[msg.author.id].set_last_active = time()
+        users[msg.author.id].set_last_active(msg.author.id, time())
 
     match = re.search(r'^~giggle +listall( +templates)? *$', msg.content)
     if match and msg.author.id == 669370838478225448:
