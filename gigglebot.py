@@ -403,7 +403,7 @@ async def cancel_all_delay_message(params):
     message_count = 0
     messages_to_remove = []
     for msg_id in delayed_messages:
-        if delayed_message[msg_id].delivery_time is not None:
+        if delayed_messages[msg_id].delivery_time is not None:
             messages_to_remove.append(delayed_messages[msg_id])
     for msg in messages_to_remove:
         if msg.author_id == member.id  and msg.delivery_channel_id == channel.id:
