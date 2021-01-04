@@ -283,6 +283,8 @@ async def send_delay_message(params):
 
     if msg_num == 'last':
         message_id = users[author.id].last_message_id
+    else:
+        message_id = msg_num
 
     if message_id in delayed_messages:
         if msg_num == 'last':
