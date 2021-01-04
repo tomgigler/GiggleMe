@@ -213,11 +213,11 @@ async def list_delay_messages(channel, author_id, list_templates=False):
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def list_all_delay_messages(channel, author_id, list_templates=False):
-    for message in delayed_messages:
-        if list_templates and message.delivery_time is None:
-            sorted_messages[message.id] = message
-        elif not list_templates and message.delivery_time is not None:
-            sorted_messages[message.id] = message
+    for msg_id in delayed_messages:
+        if list_templates and delayed_messages[msg_id].delivery_time is None:
+            sorted_messages[message.id] = delayed_messages[msg_id]
+        elif not list_templates and delayed_messages[msg_id].delivery_time is not None:
+            sorted_messages[message.id] = delayed_message[msg_id]
             sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
     if len(sorted_messages) > 0:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
