@@ -176,24 +176,31 @@ async def schedule_delay_message(delayed_message):
         delayed_messages.pop(delayed_message.id)
         delayed_message.delete_from_db()
 
-async def list_delay_messages(channel, author_id, list_templates=False):
+async def list_delay_messages(channel, author_id, list_all, templates=False):
     count = 0
     total = 0
-    if list_templates:
+    if templates:
         output = "> \n> **=========================**\n>  **Templates**\n> **========================**\n"
     else:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
 
-    sorted_messages = get_messages(list_templates)
+    sorted_messages = {}
+    for msg_id in delayed_messages:
+        if templates and delayed_messages[msg_id].delivery_time is None:
+            sorted_messages[msg_id] = delayed_messages[msg_id]
+        elif not templates and delayed_messages[msg_id].delivery_time is not None:
+            sorted_messages[msg_id] = delayed_messages[msg_id]
+    if not templates:
+        sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
         msg = sorted_messages[msg_id]
-        if msg.delivery_time is None and list_templates or msg.delivery_time is not None and not list_templates:
-            if msg.guild_id == channel.guild.id:
+        if msg.delivery_time is None and templates or msg.delivery_time is not None and not templates:
+            if msg.guild_id == channel.guild.id or list_all:
                 output += f"> \n> **ID:**  {msg.id}\n"
                 output += f"> **Author:**  {msg.author(client).name}\n"
                 output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-                if not list_templates:
+                if not templates:
                     if round((msg.delivery_time - time())/60, 1) < 0:
                         output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                     else:
@@ -208,52 +215,10 @@ async def list_delay_messages(channel, author_id, list_templates=False):
     if total > 0:
         await channel.send(output + "> \n> **====================**\n")
     else:
-        if list_templates:
+        if templates:
             await channel.send(embed=discord.Embed(description="No templates found", color=0x00ff00))
         else:
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
-
-def get_messages(get_templates=False)
-    sorted_messages = {}
-    for msg_id in delayed_messages:
-        if list_templates and delayed_messages[msg_id].delivery_time is None:
-            sorted_messages[msg_id] = delayed_messages[msg_id]
-        elif not list_templates and delayed_messages[msg_id].delivery_time is not None:
-            sorted_messages[msg_id] = delayed_messages[msg_id]
-    if not list_templates:
-        sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
-    return sorted_messages
-
-async def list_all_delay_messages(channel, author_id, list_templates=False):
-    sorted_messages = get_messages(list_templates)
-    if not list_templates:
-        sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
-    if len(sorted_messages) > 0:
-        if list_templates:
-            output = "> \n> **=========================**\n>  **Templates**\n> **========================**\n"
-        else:
-            output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
-        count = 0
-        for msg_id in sorted_messages:
-            msg = sorted_messages[msg_id]
-            output += f"> \n> **ID:**  {msg.id}\n"
-            output += f"> **Author:**  {msg.author(client).name}\n"
-            output += f"> **Server:**  {msg.guild(client).name}\n"
-            output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-            if msg.delivery_time is not None:
-                if round((msg.delivery_time - time())/60, 1) < 0:
-                    output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
-                else:
-                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
-            output += f"> **Description:**  {msg.description}\n"
-            count += 1
-            if count == 4:
-                await channel.send(output)
-                output = ""
-                count = 0
-        await channel.send(output + "> \n> **====================**\n")
-    else:
-        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_user_timezone(channel, author_id):
     if author_id in users and users[author_id].timezone:
@@ -466,17 +431,17 @@ async def on_message(msg):
     match = re.search(r'^~giggle +listall( +templates)? *$', msg.content)
     if match and msg.author.id == 669370838478225448:
         if match.group(1):
-            await list_all_delay_messages(msg.channel, msg.author.id, True)
+            await list_all_delay_messages(msg.channel, msg.author.id, True, True)
         else:
-            await list_all_delay_messages(msg.channel, msg.author.id)
+            await list_all_delay_messages(msg.channel, msg.author.id, True)
         return
 
     match = re.search(r'^~giggle +list( +templates)? *$', msg.content)
     if match:
         if match.group(1):
-            await list_delay_messages(msg.channel, msg.author.id, True)
+            await list_delay_messages(msg.channel, msg.author.id, False, True)
         else:
-            await list_delay_messages(msg.channel, msg.author.id)
+            await list_delay_messages(msg.channel, msg.author.id, False)
         return
 
     match = re.search(r'^~giggle +show( +(raw))?( +(\S+)) *$', msg.content)
