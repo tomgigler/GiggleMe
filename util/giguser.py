@@ -7,7 +7,7 @@ class User:
     def __init__(self, name, timezone, last_active, last_message_id=None):
         self.name = name
         self.timezone = timezone
-        self.last_active =
+        self.last_active = last_active
         self.last_message_id = last_message_id
 
     def set_last_active(self, user_id, last_active):
