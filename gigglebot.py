@@ -183,10 +183,11 @@ async def list_delay_messages(channel, author_id, list_templates=False):
         output = "> \n> **=========================**\n>  **Templates**\n> **========================**\n"
     else:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
-    sorted_messages = {k: v for k, v in sorted(delayed_messages.items(), key=lambda item: item[1].delivery_time)}
+
+    sorted_messages = get_messages(list_templates)
 
     for msg_id in sorted_messages:
-        msg = delayed_messages[msg_id]
+        msg = sorted_messages[msg_id]
         if msg.delivery_time is None and list_templates or msg.delivery_time is not None and not list_templates:
             if msg.guild_id == channel.guild.id:
                 output += f"> \n> **ID:**  {msg.id}\n"
@@ -212,13 +213,19 @@ async def list_delay_messages(channel, author_id, list_templates=False):
         else:
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def list_all_delay_messages(channel, author_id, list_templates=False):
+def get_messages(get_templates=False)
     sorted_messages = {}
     for msg_id in delayed_messages:
         if list_templates and delayed_messages[msg_id].delivery_time is None:
             sorted_messages[msg_id] = delayed_messages[msg_id]
         elif not list_templates and delayed_messages[msg_id].delivery_time is not None:
             sorted_messages[msg_id] = delayed_messages[msg_id]
+    if not list_templates:
+        sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
+    return sorted_messages
+
+async def list_all_delay_messages(channel, author_id, list_templates=False):
+    sorted_messages = get_messages(list_templates)
     if not list_templates:
         sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
     if len(sorted_messages) > 0:
@@ -456,8 +463,8 @@ async def on_message(msg):
         users[msg.author.id] = User(msg.author.name, None)
         users[msg.author.id].save(msg.author.id)
 
-    match = re.search(r'^~giggle +listall( +templates)? *$', msg.content) and msg.author.id == 669370838478225448
-    if match:
+    match = re.search(r'^~giggle +listall( +templates)? *$', msg.content)
+    if match and msg.author.id == 669370838478225448:
         if match.group(1):
             await list_all_delay_messages(msg.channel, msg.author.id, True)
         else:
