@@ -15,6 +15,11 @@ def show_help(command):
         desc is an optional description of the message
         If included, it must come after channel and be surrounded by double quotes
 
+        To create a template:
+
+        `~giggle template channel=<channel> desc="<brief description>"`
+        `<message>`
+
         The following commands may be used to manage scheduled messages:
 
         `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`
@@ -28,6 +33,10 @@ def show_help(command):
         return """`~giggle list`
 
         Display a list of currently scheduled messages for all users on this server
+
+        `~giggle list templates`
+
+        Display a list of templates for all users on this server
         """
 
     if command == "show":
@@ -40,6 +49,8 @@ def show_help(command):
         Show the raw (Markdown) message
 
         Note:  `last` may be used as <message-id> to reference your most recently scheduled message
+
+        Both `show` and `show raw` may be used to show templates
         """
 
     if command == "send":
@@ -66,17 +77,20 @@ def show_help(command):
         <message> is optional.  If specified, it will replace the body of the current message.
 
         Note:  `last` may be used as <message-id> to reference your most recently scheduled message
+
+        `edit` may be used to edit templates.  When editing a template, the <time> option is not allowed
         """
 
     if command == "cancel":
         return """`~giggle cancel <message-id>`
 
-        Cancel message identified by <message-id>
+        Cancel message or delete template identified by <message-id>
         Note:  `last` may be used as <message-id> to reference your most recently scheduled message
 
         `~giggle cancel all`
 
         Cancel all delayed messages scheduled by you.  You will be prompted for confirmation
+        `cancel all` has no effect on templates
         """
 
     if command == "timezone":
