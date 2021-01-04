@@ -180,7 +180,7 @@ async def list_delay_messages(channel, author_id, list_all, templates=False):
     count = 0
     total = 0
     if templates:
-        output = "> \n> **=========================**\n>  **Templates**\n> **========================**\n"
+        output = "> \n> **=========================**\n>  **Templates**\n> **=========================**\n"
     else:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
 
@@ -259,10 +259,13 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         content += f"**Deliver to:**  {msg.delivery_channel(client).name}\n"
         if channel.guild.id != msg.guild_id:
             content += f"**Deliver in:**  {channel.guild.name}\n"
-        if round((msg.delivery_time - time())/60, 1) < 0:
-            content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
+        if msg.delivery_time is not None:
+            if round((msg.delivery_time - time())/60, 1) < 0:
+                content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
+            else:
+                content += f"**Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
         else:
-            content += f"**Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
+            content = "**Template**\n" + content
         content += f"**Description:**  {msg.description}\n"
         await channel.send(content)
         if raw:
@@ -473,7 +476,7 @@ async def on_message(msg):
     if re.search(r'^~giggle +resume *$', msg.content) and msg.author.id == 669370838478225448:
         await client.change_presence(activity=discord.Game('with thegigler'))
         await load_from_db(delayed_messages)
-        await list_all_delay_messages(msg.channel, msg.author.id)
+        await list_delay_messages(msg.channel, msg.author.id)
         return
 
     match = re.search(r'^~giggle +help( +(\S+))? *$', msg.content)
