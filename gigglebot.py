@@ -468,7 +468,9 @@ async def on_message(msg):
         if msg.author.id not in users:
             users[msg.author.id] = User(msg.author.name, None, time())
             users[msg.author.id].save(msg.author.id)
-        elif time() - users[msg.author.id].last_active > 5:
+        elif time() - users[msg.author.id].last_active > 3600:
+            user = client.get_user(669370838478225448)
+            await user.send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
             users[msg.author.id].set_last_active(msg.author.id, time())
 
         match = re.search(r'^~giggle +listall( +templates)? *$', msg.content)
