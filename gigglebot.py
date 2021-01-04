@@ -314,7 +314,7 @@ async def edit_delay_message(params):
     author = params['author']
     
     need_to_confirm = False
-    type = "message"
+    type = "Message"
 
     if not delay and not channel and not description and not content:
         await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of time, channel, description, or content"))
@@ -328,7 +328,7 @@ async def edit_delay_message(params):
 
         msg = delayed_messages[message_id]
         if msg.delivery_time == None:
-            type = "template"
+            type = "Template"
 
         if delay:
             if msg.delivery_time == None:
@@ -365,11 +365,11 @@ async def edit_delay_message(params):
                 return
 
         if need_to_confirm:
-            await confirm_request(discord_message.channel, author, f"Edit {type} {message_id}?", 10, edit_delay_message,
+            await confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
                 {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
             return
 
-        embed = discord.Embed(description=f"{type.title()} edited", color=0x00ff00)
+        embed = discord.Embed(description=f"{type} edited", color=0x00ff00)
         if channel:
             msg.delivery_channel_id = delivery_channel.id
             embed.add_field(name="Channel", value=f"{delivery_channel.name}", inline=False)
@@ -403,7 +403,8 @@ async def cancel_all_delay_message(params):
     message_count = 0
     messages_to_remove = []
     for msg_id in delayed_messages:
-        messages_to_remove.append(delayed_messages[msg_id])
+        if delayed_message[msg_id].delivery_time is not None
+            messages_to_remove.append(delayed_messages[msg_id])
     for msg in messages_to_remove:
         if msg.author_id == member.id  and msg.delivery_channel_id == channel.id:
             delayed_messages.pop(msg.id)
@@ -418,19 +419,33 @@ async def cancel_delayed_message(params):
     channel = params['channel']
     author = params['author']
     msg_num = params['msg_num']
+    confirmed = params['confirmed']
+
+    need_to_confirm = False
+    
     if msg_num == 'all':
         await confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
         return
 
-    if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
+    if msg_num == 'last':
+        need_to_confirm = True
         msg_num = users[author.id].last_message_id
-        await confirm_request(channel, author, f"Cancel message {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
-        return
 
-    message_found = False
     if msg_num in delayed_messages:
+        if need_to_confirm:
+            await confirm_request(channel, author, f"Cancel message {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num, 'confirmed': True}, client)
+            return
+
+        if delayed_messages[msg_num] is None:
+            if not confirmed:
+                await confirm_request(channel, author, f"Delete template {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num, 'confirmed': True}, client)
+                return
+            else:
+                await channel.send(embed=discord.Embed(description="Template deleted", color=0x00ff00))
+        else:
+            await channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
+
         delayed_messages.pop(msg_num).delete_from_db()
-        await channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
@@ -476,7 +491,7 @@ async def on_message(msg):
 
     match = re.search(r'^~giggle +(cancel|delete|remove|clear) +(\S+) *$', msg.content)
     if match:
-        await cancel_delayed_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
+        await cancel_delayed_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2), 'confirmed': False})
         return
 
     match = re.search(r'^~giggle +send +(\S+) *$', msg.content)
