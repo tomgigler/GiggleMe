@@ -431,9 +431,9 @@ async def on_message(msg):
     match = re.search(r'^~giggle +listall( +templates)? *$', msg.content)
     if match and msg.author.id == 669370838478225448:
         if match.group(1):
-            await list_all_delay_messages(msg.channel, msg.author.id, True, True)
+            await list_delay_messages(msg.channel, msg.author.id, True, True)
         else:
-            await list_all_delay_messages(msg.channel, msg.author.id, True)
+            await list_delay_messages(msg.channel, msg.author.id, True)
         return
 
     match = re.search(r'^~giggle +list( +templates)? *$', msg.content)
