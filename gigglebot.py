@@ -290,11 +290,11 @@ async def send_delay_message(params):
             return
 
         if msg.delivery_time is None:
-            
+            await channel.send(embed=discord.Embed(description=f"{message_id} is a template and cannot be sent", color=0x0000ff))
+            return
         else:
             msg = delayed_messages[message_id]
             msg.delivery_time = 0
-            await channel.send(embed=discord.Embed(description=f"{message_id} is a template and cannot be sent", color=0x0000ff))
  
         await schedule_delay_message(msg)
 
