@@ -281,15 +281,21 @@ async def send_delay_message(params):
     author = params['author']
     msg_num = params['msg_num']
 
-    if msg_num == 'last' and author.id in users and users[author.id].last_message_id:
-        msg_num = users[author.id].last_message_id
-        await confirm_request(channel, author, f"Send message {msg_num} now?", 15, send_delay_message, {'channel': channel, 'author': author, 'msg_num': msg_num}, client)
-        return
+    if msg_num == 'last':
+        message_id = users[author.id].last_message_id
 
-    if msg_num in delayed_messages:
-        msg = delayed_messages[msg_num]
-        msg.delivery_time = 0
+    if message_id in delayed_messages:
+        if msg_num == 'last':
+            await confirm_request(channel, author, f"Send message {message_id} now?", 15, send_delay_message, {'channel': channel, 'author': author, 'msg_num': message_id}, client)
+            return
 
+        if msg.delivery_time is None:
+            
+        else:
+            msg = delayed_messages[message_id]
+            msg.delivery_time = 0
+            await channel.send(embed=discord.Embed(description=f"{message_id} is a template and cannot be sent", color=0x0000ff))
+ 
         await schedule_delay_message(msg)
 
         await channel.send(embed=discord.Embed(description="Message sent", color=0x00ff00))
@@ -476,7 +482,7 @@ async def on_message(msg):
     if re.search(r'^~giggle +resume *$', msg.content) and msg.author.id == 669370838478225448:
         await client.change_presence(activity=discord.Game('with thegigler'))
         await load_from_db(delayed_messages)
-        await list_delay_messages(msg.channel, msg.author.id)
+        await list_delay_messages(msg.channel, msg.author.id, True)
         return
 
     match = re.search(r'^~giggle +help( +(\S+))? *$', msg.content)
