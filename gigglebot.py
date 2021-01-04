@@ -465,8 +465,10 @@ async def on_message(msg):
         return
 
     if msg.author.id not in users:
-        users[msg.author.id] = User(msg.author.name, None)
+        users[msg.author.id] = User(msg.author.name, None, time())
         users[msg.author.id].save(msg.author.id)
+    else:
+        users[msg.author.id].set_last_active = time()
 
     match = re.search(r'^~giggle +listall( +templates)? *$', msg.content)
     if match and msg.author.id == 669370838478225448:
