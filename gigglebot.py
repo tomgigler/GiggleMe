@@ -89,7 +89,7 @@ async def process_delay_message(discord_message, delay, channel, description, co
     else:
         if delay == 'template':
             delivery_time = None
-        else re.search(r'^-?\d+$', delay):
+        elif re.search(r'^-?\d+$', delay):
             if delay == '0':
                 delivery_time = 0
             else:
@@ -450,8 +450,12 @@ async def on_message(msg):
         await list_all_delay_messages(msg.channel, msg.author.id)
         return
 
-    if re.search(r'^~giggle +list *$', msg.content):
-        await list_delay_messages(msg.channel, msg.author.id)
+    match = re.search(r'^~giggle +list( +templates) *$', msg.content):
+    if match:
+        if match.group(1):
+            await list_delay_messages(msg.channel, msg.author.id, True)
+        else:
+            await list_delay_messages(msg.channel, msg.author.id)
         return
 
     match = re.search(r'^~giggle +show( +(raw))?( +(\S+)) *$', msg.content)
