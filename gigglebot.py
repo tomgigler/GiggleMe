@@ -127,7 +127,7 @@ async def process_delay_message(discord_message, delay, channel, description, co
 
         delayed_messages[newMessage.id] = newMessage
 
-        users[discord_message.author.id].set_last_message(discord_message.author.id, newMessage.id)
+        users[discord_message.author.id].set_last_message(newMessage.id)
 
         await schedule_delay_message(newMessage)
 
@@ -466,12 +466,12 @@ async def on_message(msg):
             return
 
         if msg.author.id not in users:
-            users[msg.author.id] = User(msg.author.name, None, time())
-            users[msg.author.id].save(msg.author.id)
+            users[msg.author.id] = User(msg.author.id, msg.author.name, None, time())
+            users[msg.author.id].save()
         elif time() - users[msg.author.id].last_active > 3600:
             user = client.get_user(669370838478225448)
             await user.send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
-            users[msg.author.id].set_last_active(msg.author.id, time())
+            users[msg.author.id].set_last_active(time())
 
         match = re.search(r'^~giggle +listall( +templates)? *$', msg.content)
         if match and msg.author.id == 669370838478225448:
