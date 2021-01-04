@@ -56,8 +56,8 @@ async def load_from_db(delayed_messages):
             newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, description, content)
 
             delayed_messages[message_id] = newMessage
-
-            loop.create_task(schedule_delay_message(newMessage))
+            if delivery_time is not None:
+                loop.create_task(schedule_delay_message(newMessage))
 
     mycursor.close()
     mydb.disconnect()
@@ -87,7 +87,9 @@ async def process_delay_message(discord_message, delay, channel, description, co
     if not has_permission:
         await discord_message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {delivery_channel.name}", color=0xff0000))
     else:
-        if re.search(r'^-?\d+$', delay):
+        if delay == 'template':
+            delivery_time = None
+        else re.search(r'^-?\d+$', delay):
             if delay == '0':
                 delivery_time = 0
             else:
@@ -109,7 +111,14 @@ async def process_delay_message(discord_message, delay, channel, description, co
         # create new DelayedMessage
         newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, description, content)
         newMessage.insert_into_db()
-        if delivery_time == 0:
+
+        if delivery_time is None:
+            embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
+            embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
+            delayed_messages[newMessage.id] = newMessage
+            await discord_message.channel.send(embed=embed)
+            return
+        elif delivery_time == 0:
             await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
         else:
             embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server {gigtz.display_localized_time(newMessage.delivery_time, users[discord_message.author.id].timezone)}", color=0x00ff00)
@@ -167,33 +176,41 @@ async def schedule_delay_message(delayed_message):
         delayed_messages.pop(delayed_message.id)
         delayed_message.delete_from_db()
 
-async def list_delay_messages(channel, author_id):
+async def list_delay_messages(channel, author_id, list_templates=False):
     count = 0
     total = 0
-    output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
+    if list_templates:
+        output = "> \n> **=========================**\n>  **Templates**\n> **========================**\n"
+    else:
+        output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
     sorted_messages = {k: v for k, v in sorted(delayed_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
         msg = delayed_messages[msg_id]
-        if msg.guild_id == channel.guild.id:
-            output += f"> \n> **ID:**  {msg.id}\n"
-            output += f"> **Author:**  {msg.author(client).name}\n"
-            output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-            if round((msg.delivery_time - time())/60, 1) < 0:
-                output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
-            else:
-                output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
-            output += f"> **Description:**  {msg.description}\n"
-            count += 1
-            total += 1
-            if count == 4:
-                await channel.send(output)
-                output = ""
-                count = 0
+        if msg.delivery_time is None and list_templates or msg.delivery_time is not None and not list_templates:
+            if msg.guild_id == channel.guild.id:
+                output += f"> \n> **ID:**  {msg.id}\n"
+                output += f"> **Author:**  {msg.author(client).name}\n"
+                output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
+                if not list_templates:
+                    if round((msg.delivery_time - time())/60, 1) < 0:
+                        output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
+                    else:
+                        output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
+                output += f"> **Description:**  {msg.description}\n"
+                count += 1
+                total += 1
+                if count == 4:
+                    await channel.send(output)
+                    output = ""
+                    count = 0
     if total > 0:
         await channel.send(output + "> \n> **====================**\n")
     else:
-        await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
+        if list_templates:
+            await channel.send(embed=discord.Embed(description="No templates found", color=0x00ff00))
+        else:
+            await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def list_all_delay_messages(channel, author_id):
     if len(delayed_messages) > 0:
@@ -206,10 +223,11 @@ async def list_all_delay_messages(channel, author_id):
             output += f"> **Author:**  {msg.author(client).name}\n"
             output += f"> **Server:**  {msg.guild(client).name}\n"
             output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-            if round((msg.delivery_time - time())/60, 1) < 0:
-                output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
-            else:
-                output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
+            if msg.delivery_time is not None:
+                if round((msg.delivery_time - time())/60, 1) < 0:
+                    output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
+                else:
+                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
             output += f"> **Description:**  {msg.description}\n"
             count += 1
             if count == 4:
@@ -457,7 +475,7 @@ async def on_message(msg):
             'channel': match.group(8), 'description': match.group(11), 'content': match.group(14), 'author': msg.author})
         return
 
-    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+    match = re.search(r'^~giggle +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+|template)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
     if match:
         await process_delay_message(msg, match.group(1), match.group(5), match.group(8), match.group(11))
         return
