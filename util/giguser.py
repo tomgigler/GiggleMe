@@ -38,10 +38,10 @@ class User:
     def save(self):
         mydb = gigdb.db_connect()
 
-        sql = "INSERT into users values ( %s, %s, %s, %s )"
+        sql = "INSERT into users values ( %s, %s, %s, %s, %s )"
 
         mycursor = mydb.cursor()
-        mycursor.execute(sql, (self.id, self.name, self.timezone, self.last_message_id))
+        mycursor.execute(sql, (self.id, self.name, self.timezone, self.last_active, self.last_message_id))
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
