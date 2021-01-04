@@ -212,13 +212,18 @@ async def list_delay_messages(channel, author_id, list_templates=False):
         else:
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def list_all_delay_messages(channel, author_id):
-    if len(delayed_messages) > 0:
+async def list_all_delay_messages(channel, author_id, list_templates=False):
+    for message in delayed_messages:
+        if list_templates and message.delivery_time is None:
+            sorted_messages[message.id] = message
+        elif not list_templates and message.delivery_time is not None:
+            sorted_messages[message.id] = message
+            sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
+    if len(sorted_messages) > 0:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
-        sorted_messages = {k: v for k, v in sorted(delayed_messages.items(), key=lambda item: item[1].delivery_time)}
         count = 0
         for msg_id in sorted_messages:
-            msg = delayed_messages[msg_id]
+            msg = sorted_messages[msg_id]
             output += f"> \n> **ID:**  {msg.id}\n"
             output += f"> **Author:**  {msg.author(client).name}\n"
             output += f"> **Server:**  {msg.guild(client).name}\n"
@@ -450,7 +455,7 @@ async def on_message(msg):
         await list_all_delay_messages(msg.channel, msg.author.id)
         return
 
-    match = re.search(r'^~giggle +list( +templates) *$', msg.content):
+    match = re.search(r'^~giggle +list( +templates)? *$', msg.content)
     if match:
         if match.group(1):
             await list_delay_messages(msg.channel, msg.author.id, True)
