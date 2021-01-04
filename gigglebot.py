@@ -274,7 +274,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
             await channel.send(msg.content)
         message_found = True
     else:
-        await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0x00ff00))
+        await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
 
 async def send_delay_message(params):
     channel = params['channel']
@@ -293,7 +293,7 @@ async def send_delay_message(params):
 
         msg = delayed_messages[message_id]
         if msg.delivery_time is None:
-            await channel.send(embed=discord.Embed(description=f"{message_id} is a template and cannot be sent", color=0x0000ff))
+            await channel.send(embed=discord.Embed(description=f"{message_id} is a template and cannot be sent", color=0xff0000))
             return
         else:
             msg.delivery_time = 0
@@ -302,7 +302,7 @@ async def send_delay_message(params):
 
         await channel.send(embed=discord.Embed(description="Message sent", color=0x00ff00))
     else:
-        await channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
+        await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
 async def edit_delay_message(params):
     discord_message = params['discord_message']
@@ -312,50 +312,63 @@ async def edit_delay_message(params):
     description = params['description']
     content = params['content']
     author = params['author']
+    
+    need_to_confirm = False
+    type = "message"
 
     if not delay and not channel and not description and not content:
         await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of time, channel, description, or content"))
         return
 
-    if message_id == 'last' and author.id in users and users[author.id].last_message_id:
+    if message_id == 'last':
         message_id = users[author.id].last_message_id
-        await confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
+        need_to_confirm = True
+
+    if message_id in delayed_messages:
+
+        msg = delayed_messages[message_id]
+        if msg.delivery_time == None:
+            type = "template"
+
+        if delay:
+            if msg.delivery_time == None:
+                await discord_message.channel.send(embed=discord.Embed(description="Cannot set a delivery time for a template", color=0xff0000))
+                return
+                
+            if re.search(r'^-?\d+$', delay):
+                if delay == '0':
+                    delivery_time = 0
+                else:
+                    delivery_time = time() + int(delay) * 60
+            else:
+                try:
+                    delivery_time = gigtz.local_time_str_to_utc(delay, users[discord_message.author.id].timezone)
+                except:
+                    await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                    return
+
+        if channel:
+            try:
+                delivery_channel = discord.utils.get(discord_message.guild.channels, name=channel)
+                if not delivery_channel:
+                    raise Exception()
+            except:
+                await discord_message.channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
+                return
+
+        if content:
+            #Make sure {roles} exist
+            try:
+                replace_mentions(content, discord_message.guild.id)
+            except Exception as e:
+                await discord_message.channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
+                return
+
+        await confirm_request(discord_message.channel, author, f"Edit {type} {message_id}?", 10, edit_delay_message,
             {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
         return
 
-    if delay:
-        if re.search(r'^-?\d+$', delay):
-            if delay == '0':
-                delivery_time = 0
-            else:
-                delivery_time = time() + int(delay) * 60
-        else:
-            try:
-                delivery_time = gigtz.local_time_str_to_utc(delay, users[discord_message.author.id].timezone)
-            except:
-                await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                return
-
-    if channel:
-        try:
-            delivery_channel = discord.utils.get(discord_message.guild.channels, name=channel)
-            if not delivery_channel:
-                raise Exception()
-        except:
-            await discord_message.channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
-            return
-
-    if content:
-        #Make sure {roles} exist
-        try:
-            replace_mentions(content, discord_message.guild.id)
-        except Exception as e:
-            await discord_message.channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
-            return
-
-    if message_id in delayed_messages:
-        msg = delayed_messages[message_id]
-        embed = discord.Embed(description="Message edited", color=0x00ff00)
+        embed = discord.Embed(description=f"{type.title()} edited", color=0x00ff00)
         if channel:
             msg.delivery_channel_id = delivery_channel.id
             embed.add_field(name="Channel", value=f"{delivery_channel.name}", inline=False)
@@ -380,7 +393,7 @@ async def edit_delay_message(params):
         await discord_message.channel.send(embed=embed)
 
     else:
-        await discord_message.channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
+        await discord_message.channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
 async def cancel_all_delay_message(params):
     member = params['member']
@@ -418,7 +431,7 @@ async def cancel_delayed_message(params):
         delayed_messages.pop(msg_num).delete_from_db()
         await channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
     else:
-        await channel.send(embed=discord.Embed(description="Message not found", color=0x00ff00))
+        await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
 @client.event
 async def on_message(msg):
