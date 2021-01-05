@@ -544,7 +544,7 @@ async def on_message(msg):
 
         except Exception as e:
             if msg.author.id == 669370838478225448:
-                await msg.channel.send(embed=discord.Embed(description=f"{format_exec()}", color=0xff0000))
+                await msg.channel.send(embed=discord.Embed(description=f"{format_exc()}", color=0xff0000))
             else:
                 await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
                 await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
