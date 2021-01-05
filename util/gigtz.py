@@ -18,24 +18,23 @@ def display_timezones(mention):
     return output
 
 def local_time_str_to_utc(time_str, tz_id):
-    tz = timezone(timezones[tz_id])
+    tz = timezone(timezones[tz_id].name)
     try:
-        dt = pacific_tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M'))
+        dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M'))
     except:
-        dt = pacific_tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S'))
+        dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S'))
     return dt.timestamp()
 
 def display_localized_time(time, tz_id):
-    tz = timezone(timezones[tz_id])
-    dt = tz.localize(datetime.fromtimestamp(time))
-    return dt.strftime('%Y-%m-%d %H:%M:%S %Z')
+    tz = timezone(timezones[tz_id].name)
+    return datetime.fromtimestamp(time).astimezone(tz).strftime('%-I:%M:%S %p %a %b %d, %Y %Z')
 
 def load_timezones():
     mydb = gigdb.db_connect()
 
     mycursor = mydb.cursor()
 
-    mycursor.execute("select * from timezones")
+    mycursor.execute("select * from timezones order by name")
     for tz in mycursor.fetchall():
         timezones[tz[0]] = TimeZone(tz[0], tz[1])
 

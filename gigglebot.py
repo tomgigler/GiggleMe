@@ -122,7 +122,7 @@ async def process_delay_message(discord_message, delay, channel, description, co
         elif delivery_time == 0:
             await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
         else:
-            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server {gigtz.display_localized_time(newMessage.delivery_time, users[discord_message.author.id].timezone)}", color=0x00ff00)
+            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, users[discord_message.author.id].timezone)}", color=0x00ff00)
             embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
             await discord_message.channel.send(embed=embed)
 
@@ -222,7 +222,7 @@ async def list_delay_messages(channel, author_id, list_all, templates=False):
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_user_timezone(channel, author_id):
-    output = f"Your time zone is currently set to:  **{gigtz.timezones[users[author_id].timezone]}**"
+    output = f"Your time zone is currently set to:  **{gigtz.timezones[users[author_id].timezone].name}**"
     await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_user_timezone(channel, author, tz):
@@ -524,7 +524,7 @@ async def on_message(msg):
                 await msg.channel.send(embed=discord.Embed(description=help.show_help(match.group(2))))
                 return
 
-            match = re.search(r'^~giggle +timezone( +([A-Z][A-Z][A-Z]))? *$', msg.content)
+            match = re.search(r'^~giggle +timezone( +(\S+))? *$', msg.content)
             if match:
                 if match[2]:
                     await set_user_timezone(msg.channel, msg.author, match[2])
