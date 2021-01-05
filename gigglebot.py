@@ -31,8 +31,9 @@ async def load_from_db(delayed_messages):
         delivery_channel_id = msg[2]
         delivery_time = msg[3]
         author_id = msg[4]
-        content = msg[5]
-        description = msg[6]
+        repeat = msg[5]
+        content = msg[6]
+        description = msg[7]
 
         if message_id in delayed_messages:
 
@@ -41,20 +42,21 @@ async def load_from_db(delayed_messages):
             delayed_messages[message_id].guild_id = guild_id
             delayed_messages[message_id].delivery_channel_id = delivery_channel_id
             delayed_messages[message_id].author_id = author_id
+            delayed_messages[message_id].repeat = repeat
             delayed_messages[message_id].content = content
             delayed_messages[message_id].description = description
 
             if delayed_messages[message_id].delivery_time != delivery_time:
                 delayed_messages[message_id].delivery_time = delivery_time
 
-                newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, description, content)
+                newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, description, content)
                 if g_id not in delayed_messages:
                     delayed_messages = {}
                 delayed_messages[message_id] = newMessage
                 loop.create_task(schedule_delay_message(newMessage))
         else:
 
-            newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, description, content)
+            newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, description, content)
 
             delayed_messages[message_id] = newMessage
             if delivery_time is not None:
@@ -66,7 +68,7 @@ async def load_from_db(delayed_messages):
     gigtz.load_timezones()
     load_users()
 
-async def process_delay_message(discord_message, delay, channel, description, content):
+async def process_delay_message(discord_message, delay, channel, repeat, description, content):
 
     # get channel if provided
     if channel:
@@ -90,6 +92,9 @@ async def process_delay_message(discord_message, delay, channel, description, co
     else:
         if delay == 'template':
             delivery_time = None
+            if repeat is not None:
+                await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
+                return
         elif re.search(r'^-?\d+$', delay):
             if delay == '0':
                 delivery_time = 0
@@ -110,7 +115,7 @@ async def process_delay_message(discord_message, delay, channel, description, co
             return
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, description, content)
+        newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, repeat, description, content)
         newMessage.insert_into_db()
 
         if delivery_time is None:
@@ -174,8 +179,19 @@ async def schedule_delay_message(delayed_message):
             # At this point, we'll just leave {role} in the content
             pass
         await delayed_message.delivery_channel(client).send(content)
-        delayed_messages.pop(delayed_message.id)
-        delayed_message.delete_from_db()
+        if delayed_message.repeat is not None:
+            if delayed_message.repeat == 'daily':
+                delayed_message.delivery_time = gigtz.add_day(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
+            elif delayed_message.repeat == 'weekly':
+                delayed_message.delivery_time = gigtz.add_week(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
+            elif delayed_message.repeat == 'monthly':
+                delayed_message.delivery_time = gigtz.add_month(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
+            delayed_message.update_db()
+            loop = asyncio.get_event_loop()
+            loop.create_task(schedule_delay_message(delayed_message))
+        else:
+            delayed_messages.pop(delayed_message.id)
+            delayed_message.delete_from_db()
 
 async def list_delay_messages(channel, author_id, list_all, templates=False):
     count = 0
@@ -202,6 +218,7 @@ async def list_delay_messages(channel, author_id, list_all, templates=False):
                 output += f"> **Author:**  {msg.author(client).name}\n"
                 output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
                 if not templates:
+                    output += f"> **Repeat:**  {msg.repeat}\n"
                     if round((msg.delivery_time - time())/60, 1) < 0:
                         output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                     else:
@@ -249,21 +266,22 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
     if msg_num == 'last':
         if author_id in users:
             msg_num = users[author_id].last_message_id
-            content += f"**ID:**  {msg_num}\n"
+            content += f"> **ID:**  {msg_num}\n"
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
-        content += f"**Author:**  {msg.author(client).name}\n"
-        content += f"**Deliver to:**  {msg.delivery_channel(client).name}\n"
+        content += f"> **Author:**  {msg.author(client).name}\n"
+        content += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
+        content += f"> **Repeat:**  {msg.repeat}\n"
         if channel.guild.id != msg.guild_id:
-            content += f"**Deliver in:**  {channel.guild.name}\n"
+            content += f"> **Deliver in:**  {channel.guild.name}\n"
         if msg.delivery_time is not None:
             if round((msg.delivery_time - time())/60, 1) < 0:
-                content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
+                content += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                content += f"**Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
+                content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
         else:
-            content = "**Template**\n" + content
-        content += f"**Description:**  {msg.description}\n"
+            content = "> **Template**\n" + content
+        content += f"> **Description:**  {msg.description}\n"
         await channel.send(content)
         if raw:
             await channel.send("```\n" + msg.content + "\n```")
@@ -306,6 +324,7 @@ async def edit_delay_message(params):
     message_id = params['message_id']
     delay = params['delay']
     channel = params['channel']
+    repeat = params['repeat']
     description = params['description']
     content = params['content']
     author = params['author']
@@ -313,8 +332,8 @@ async def edit_delay_message(params):
     need_to_confirm = False
     type = "Message"
 
-    if not delay and not channel and not description and not content:
-        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of time, channel, description, or content"))
+    if not delay and not channel and not repeat and not description and not content:
+        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of time, channel, repeat, description, or content"))
         return
 
     if message_id == 'last':
@@ -326,6 +345,9 @@ async def edit_delay_message(params):
         msg = delayed_messages[message_id]
         if msg.delivery_time == None:
             type = "Template"
+            if repeat is not None:
+                await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a template", color=0xff0000))
+                return
 
         if delay:
             if msg.delivery_time == None:
@@ -363,13 +385,18 @@ async def edit_delay_message(params):
 
         if need_to_confirm:
             await confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
-                {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'description': description, 'content': content, 'author': author}, client)
+                    {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'description': description, 'content': content, 'author': author}, client)
             return
 
         embed = discord.Embed(description=f"{type} edited", color=0x00ff00)
         if channel:
             msg.delivery_channel_id = delivery_channel.id
             embed.add_field(name="Channel", value=f"{delivery_channel.name}", inline=False)
+        if repeat:
+            if repeat == 'none' or repeat == 'None':
+                repeat = None
+            msg.repeat = repeat
+            embed.add_field(name="Repeat", value=f"{repeat}", inline=False)
         if description:
             msg.description = description
             embed.add_field(name="Description", value=f"{description}", inline=False)
@@ -377,7 +404,7 @@ async def edit_delay_message(params):
             msg.content = content
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage =  DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.description, msg.content)
+            newMessage =  DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.description, msg.content)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
@@ -502,15 +529,15 @@ async def on_message(msg):
                 await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
                 return
 
-            match = re.search(r'^~g(iggle)? +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+))?(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+            match = re.search(r'^~g(iggle)? +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
                 await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
-                    'channel': match.group(9), 'description': match.group(12), 'content': match.group(15), 'author': msg.author})
+                    'channel': match.group(9), 'repeat': match.group(12), 'description': match.group(15), 'content': match.group(18), 'author': msg.author})
                 return
 
-            match = re.search(r'^~g(iggle)? +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+|template)(( +channel=)(\S+))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+            match = re.search(r'^~g(iggle)? +(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
-                await process_delay_message(msg, match.group(2), match.group(6), match.group(9), match.group(12))
+                await process_delay_message(msg, match.group(2), match.group(6), match.group(9), match.group(12), match.group(15))
                 return
 
             if re.search(r'^~g(iggle)? +resume *$', msg.content) and msg.author.id == 669370838478225448:

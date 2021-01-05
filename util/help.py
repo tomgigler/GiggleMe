@@ -4,7 +4,7 @@ def show_help(command):
     if not command:
         return """To schedule <message> to be delivered to <channel> at <time>:
 
-        `~giggle <time> channel=<channel> desc="<brief description>"`
+        `~giggle <time> channel=<channel> repeat=<frequency> desc="<brief description>"`
         `<message>`
 
         <time> may be either a number of minutes from now
@@ -12,13 +12,19 @@ def show_help(command):
         All times are UTC unless you have set your local
         time with the `~giggle timezone` command
 
+        repeat is an optional.  If included, your message will be repeated at
+        the given frequency until you cancel the message or edit it with repeat=none
+        <frequency> may be daily, weekly, or monthly
+
         desc is an optional description of the message
-        If included, it must come after channel and be surrounded by double quotes
 
         To create a template:
 
         `~giggle template channel=<channel> desc="<brief description>"`
         `<message>`
+
+        Note:  For both messages and templates, the optionsl parameters (when provided)
+        must appear in the order shown above
 
         The following commands may be used to manage scheduled messages:
 
@@ -61,24 +67,29 @@ def show_help(command):
         """
 
     if command == "edit":
-        return """`~giggle edit <message-id> <time> channel=<channel> desc="<desc>"`
+        return """`~giggle edit <message-id> <time> channel=<channel> repeat=<frequency> desc="<desc>"`
         `<message>`
 
         Edit message identified by <message-id>.
-        
+
         <time> may be either a number of minutes from now or a DateTime of the format YYYY-MM-DD HH:MM(:SS)
         If not specified, the current delivery time will be used.
         All times are UTC unless you have set your local time with the `~giggle timezone` command
 
         channel=<channel> is optional.  If not specified, the current delivery channel will be used.
 
-        desc="<desc>" is optional.  If both channel and desc are included, desc must come after channel
+        repeat is an optional.  If included, your message will be repeated at
+        the given frequency until you cancel the message or edit it with repeat=none
+        <frequency> may be none, daily, weekly, or monthly
+
+        desc is an optional description of the message
 
         <message> is optional.  If specified, it will replace the body of the current message.
 
         Note:  `last` may be used as <message-id> to reference your most recently scheduled message
+        The optional parameters to the command (when provided) must appear in the order above
 
-        `edit` may be used to edit templates.  When editing a template, the <time> option is not allowed
+        `edit` may be used to edit templates.  When editing a template, the <time> and repeat options are not allowed
         """
 
     if command == "cancel":
