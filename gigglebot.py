@@ -464,7 +464,7 @@ async def on_message(msg):
 
         try:
             if msg.author.id not in users:
-                users[msg.author.id] = User(msg.author.id, msg.author.name, None, time())
+                users[msg.author.id] = User(msg.author.id, msg.author.name, 1, time())
                 users[msg.author.id].save()
                 await client.get_user(669370838478225448).send(f"{msg.author.mention} is a new {client.user.name} bot user.  In the {msg.guild.name} server")
             elif time() - users[msg.author.id].last_active > 3600 and msg.author.id != 669370838478225448:
