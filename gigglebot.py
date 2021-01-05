@@ -92,6 +92,9 @@ async def process_delay_message(discord_message, delay, channel, repeat, descrip
     else:
         if delay == 'template':
             delivery_time = None
+            if repeat is not None:
+                await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
+                return
         elif re.search(r'^-?\d+$', delay):
             if delay == '0':
                 delivery_time = 0
@@ -203,8 +206,8 @@ async def list_delay_messages(channel, author_id, list_all, templates=False):
                 output += f"> \n> **ID:**  {msg.id}\n"
                 output += f"> **Author:**  {msg.author(client).name}\n"
                 output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-                output += f"> **Repeat:**  {msg.repeat}\n"
                 if not templates:
+                    output += f"> **Repeat:**  {msg.repeat}\n"
                     if round((msg.delivery_time - time())/60, 1) < 0:
                         output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                     else:
@@ -252,22 +255,22 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
     if msg_num == 'last':
         if author_id in users:
             msg_num = users[author_id].last_message_id
-            content += f"**ID:**  {msg_num}\n"
+            content += f"> **ID:**  {msg_num}\n"
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
-        content += f"**Author:**  {msg.author(client).name}\n"
-        content += f"**Channel:**  {msg.delivery_channel(client).name}\n"
+        content += f"> **Author:**  {msg.author(client).name}\n"
+        content += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
         content += f"> **Repeat:**  {msg.repeat}\n"
         if channel.guild.id != msg.guild_id:
-            content += f"**Deliver in:**  {channel.guild.name}\n"
+            content += f"> **Deliver in:**  {channel.guild.name}\n"
         if msg.delivery_time is not None:
             if round((msg.delivery_time - time())/60, 1) < 0:
-                content += f"**Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
+                content += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                content += f"**Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
+                content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
         else:
-            content = "**Template**\n" + content
-        content += f"**Description:**  {msg.description}\n"
+            content = "> **Template**\n" + content
+        content += f"> **Description:**  {msg.description}\n"
         await channel.send(content)
         if raw:
             await channel.send("```\n" + msg.content + "\n```")
@@ -331,6 +334,9 @@ async def edit_delay_message(params):
         msg = delayed_messages[message_id]
         if msg.delivery_time == None:
             type = "Template"
+            if repeat is not None:
+                await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a template", color=0xff0000))
+                return
 
         if delay:
             if msg.delivery_time == None:
