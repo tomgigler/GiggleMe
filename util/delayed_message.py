@@ -4,12 +4,13 @@ from hashlib import md5
 from gigdb import db_connect
 
 class DelayedMessage:
-    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, description, content):
+    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, description, content):
         self.id = id
         self.guild_id = guild_id
         self.delivery_channel_id = delivery_channel_id
         self.delivery_time = delivery_time
         self.author_id = author_id
+        self.repeat = repeat
         self.description = description
         self.content = content
 
@@ -31,8 +32,8 @@ class DelayedMessage:
         mydb = db_connect()
 
         mycursor = mydb.cursor()
-        sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s)"
-        mycursor.execute(sql, (self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.content, self.description))
+        sql = "INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s, %s)"
+        mycursor.execute(sql, (self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.content, self.description))
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
@@ -41,8 +42,8 @@ class DelayedMessage:
         mydb = db_connect()
 
         mycursor = mydb.cursor()
-        sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, content = %s, description = %s WHERE id = %s"
-        mycursor.execute(sql, (self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.content, self.description, self.id))
+        sql = "UPDATE messages SET guild_id = %s, delivery_channel_id = %s, delivery_time =  %s, author_id = %s, repeats = %s, content = %s, description = %s WHERE id = %s"
+        mycursor.execute(sql, (self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.content, self.description, self.id))
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
