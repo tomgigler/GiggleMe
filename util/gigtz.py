@@ -13,7 +13,7 @@ class TimeZone:
 def display_timezones(mention):
     output = "**Available Time Zones**\n**=============================**\n"
     for tz in timezones:
-        output += f"{tz.name}\n"
+        output += f"{timezones[tz].name}\n"
     output += f"\nDon't see your time zone?  DM **{mention}** and ask me to add it!"
     return output
 
