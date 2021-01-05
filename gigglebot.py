@@ -6,6 +6,7 @@ from settings import bot_token
 from datetime import datetime
 from time import time
 from operator import attrgetter
+from traceback import format_exc
 import help
 from confirm import confirm_request, process_reaction
 import gigtz
@@ -542,9 +543,8 @@ async def on_message(msg):
             await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
 
         except Exception as e:
-            await discord_message.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
-            await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
-            print(str(e))
+            await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
+            await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
 
 @client.event
 async def on_reaction_add(reaction, user):
