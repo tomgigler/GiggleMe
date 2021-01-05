@@ -239,7 +239,7 @@ async def list_delay_messages(channel, author_id, list_all, templates=False):
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_user_timezone(channel, author_id):
-    output = f"Your time zone is currently set to:  **{gigtz.timezones[users[author_id].timezone].name}**"
+    output = f"Your time zone is currently set to:  **{gigtz.timezones[users[author_id].timezone].name}**\n\nUse `~giggle timezone <timezone>` to set your time zone\n\nTo see a list of available time zones type `~giggle timezones`"
     await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_user_timezone(channel, author, tz):
