@@ -375,6 +375,9 @@ async def edit_delay_message(params):
         if channel:
             msg.delivery_channel_id = delivery_channel.id
             embed.add_field(name="Channel", value=f"{delivery_channel.name}", inline=False)
+        if repeat:
+            msg.repeat = repeat
+            embed.add_field(name="Repeat", value=f"{repeat}", inline=False)
         if description:
             msg.description = description
             embed.add_field(name="Description", value=f"{description}", inline=False)
