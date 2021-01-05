@@ -45,7 +45,7 @@ def load_timezones():
 def add_day(time, tz_id):
     tz = timezone(timezones[tz_id].name)
     from_dt = datetime.fromtimestamp(time)
-    to_dt = datetime.fromtimestamp(time) + relativedelta(days=+100)
+    to_dt = datetime.fromtimestamp(time) + relativedelta(days=+1)
     time = to_dt.timestamp()
     if not from_dt.astimezone(tz).dst() and to_dt.astimezone(tz).dst():
         to_dt = datetime.fromtimestamp(time) + relativedelta(hours=-1)
@@ -58,7 +58,7 @@ def add_day(time, tz_id):
 def add_week(time, tz_id):
     tz = timezone(timezones[tz_id].name)
     from_dt = datetime.fromtimestamp(time)
-    to_dt = datetime.fromtimestamp(time) + relativedelta(weeks=+18)
+    to_dt = datetime.fromtimestamp(time) + relativedelta(weeks=+1)
     time = to_dt.timestamp()
     if not from_dt.astimezone(tz).dst() and to_dt.astimezone(tz).dst():
         to_dt = datetime.fromtimestamp(time) + relativedelta(hours=-1)
