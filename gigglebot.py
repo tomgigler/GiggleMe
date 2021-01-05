@@ -179,8 +179,19 @@ async def schedule_delay_message(delayed_message):
             # At this point, we'll just leave {role} in the content
             pass
         await delayed_message.delivery_channel(client).send(content)
-        delayed_messages.pop(delayed_message.id)
-        delayed_message.delete_from_db()
+        if delayed_message.repeat is not None:
+            if delayed_message.repeat == 'daily':
+                delayed_message.delivery_time = gigtz.add_day(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
+            elif delayed_message.repeat == 'weekly':
+                delayed_message.delivery_time = gigtz.add_week(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
+            elif delayed_message.repeat == 'monthly':
+                delayed_message.delivery_time = gigtz.add_month(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
+            delayed_message.update_db()
+            loop = asyncio.get_event_loop()
+            loop.create_task(schedule_delay_message(delayed_message))
+        else:
+            delayed_messages.pop(delayed_message.id)
+            delayed_message.delete_from_db()
 
 async def list_delay_messages(channel, author_id, list_all, templates=False):
     count = 0
@@ -382,6 +393,8 @@ async def edit_delay_message(params):
             msg.delivery_channel_id = delivery_channel.id
             embed.add_field(name="Channel", value=f"{delivery_channel.name}", inline=False)
         if repeat:
+            if repeat == 'none' or repeat == 'None':
+                repeat = None
             msg.repeat = repeat
             embed.add_field(name="Repeat", value=f"{repeat}", inline=False)
         if description:
@@ -516,7 +529,7 @@ async def on_message(msg):
                 await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
                 return
 
-            match = re.search(r'^~g(iggle)? +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)(none|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+            match = re.search(r'^~g(iggle)? +edit +(\S+)(( +)(\d{4}-\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
                 await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
                     'channel': match.group(9), 'repeat': match.group(12), 'description': match.group(15), 'content': match.group(18), 'author': msg.author})

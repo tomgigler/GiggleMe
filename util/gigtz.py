@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from datetime import datetime
 from pytz import timezone
+from dateutil.relativedelta import relativedelta
 import gigdb
 
 timezones = {}
@@ -41,3 +42,41 @@ def load_timezones():
     mycursor.close()
     mydb.disconnect()
 
+def add_day(time, tz_id):
+    tz = timezone(timezones[tz_id].name)
+    from_dt = datetime.fromtimestamp(time)
+    to_dt = datetime.fromtimestamp(time) + relativedelta(days=+100)
+    time = to_dt.timestamp()
+    if not from_dt.astimezone(tz).dst() and to_dt.astimezone(tz).dst():
+        to_dt = datetime.fromtimestamp(time) + relativedelta(hours=-1)
+    elif from_dt.astimezone(tz).dst() and not to_dt.astimezone(tz).dst():
+        to_dt = datetime.fromtimestamp(time) + relativedelta(hours=+1)
+    else:
+        to_dt = datetime.fromtimestamp(time)
+    return to_dt.timestamp()
+
+def add_week(time, tz_id):
+    tz = timezone(timezones[tz_id].name)
+    from_dt = datetime.fromtimestamp(time)
+    to_dt = datetime.fromtimestamp(time) + relativedelta(weeks=+18)
+    time = to_dt.timestamp()
+    if not from_dt.astimezone(tz).dst() and to_dt.astimezone(tz).dst():
+        to_dt = datetime.fromtimestamp(time) + relativedelta(hours=-1)
+    elif from_dt.astimezone(tz).dst() and not to_dt.astimezone(tz).dst():
+        to_dt = datetime.fromtimestamp(time) + relativedelta(hours=+1)
+    else:
+        to_dt = datetime.fromtimestamp(time)
+    return to_dt.timestamp()
+
+def add_month(time, tz_id):
+    tz = timezone(timezones[tz_id].name)
+    from_dt = datetime.fromtimestamp(time)
+    to_dt = datetime.fromtimestamp(time) + relativedelta(months=+1)
+    time = to_dt.timestamp()
+    if not from_dt.astimezone(tz).dst() and to_dt.astimezone(tz).dst():
+        to_dt = datetime.fromtimestamp(time) + relativedelta(hours=-1)
+    elif from_dt.astimezone(tz).dst() and not to_dt.astimezone(tz).dst():
+        to_dt = datetime.fromtimestamp(time) + relativedelta(hours=+1)
+    else:
+        to_dt = datetime.fromtimestamp(time)
+    return to_dt.timestamp()
