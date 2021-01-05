@@ -2,6 +2,7 @@
 from datetime import datetime
 from pytz import timezone
 from dateutil.relativedelta import relativedelta
+from time import time
 import gigdb
 
 timezones = {}
@@ -80,3 +81,7 @@ def add_month(time, tz_id):
     else:
         to_dt = datetime.fromtimestamp(time)
     return to_dt.timestamp()
+
+def get_current_year(tz_id):
+    tz = timezone(timezones[tz_id].name)
+    return datetime.fromtimestamp(time()).astimezone(tz).strftime('%Y')
