@@ -127,4 +127,4 @@ def show_help(command):
 
         `~giggle help`
 
-        Show this help"""
+        Show the main help"""
