@@ -555,7 +555,7 @@ async def on_message(msg):
 
             match = re.search(r'^~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
             if match:
-                await msg.channel.send(embed=discord.Embed(description=help.show_help(match.group(4))))
+                await msg.channel.send(help.show_help(match.group(4)))
                 return
 
             match = re.search(r'^~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
