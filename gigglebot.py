@@ -32,8 +32,9 @@ async def load_from_db(delayed_messages):
         delivery_time = msg[3]
         author_id = msg[4]
         repeat = msg[5]
-        content = msg[6]
-        description = msg[7]
+        last_repeat_message = msg[6]
+        content = msg[7]
+        description = msg[8]
 
         if message_id in delayed_messages:
 
@@ -43,20 +44,21 @@ async def load_from_db(delayed_messages):
             delayed_messages[message_id].delivery_channel_id = delivery_channel_id
             delayed_messages[message_id].author_id = author_id
             delayed_messages[message_id].repeat = repeat
+            delayed_messages[message_id].last_repeat_message = last_repeat_message
             delayed_messages[message_id].content = content
             delayed_messages[message_id].description = description
 
             if delayed_messages[message_id].delivery_time != delivery_time:
                 delayed_messages[message_id].delivery_time = delivery_time
 
-                newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, description, content)
+                newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
                 if g_id not in delayed_messages:
                     delayed_messages = {}
                 delayed_messages[message_id] = newMessage
                 loop.create_task(schedule_delay_message(newMessage))
         else:
 
-            newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, description, content)
+            newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
 
             delayed_messages[message_id] = newMessage
             if delivery_time is not None:
@@ -115,7 +117,7 @@ async def process_delay_message(discord_message, delay, channel, repeat, descrip
             return
 
         # create new DelayedMessage
-        newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, repeat, description, content)
+        newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, repeat, None, description, content)
         newMessage.insert_into_db()
 
         if delivery_time is None:
@@ -156,42 +158,51 @@ def replace_mentions(content, guild_id):
 
         return content
 
-async def schedule_delay_message(delayed_message):
+async def schedule_delay_message(msg):
 
-    guild = delayed_message.guild(client)
+    guild = msg.guild(client)
 
-    if delayed_message.delivery_time == 0:
+    if msg.delivery_time == 0:
         delay = 0
     else:
-        delay = delayed_message.delivery_time - time()
+        delay = msg.delivery_time - time()
     if delay < 0:
         return
     await asyncio.sleep(int(delay))
 
-    # after sleep, make sure delayed_message has not been canceled
-    if delayed_message.id in delayed_messages and delayed_messages[delayed_message.id] == delayed_message:
+    # after sleep, make sure msg has not been canceled
+    if msg.id in delayed_messages and delayed_messages[msg.id] == msg:
 
         # we have to replace mentions now because the content may have changed while we were sleeping
-        content = delayed_message.content
+        content = msg.content
         try:
             content = replace_mentions(content, guild.id)
         except:
             # At this point, we'll just leave {role} in the content
             pass
-        await delayed_message.delivery_channel(client).send(content)
-        if delayed_message.repeat is not None:
-            if delayed_message.repeat == 'daily':
-                delayed_message.delivery_time = gigtz.add_day(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
-            elif delayed_message.repeat == 'weekly':
-                delayed_message.delivery_time = gigtz.add_week(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
-            elif delayed_message.repeat == 'monthly':
-                delayed_message.delivery_time = gigtz.add_month(delayed_message.delivery_time, users[delayed_message.author_id].timezone)
-            delayed_message.update_db()
+
+        if msg.repeat is not None and msg.last_repeat_message == msg.delivery_channel(client).last_message_id:
+            try:
+                old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                await old_message.delete()
+            except:
+                pass
+
+        sent_message = await msg.delivery_channel(client).send(content)
+        if msg.repeat is not None:
+            if msg.repeat == 'daily':
+                msg.delivery_time = gigtz.add_day(msg.delivery_time, users[msg.author_id].timezone)
+            elif msg.repeat == 'weekly':
+                msg.delivery_time = gigtz.add_week(msg.delivery_time, users[msg.author_id].timezone)
+            elif msg.repeat == 'monthly':
+                msg.delivery_time = gigtz.add_month(msg.delivery_time, users[msg.author_id].timezone)
+            msg.last_repeat_message = sent_message.id
+            msg.update_db()
             loop = asyncio.get_event_loop()
-            loop.create_task(schedule_delay_message(delayed_message))
+            loop.create_task(schedule_delay_message(msg))
         else:
-            delayed_messages.pop(delayed_message.id)
-            delayed_message.delete_from_db()
+            delayed_messages.pop(msg.id)
+            msg.delete_from_db()
 
 async def list_delay_messages(channel, author_id, list_all, templates=False):
     count = 0
@@ -219,6 +230,13 @@ async def list_delay_messages(channel, author_id, list_all, templates=False):
                 output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
                 if not templates:
                     output += f"> **Repeat:**  {msg.repeat}\n"
+                    if msg.repeat and msg.last_repeat_message:
+                        try:
+                            old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                            output += f"> **Last Delivery:**  {old_message.jump_url}\n"
+                        except:
+                            pass
+
                     if round((msg.delivery_time - time())/60, 1) < 0:
                         output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                     else:
@@ -404,7 +422,7 @@ async def edit_delay_message(params):
             msg.content = content
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage =  DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.description, msg.content)
+            newMessage =  DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.description, msg.content)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
@@ -430,7 +448,7 @@ async def cancel_all_delay_message(params):
         if delayed_messages[msg_id].delivery_time is not None:
             messages_to_remove.append(delayed_messages[msg_id])
     for msg in messages_to_remove:
-        if msg.author_id == member.id  and msg.delivery_channel_id == channel.id:
+        if msg.author_id == member.id:
             delayed_messages.pop(msg.id)
             message_count += 1
             msg.delete_from_db()
