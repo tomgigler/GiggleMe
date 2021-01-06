@@ -516,17 +516,13 @@ async def on_message(msg):
                 await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
                 users[msg.author.id].set_last_active(time())
 
-            match = re.search(r'^~g(iggle)? +(listall|la)( +templates)? *$', msg.content)
-            if match and msg.author.id == 669370838478225448:
-                if match.group(3):
-                    await list_delay_messages(msg.channel, msg.author.id, True, True)
-                else:
-                    await list_delay_messages(msg.channel, msg.author.id, True)
-                return
-
-            match = re.search(r'^~g(iggle)? +(list|ls)( +(templates|tmp))? *$', msg.content)
+            match = re.search(r'^~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp))? *$', msg.content)
             if match:
-                if match.group(4):
+                if match.group(4) and match.group(6) and msg.author.id == 669370838478225448:
+                    await list_delay_messages(msg.channel, msg.author.id, True, True)
+                elif match.group(4) and msg.author.id == 669370838478225448:
+                    await list_delay_messages(msg.channel, msg.author.id, True)
+                elif match.group(6):
                     await list_delay_messages(msg.channel, msg.author.id, False, True)
                 else:
                     await list_delay_messages(msg.channel, msg.author.id, False)
