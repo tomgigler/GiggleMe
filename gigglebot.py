@@ -562,7 +562,6 @@ async def on_message(msg):
                 return
 
             if re.search(r'^~g(iggle)? +resume *$', msg.content) and msg.author.id == 669370838478225448:
-                await client.change_presence(activity=discord.Game('with thegigler'))
                 await load_from_db(delayed_messages)
                 await list_delay_messages(msg.channel, msg.author.id, True)
                 return
@@ -592,6 +591,10 @@ async def on_message(msg):
             else:
                 await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
                 await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
+
+@client.event
+async def on_ready():
+    await client.change_presence(activity=discord.Game('with thegigler'))
 
 @client.event
 async def on_reaction_add(reaction, user):
