@@ -36,7 +36,11 @@ def show_help(command):
 > 
 > `~giggle list templates`
 > 
-> Display a list of templates for all users on this server"""
+> Display a list of templates for all users on this server
+> 
+> `~giggle list repeats`
+> 
+> Display a list of repeating messages for all users on this server"""
 
     if command == "show":
         return """> `~giggle show <message-id>`
