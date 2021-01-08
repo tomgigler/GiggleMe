@@ -204,50 +204,60 @@ async def schedule_delay_message(msg):
             delayed_messages.pop(msg.id)
             msg.delete_from_db()
 
-async def list_delay_messages(channel, author_id, list_all, templates=False):
+async def list_delay_messages(channel, author_id, list_all, tmps_repeats=None):
     count = 0
     total = 0
+    templates = False
+    if tmps_repeats == 'templates' or tmps_repeats == 'tmp':
+        templates = True
     if templates:
         output = "> \n> **=========================**\n>  **Templates**\n> **=========================**\n"
+    elif tmps_repeats == 'repeats':
+        output = "> \n> **====================**\n>  **Repeating Messages**\n> **====================**\n"
     else:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
 
     sorted_messages = {}
     for msg_id in delayed_messages:
-        if templates and delayed_messages[msg_id].delivery_time is None:
-            sorted_messages[msg_id] = delayed_messages[msg_id]
-        elif not templates and delayed_messages[msg_id].delivery_time is not None:
-            sorted_messages[msg_id] = delayed_messages[msg_id]
+        if templates:
+            if delayed_messages[msg_id].delivery_time is None:
+                sorted_messages[msg_id] = delayed_messages[msg_id]
+        elif delayed_messages[msg_id].delivery_time is not None:
+            if tmps_repeats == 'repeats':
+                if delayed_messages[msg_id].repeat is not None:
+                    sorted_messages[msg_id] = delayed_messages[msg_id]
+            else:
+                sorted_messages[msg_id] = delayed_messages[msg_id]
+
     if not templates:
         sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
         msg = sorted_messages[msg_id]
-        if msg.delivery_time is None and templates or msg.delivery_time is not None and not templates:
-            if msg.guild_id == channel.guild.id or list_all:
-                output += f"> \n> **ID:**  {msg.id}\n"
-                output += f"> **Author:**  {msg.author(client).name}\n"
-                output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-                if not templates:
-                    output += f"> **Repeat:**  {msg.repeat}\n"
-                    if msg.repeat and msg.last_repeat_message:
-                        try:
-                            old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
-                            output += f"> **Last Delivery:**  {old_message.jump_url}\n"
-                        except:
-                            pass
+        if msg.guild_id == channel.guild.id or list_all and author_id == 669370838478225448:
+            output += f"> \n> **ID:**  {msg.id}\n"
+            output += f"> **Author:**  {msg.author(client).name}\n"
+            output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
+            if not templates:
+                output += f"> **Repeat:**  {msg.repeat}\n"
+                if msg.repeat and msg.last_repeat_message:
+                    try:
+                        old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                        output += f"> **Last Delivery:**  {old_message.jump_url}\n"
+                    except:
+                        pass
 
-                    if round((msg.delivery_time - time())/60, 1) < 0:
-                        output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
-                    else:
-                        output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
-                output += f"> **Description:**  {msg.description}\n"
-                count += 1
-                total += 1
-                if count == 4:
-                    await channel.send(output)
-                    output = ""
-                    count = 0
+                if round((msg.delivery_time - time())/60, 1) < 0:
+                    output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
+                else:
+                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
+            output += f"> **Description:**  {msg.description}\n"
+            count += 1
+            total += 1
+            if count == 4:
+                await channel.send(output)
+                output = ""
+                count = 0
     if total > 0:
         await channel.send(output + "> \n> **====================**\n")
     else:
@@ -516,16 +526,9 @@ async def on_message(msg):
                 await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
                 users[msg.author.id].set_last_active(time())
 
-            match = re.search(r'^~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp))? *$', msg.content)
+            match = re.search(r'^~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp|repeats))? *$', msg.content)
             if match:
-                if match.group(4) and match.group(6) and msg.author.id == 669370838478225448:
-                    await list_delay_messages(msg.channel, msg.author.id, True, True)
-                elif match.group(4) and msg.author.id == 669370838478225448:
-                    await list_delay_messages(msg.channel, msg.author.id, True)
-                elif match.group(6):
-                    await list_delay_messages(msg.channel, msg.author.id, False, True)
-                else:
-                    await list_delay_messages(msg.channel, msg.author.id, False)
+                await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(6))
                 return
 
             match = re.search(r'^~g(iggle)? +show( +(raw))?( +(\S+)) *$', msg.content)
@@ -563,7 +566,7 @@ async def on_message(msg):
 
             if re.search(r'^~g(iggle)? +resume *$', msg.content) and msg.author.id == 669370838478225448:
                 await load_from_db(delayed_messages)
-                await list_delay_messages(msg.channel, msg.author.id, True)
+                await list_delay_messages(msg.channel, msg.author.id, "all")
                 return
 
             match = re.search(r'^~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
