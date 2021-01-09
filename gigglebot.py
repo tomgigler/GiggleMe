@@ -556,22 +556,22 @@ async def on_message(msg):
                 await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
                 return
 
-            match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+            match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
                 if match.group(7) and not match.group(6):
                     await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(users[msg.author.id].timezone)}-" + match.group(5),
-                    'channel': match.group(11), 'repeat': match.group(14), 'description': match.group(17), 'content': match.group(20), 'author': msg.author})
+                    'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
                 else:
                     await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
-                    'channel': match.group(11), 'repeat': match.group(14), 'description': match.group(17), 'content': match.group(20), 'author': msg.author})
+                    'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
                 return
 
-            match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+            match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
                 if match.group(4) and not match.group(3):
-                    await process_delay_message(msg, f"{gigtz.get_current_year(users[msg.author.id].timezone)}-" + match.group(2), match.group(8), match.group(11), match.group(14), match.group(17))
+                    await process_delay_message(msg, f"{gigtz.get_current_year(users[msg.author.id].timezone)}-" + match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
                 else:
-                    await process_delay_message(msg, match.group(2), match.group(8), match.group(11), match.group(14), match.group(17))
+                    await process_delay_message(msg, match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
                 return
 
             if re.match(r'~g(iggle)? +resume *$', msg.content) and msg.author.id == 669370838478225448:

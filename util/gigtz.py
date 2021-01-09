@@ -22,9 +22,15 @@ def display_timezones(mention):
 def local_time_str_to_utc(time_str, tz_id):
     tz = timezone(timezones[tz_id].name)
     try:
-        dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M'))
+        dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %I:%M %p'))
     except:
-        dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S'))
+        try:
+            dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %I:%M:%S %p'))
+        except:
+            try:
+                dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M'))
+            except:
+                dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S'))
     return dt.timestamp()
 
 def display_localized_time(time, tz_id):
