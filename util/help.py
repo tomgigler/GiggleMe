@@ -10,7 +10,7 @@ def show_help(command):
 > <time> may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
 > 
 > repeat is optional.  If included, your message will be repeated at the given frequency until you cancel the message or edit it with repeat=none
-> <frequency> may be `daily`, `weekly`, or `monthly`
+> <frequency> may be `daily`, `weekly`, `monthly`, or `hours:NUM` where `NUM` is a positive integer
 > 
 > desc is an optional description of the message
 > 
