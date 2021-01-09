@@ -17,7 +17,7 @@ from delayed_message import DelayedMessage
 client = discord.Client()
 delayed_messages = {}
 
-async def load_from_db(delayed_messages):
+def load_from_db(delayed_messages):
     mydb = db_connect()
 
     loop = asyncio.get_event_loop()
@@ -160,8 +160,6 @@ def replace_mentions(content, guild_id):
 
 async def schedule_delay_message(msg):
 
-    guild = msg.guild(client)
-
     if msg.delivery_time == 0:
         delay = 0
     else:
@@ -169,6 +167,8 @@ async def schedule_delay_message(msg):
     if delay < 0:
         return
     await asyncio.sleep(int(delay))
+
+    guild = msg.guild(client)
 
     # after sleep, make sure msg has not been canceled
     if msg.id in delayed_messages and delayed_messages[msg.id] == msg:
@@ -574,8 +574,8 @@ async def on_message(msg):
                     await process_delay_message(msg, match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
                 return
 
-            if re.match(r'~g(iggle)? +resume *$', msg.content) and msg.author.id == 669370838478225448:
-                await load_from_db(delayed_messages)
+            if re.match(r'~g(iggle)? +reload *$', msg.content) and msg.author.id == 669370838478225448:
+                load_from_db(delayed_messages)
                 await list_delay_messages(msg.channel, msg.author.id, "all")
                 return
 
@@ -620,5 +620,6 @@ async def on_guild_join(guild):
 
 gigtz.load_timezones()
 load_users()
+load_from_db(delayed_messages)
 
 client.run(bot_token)
