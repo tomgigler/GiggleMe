@@ -190,7 +190,7 @@ async def schedule_delay_message(msg):
 
         sent_message = await msg.delivery_channel(client).send(content)
         if msg.repeat is not None:
-            match = re.matchh(r'hours:(\d+)', msg.repeat)
+            match = re.match(r'hours:(\d+)', msg.repeat)
             if match:
                 msg.delivery_time = gigtz.add_hours(msg.delivery_time, int(match.group(1)), users[msg.author_id].timezone)
             elif msg.repeat == 'daily':
