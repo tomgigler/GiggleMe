@@ -43,6 +43,19 @@ def load_timezones():
     mycursor.close()
     mydb.disconnect()
 
+def add_hours(time, num, tz_id):
+    tz = timezone(timezones[tz_id].name)
+    from_dt = datetime.fromtimestamp(time)
+    to_dt = datetime.fromtimestamp(time) + relativedelta(hours=+num)
+    time = to_dt.timestamp()
+    if not from_dt.astimezone(tz).dst() and to_dt.astimezone(tz).dst():
+        to_dt = datetime.fromtimestamp(time) + relativedelta(hours=-1)
+    elif from_dt.astimezone(tz).dst() and not to_dt.astimezone(tz).dst():
+        to_dt = datetime.fromtimestamp(time) + relativedelta(hours=+1)
+    else:
+        to_dt = datetime.fromtimestamp(time)
+    return to_dt.timestamp()
+
 def add_day(time, tz_id):
     tz = timezone(timezones[tz_id].name)
     from_dt = datetime.fromtimestamp(time)

@@ -73,7 +73,7 @@ def show_help(command):
 > channel=<channel> is optional.  If not specified, the current delivery channel will be used
 > 
 > repeat is optional.  If included, your message will be repeated at the given frequency until you cancel the message or edit it with repeat=none
-> <frequency> may be `none`, `daily`, `weekly`, or `monthly`
+> <frequency> may be `none`, `daily`, `weekly`, `monthly`, or `hours:NUM` where `NUM` is a positive integer
 > 
 > desc is an optional description of the message
 > 
