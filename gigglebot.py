@@ -97,7 +97,7 @@ async def process_delay_message(discord_message, delay, channel, repeat, descrip
             if repeat is not None:
                 await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
                 return
-        elif re.search(r'^-?\d+$', delay):
+        elif re.match(r'-?\d+$', delay):
             if delay == '0':
                 delivery_time = 0
             else:
@@ -392,7 +392,7 @@ async def edit_delay_message(params):
                 await discord_message.channel.send(embed=discord.Embed(description="Cannot set a delivery time for a template", color=0xff0000))
                 return
                 
-            if re.search(r'^-?\d+$', delay):
+            if re.match(r'-?\d+$', delay):
                 if delay == '0':
                     delivery_time = 0
                 else:
@@ -520,7 +520,7 @@ async def on_message(msg):
         user = client.get_user(669370838478225448)
         await user.send(f"{msg.author.mention} said {msg.content}")
 
-    if re.search(r'^~(giggle|g |g$)', msg.content):
+    if re.match(r'~(giggle|g |g$)', msg.content):
         try:
             if not msg.author.guild_permissions.mute_members and msg.author.id != 669370838478225448:
                 return
@@ -536,27 +536,27 @@ async def on_message(msg):
                 await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
                 users[msg.author.id].set_last_active(time())
 
-            match = re.search(r'^~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp|repeats))? *$', msg.content)
+            match = re.match(r'~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp|repeats))? *$', msg.content)
             if match:
                 await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(6))
                 return
 
-            match = re.search(r'^~g(iggle)? +show( +(raw))?( +(\S+)) *$', msg.content)
+            match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)) *$', msg.content)
             if match:
                 await show_delayed_message(msg.channel, msg.author.id, match.group(5), match.group(3))
                 return
 
-            match = re.search(r'^~g(iggle)? +(cancel|delete|remove|clear|rm) +(\S+) *$', msg.content)
+            match = re.match(r'~g(iggle)? +(cancel|delete|remove|clear|rm) +(\S+) *$', msg.content)
             if match:
                 await cancel_delayed_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(3), 'confirmed': False})
                 return
 
-            match = re.search(r'^~g(iggle)? +send +(\S+) *$', msg.content)
+            match = re.match(r'~g(iggle)? +send +(\S+) *$', msg.content)
             if match:
                 await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
                 return
 
-            match = re.search(r'^~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+            match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
                 if match.group(7) and not match.group(6):
                     await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(users[msg.author.id].timezone)}-" + match.group(5),
@@ -566,7 +566,7 @@ async def on_message(msg):
                     'channel': match.group(11), 'repeat': match.group(14), 'description': match.group(17), 'content': match.group(20), 'author': msg.author})
                 return
 
-            match = re.search(r'^~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+            match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
                 if match.group(4) and not match.group(3):
                     await process_delay_message(msg, f"{gigtz.get_current_year(users[msg.author.id].timezone)}-" + match.group(2), match.group(8), match.group(11), match.group(14), match.group(17))
@@ -574,17 +574,17 @@ async def on_message(msg):
                     await process_delay_message(msg, match.group(2), match.group(8), match.group(11), match.group(14), match.group(17))
                 return
 
-            if re.search(r'^~g(iggle)? +resume *$', msg.content) and msg.author.id == 669370838478225448:
+            if re.match(r'~g(iggle)? +resume *$', msg.content) and msg.author.id == 669370838478225448:
                 await load_from_db(delayed_messages)
                 await list_delay_messages(msg.channel, msg.author.id, "all")
                 return
 
-            match = re.search(r'^~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
+            match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
             if match:
                 await msg.channel.send(help.show_help(match.group(4)))
                 return
 
-            match = re.search(r'^~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
+            match = re.match(r'~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
             if match:
                 if match[4]:
                     await set_user_timezone(msg.channel, msg.author, match[4])
@@ -592,7 +592,7 @@ async def on_message(msg):
                     await show_user_timezone(msg.channel, msg.author.id)
                 return
 
-            if re.search(r'^~g(iggle)? +(timezones|tzs) *$', msg.content):
+            if re.match(r'~g(iggle)? +(timezones|tzs) *$', msg.content):
                 await msg.channel.send(embed=discord.Embed(description=gigtz.display_timezones(client.user.mention), color=0x00ff00))
                 return
 
