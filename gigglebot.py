@@ -303,6 +303,13 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         content += f"> **Author:**  {msg.author(client).name}\n"
         content += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
         content += f"> **Repeat:**  {msg.repeat}\n"
+        if msg.repeat and msg.last_repeat_message:
+            try:
+                old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                content += f"> **Last Delivery:**  {old_message.jump_url}\n"
+            except:
+                pass
+
         if channel.guild.id != msg.guild_id:
             content += f"> **Deliver in:**  {channel.guild.name}\n"
         if msg.delivery_time is not None:
