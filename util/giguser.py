@@ -69,10 +69,10 @@ def load_users():
 
 def save_user(user_id, name, guild_id, guild_name):
 
-    mydb = db_connect()
+    mydb = gigdb.db_connect()
     mycursor = mydb.cursor(buffered=True)
 
-    sql = "SELECT * FROM users WHERE id = %s"
+    sql = "SELECT * FROM users WHERE user = %s"
 
     mycursor.execute(sql, ( user_id, ))
 
