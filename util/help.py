@@ -126,3 +126,4 @@ def show_help(command):
 > `~giggle help`
 > 
 > Show the main help"""
+    return f"> \"{command}\" is not a recognized command\n> \n> Available commands are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`"
