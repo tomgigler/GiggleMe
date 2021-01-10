@@ -521,89 +521,82 @@ async def on_message(msg):
         await user.send(f"{msg.author.mention} said {msg.content}")
 
     if re.match(r'~(giggle|g |g$)', msg.content):
-        try:
-            if not msg.author.guild_permissions.mute_members and msg.author.id != 669370838478225448:
-                return
-        except:
-            return
+        if msg.author.id in giguser.user_guilds.keys() and msg.guild.id in giguser.user_guilds[msg.author.id]:
+            try:
+                if time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != 669370838478225448:
+                    await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
+                    giguser.users[msg.author.id].set_last_active(time())
 
-        try:
-            if msg.author.id not in giguser.users:
-                giguser.users[msg.author.id] = giguser.User(msg.author.id, msg.author.name, 1, time())
-                giguser.users[msg.author.id].save()
-                await client.get_user(669370838478225448).send(f"{msg.author.mention} is a new {client.user.name} bot user.  In the {msg.guild.name} server")
-            elif time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != 669370838478225448:
-                await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
-                giguser.users[msg.author.id].set_last_active(time())
+                match = re.match(r'~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp|repeats))? *$', msg.content)
+                if match:
+                    await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(6))
+                    return
 
-            match = re.match(r'~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp|repeats))? *$', msg.content)
-            if match:
-                await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(6))
-                return
+                match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)) *$', msg.content)
+                if match:
+                    await show_delayed_message(msg.channel, msg.author.id, match.group(5), match.group(3))
+                    return
 
-            match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)) *$', msg.content)
-            if match:
-                await show_delayed_message(msg.channel, msg.author.id, match.group(5), match.group(3))
-                return
+                match = re.match(r'~g(iggle)? +(cancel|delete|remove|clear|rm) +(\S+) *$', msg.content)
+                if match:
+                    await cancel_delayed_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(3), 'confirmed': False})
+                    return
 
-            match = re.match(r'~g(iggle)? +(cancel|delete|remove|clear|rm) +(\S+) *$', msg.content)
-            if match:
-                await cancel_delayed_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(3), 'confirmed': False})
-                return
+                match = re.match(r'~g(iggle)? +send +(\S+) *$', msg.content)
+                if match:
+                    await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
+                    return
 
-            match = re.match(r'~g(iggle)? +send +(\S+) *$', msg.content)
-            if match:
-                await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
-                return
+                match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+                if match:
+                    if match.group(7) and not match.group(6):
+                        await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(5),
+                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
+                    else:
+                        await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
+                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
+                    return
 
-            match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
-            if match:
-                if match.group(7) and not match.group(6):
-                    await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(5),
-                    'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
+                match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+                if match:
+                    if match.group(4) and not match.group(3):
+                        await process_delay_message(msg, f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
+                    else:
+                        await process_delay_message(msg, match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
+                    return
+
+                if re.match(r'~g(iggle)? +reload *$', msg.content) and msg.author.id == 669370838478225448:
+                    load_from_db(delayed_messages)
+                    await list_delay_messages(msg.channel, msg.author.id, "all")
+                    return
+
+                match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
+                if match:
+                    await msg.channel.send(help.show_help(match.group(4)))
+                    return
+
+                match = re.match(r'~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
+                if match:
+                    if match[4]:
+                        await set_user_timezone(msg.channel, msg.author, match[4])
+                    else:
+                        await show_user_timezone(msg.channel, msg.author.id)
+                    return
+
+                if re.match(r'~g(iggle)? +(timezones|tzs) *$', msg.content):
+                    await msg.channel.send(embed=discord.Embed(description=gigtz.display_timezones(client.user.mention), color=0x00ff00))
+                    return
+
+                await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
+
+            except Exception as e:
+                if msg.author.id == 669370838478225448:
+                    await msg.channel.send(f"`{format_exc()}`")
                 else:
-                    await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
-                    'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
-                return
-
-            match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
-            if match:
-                if match.group(4) and not match.group(3):
-                    await process_delay_message(msg, f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
-                else:
-                    await process_delay_message(msg, match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
-                return
-
-            if re.match(r'~g(iggle)? +reload *$', msg.content) and msg.author.id == 669370838478225448:
-                load_from_db(delayed_messages)
-                await list_delay_messages(msg.channel, msg.author.id, "all")
-                return
-
-            match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
-            if match:
-                await msg.channel.send(help.show_help(match.group(4)))
-                return
-
-            match = re.match(r'~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
-            if match:
-                if match[4]:
-                    await set_user_timezone(msg.channel, msg.author, match[4])
-                else:
-                    await show_user_timezone(msg.channel, msg.author.id)
-                return
-
-            if re.match(r'~g(iggle)? +(timezones|tzs) *$', msg.content):
-                await msg.channel.send(embed=discord.Embed(description=gigtz.display_timezones(client.user.mention), color=0x00ff00))
-                return
-
-            await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
-
-        except Exception as e:
-            if msg.author.id == 669370838478225448:
-                await msg.channel.send(f"`{format_exc()}`")
-            else:
-                await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
-                await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
+                    await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
+                    await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
+        else:
+            await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\nPlease include the server id ({msg.guild.id}) in your message", color=0xff0000))
 
 @client.event
 async def on_ready():
