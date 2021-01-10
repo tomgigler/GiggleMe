@@ -587,6 +587,16 @@ async def on_message(msg):
                     await msg.channel.send(embed=discord.Embed(description=gigtz.display_timezones(client.user.mention), color=0x00ff00))
                     return
 
+                match = re.match(r'^~g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
+                if match and msg.author.id == 669370838478225448:
+                    if match.group(3):
+                        guild_id = int(match.group(3))
+                    else:
+                        guild_id = msg.guild.id
+                    gigdb.save_user(int(match.group(2)), client.get_user(int(match.group(2))).name, int(guild_id), client.get_guild(guild_id).name)
+                    await msg.channel.send(f"Permissions granted for {client.get_user(int(match.group(2))).name} in {client.get_guild(guild_id).name}")
+                    return
+
                 await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
 
             except Exception as e:
