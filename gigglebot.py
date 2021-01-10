@@ -13,6 +13,7 @@ import gigtz
 from gigdb import db_connect
 import giguser
 from delayed_message import DelayedMessage
+from gigparse import parse_args
 
 client = discord.Client()
 delayed_messages = {}
@@ -366,14 +367,17 @@ async def send_delay_message(params):
         await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
 async def edit_delay_message(params):
-    discord_message = params['discord_message']
-    message_id = params['message_id']
-    delay = params['delay']
-    channel = params['channel']
-    repeat = params['repeat']
-    description = params['description']
-    content = params['content']
-    author = params['author']
+    discord_message = params.pop('discord_message', None)
+    message_id = params.pop('message_id', None)
+    delay = params.pop('delay', None)
+    channel = params.pop('channel', None)
+    repeat = params.pop('repeat', None)
+    description = params.pop('desc', None)
+    content = params.pop('content', None)
+
+    if params:
+        await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter {next(iter(params))} is unrecognized\n\nTo see help type:\n\n`~giggle help edit`", color=0xff0000))
+        return
     
     need_to_confirm = False
     type = "Message"
@@ -383,7 +387,7 @@ async def edit_delay_message(params):
         return
 
     if message_id == 'last':
-        message_id = giguser.users[author.id].last_message_id
+        message_id = giguser.users[discord_message.author.id].last_message_id
         need_to_confirm = True
 
     if message_id in delayed_messages:
@@ -430,8 +434,8 @@ async def edit_delay_message(params):
                 return
 
         if need_to_confirm:
-            await confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
-                    {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'description': description, 'content': content, 'author': author}, client)
+            await confirm_request(discord_message.channel, discord_message.author, f"Edit message {message_id}?", 10, edit_delay_message,
+                    {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'desc': description, 'content': content, 'author': author}, client)
             return
 
         embed = discord.Embed(description=f"{type} edited", color=0x00ff00)
@@ -555,14 +559,9 @@ async def on_message(msg):
                     await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
                     return
 
-                match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)(([Nn]one|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+                match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|-?\d+))?( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    if match.group(7) and not match.group(6):
-                        await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(5),
-                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(21), 'content': match.group(24), 'author': msg.author})
-                    else:
-                        await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
-                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(21), 'content': match.group(24), 'author': msg.author})
+                    await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
                     return
 
                 match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)((hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
