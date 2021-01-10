@@ -376,7 +376,7 @@ async def edit_delay_message(params):
     content = params.pop('content', None)
 
     if params:
-        await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter {next(iter(params))} is unrecognized\n\nTo see help type:\n\n`~giggle help edit`", color=0xff0000))
+        await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`", color=0xff0000))
         return
     
     need_to_confirm = False
