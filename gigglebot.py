@@ -13,7 +13,7 @@ import gigtz
 from gigdb import db_connect
 import giguser
 from delayed_message import DelayedMessage
-from gigparse import parse_args
+from gigparse import parse_args, GigParseException
 
 client = discord.Client()
 delayed_messages = {}
@@ -561,8 +561,11 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|-?\d+))?( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
-                    return
+                    try:
+                        await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
+                        return
+                    except GigParseException:
+                        pass
 
                 match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)((hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
                 if match:
