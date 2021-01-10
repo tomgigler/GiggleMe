@@ -11,7 +11,7 @@ import help
 from confirm import confirm_request, process_reaction
 import gigtz
 from gigdb import db_connect
-from giguser import User, load_users, users
+import giguser
 from delayed_message import DelayedMessage
 
 client = discord.Client()
@@ -68,7 +68,7 @@ def load_from_db(delayed_messages):
     mydb.disconnect()
 
     gigtz.load_timezones()
-    load_users()
+    giguser.load_users()
 
 async def process_delay_message(discord_message, delay, channel, repeat, description, content):
 
@@ -104,7 +104,7 @@ async def process_delay_message(discord_message, delay, channel, repeat, descrip
                 delivery_time = time() + int(delay) * 60
         else:
             try:
-                delivery_time = gigtz.local_time_str_to_utc(delay, users[discord_message.author.id].timezone)
+                delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[discord_message.author.id].timezone)
             except:
                 await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
@@ -129,13 +129,13 @@ async def process_delay_message(discord_message, delay, channel, repeat, descrip
         elif delivery_time == 0:
             await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
         else:
-            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, users[discord_message.author.id].timezone)}", color=0x00ff00)
+            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone)}", color=0x00ff00)
             embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
             await discord_message.channel.send(embed=embed)
 
         delayed_messages[newMessage.id] = newMessage
 
-        users[discord_message.author.id].set_last_message(newMessage.id)
+        giguser.users[discord_message.author.id].set_last_message(newMessage.id)
 
         await schedule_delay_message(newMessage)
 
@@ -192,13 +192,13 @@ async def schedule_delay_message(msg):
         if msg.repeat is not None:
             match = re.match(r'hours:(\d+)', msg.repeat)
             if match:
-                msg.delivery_time = gigtz.add_hours(msg.delivery_time, int(match.group(1)), users[msg.author_id].timezone)
+                msg.delivery_time = gigtz.add_hours(msg.delivery_time, int(match.group(1)), giguser.users[msg.author_id].timezone)
             elif msg.repeat == 'daily':
-                msg.delivery_time = gigtz.add_day(msg.delivery_time, users[msg.author_id].timezone)
+                msg.delivery_time = gigtz.add_day(msg.delivery_time, giguser.users[msg.author_id].timezone)
             elif msg.repeat == 'weekly':
-                msg.delivery_time = gigtz.add_week(msg.delivery_time, users[msg.author_id].timezone)
+                msg.delivery_time = gigtz.add_week(msg.delivery_time, giguser.users[msg.author_id].timezone)
             elif msg.repeat == 'monthly':
-                msg.delivery_time = gigtz.add_month(msg.delivery_time, users[msg.author_id].timezone)
+                msg.delivery_time = gigtz.add_month(msg.delivery_time, giguser.users[msg.author_id].timezone)
             msg.last_repeat_message = sent_message.id
             msg.update_db()
             loop = asyncio.get_event_loop()
@@ -253,7 +253,7 @@ async def list_delay_messages(channel, author_id, list_all, tmps_repeats=None):
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
-                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
+                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone)}\n"
             output += f"> **Description:**  {msg.description}\n"
             count += 1
             total += 1
@@ -270,7 +270,7 @@ async def list_delay_messages(channel, author_id, list_all, tmps_repeats=None):
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
 async def show_user_timezone(channel, author_id):
-    output = f"Your time zone is currently set to:  **{gigtz.timezones[users[author_id].timezone].name}**\n\nUse `~giggle timezone <timezone>` to set your time zone\n\nTo see a list of available time zones type `~giggle timezones`"
+    output = f"Your time zone is currently set to:  **{gigtz.timezones[giguser.users[author_id].timezone].name}**\n\nUse `~giggle timezone <timezone>` to set your time zone\n\nTo see a list of available time zones type `~giggle timezones`"
     await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_user_timezone(channel, author, tz):
@@ -286,7 +286,7 @@ async def set_user_timezone(channel, author, tz):
             mycursor.close()
             mydb.disconnect()
 
-            users[author.id].timezone = tz_id
+            giguser.users[author.id].timezone = tz_id
             await channel.send(embed=discord.Embed(description=f"Your time zone has been set to {tz}", color=0x00ff00))
             return
     else:
@@ -295,8 +295,8 @@ async def set_user_timezone(channel, author, tz):
 async def show_delayed_message(channel, author_id, msg_num, raw):
     content = ""
     if msg_num == 'last':
-        if author_id in users:
-            msg_num = users[author_id].last_message_id
+        if author_id in giguser.users:
+            msg_num = giguser.users[author_id].last_message_id
             content += f"> **ID:**  {msg_num}\n"
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
@@ -316,7 +316,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
             if round((msg.delivery_time - time())/60, 1) < 0:
                 content += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, users[author_id].timezone)}\n"
+                content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone)}\n"
         else:
             content = "> **Template**\n" + content
         content += f"> **Description:**  {msg.description}\n"
@@ -335,7 +335,7 @@ async def send_delay_message(params):
     msg_num = params['msg_num']
 
     if msg_num == 'last':
-        message_id = users[author.id].last_message_id
+        message_id = giguser.users[author.id].last_message_id
     else:
         message_id = msg_num
 
@@ -375,7 +375,7 @@ async def edit_delay_message(params):
         return
 
     if message_id == 'last':
-        message_id = users[author.id].last_message_id
+        message_id = giguser.users[author.id].last_message_id
         need_to_confirm = True
 
     if message_id in delayed_messages:
@@ -399,7 +399,7 @@ async def edit_delay_message(params):
                     delivery_time = time() + int(delay) * 60
             else:
                 try:
-                    delivery_time = gigtz.local_time_str_to_utc(delay, users[discord_message.author.id].timezone)
+                    delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[discord_message.author.id].timezone)
                 except:
                     await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                     return
@@ -447,7 +447,7 @@ async def edit_delay_message(params):
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
             else:
-                embed.add_field(name="Deliver", value=f"{gigtz.display_localized_time(newMessage.delivery_time, users[discord_message.author.id].timezone)}", inline=False)
+                embed.add_field(name="Deliver", value=f"{gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone)}", inline=False)
             loop.create_task(schedule_delay_message(newMessage))
             newMessage.update_db()
         else:
@@ -491,7 +491,7 @@ async def cancel_delayed_message(params):
 
     if msg_num == 'last':
         need_to_confirm = True
-        msg_num = users[author.id].last_message_id
+        msg_num = giguser.users[author.id].last_message_id
 
     if msg_num in delayed_messages:
         if need_to_confirm:
@@ -528,13 +528,13 @@ async def on_message(msg):
             return
 
         try:
-            if msg.author.id not in users:
-                users[msg.author.id] = User(msg.author.id, msg.author.name, 1, time())
-                users[msg.author.id].save()
+            if msg.author.id not in giguser.users:
+                giguser.users[msg.author.id] = giguser.User(msg.author.id, msg.author.name, 1, time())
+                giguser.users[msg.author.id].save()
                 await client.get_user(669370838478225448).send(f"{msg.author.mention} is a new {client.user.name} bot user.  In the {msg.guild.name} server")
-            elif time() - users[msg.author.id].last_active > 3600 and msg.author.id != 669370838478225448:
+            elif time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != 669370838478225448:
                 await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
-                users[msg.author.id].set_last_active(time())
+                giguser.users[msg.author.id].set_last_active(time())
 
             match = re.match(r'~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp|repeats))? *$', msg.content)
             if match:
@@ -559,7 +559,7 @@ async def on_message(msg):
             match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
                 if match.group(7) and not match.group(6):
-                    await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(users[msg.author.id].timezone)}-" + match.group(5),
+                    await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(5),
                     'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
                 else:
                     await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
@@ -569,7 +569,7 @@ async def on_message(msg):
             match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
             if match:
                 if match.group(4) and not match.group(3):
-                    await process_delay_message(msg, f"{gigtz.get_current_year(users[msg.author.id].timezone)}-" + match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
+                    await process_delay_message(msg, f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
                 else:
                     await process_delay_message(msg, match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
                 return
@@ -619,7 +619,7 @@ async def on_guild_join(guild):
     await user.send(f"{client.user.name} bot joined {guild.name}")
 
 gigtz.load_timezones()
-load_users()
+giguser.load_users()
 load_from_db(delayed_messages)
 
 client.run(bot_token)
