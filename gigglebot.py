@@ -85,7 +85,7 @@ async def process_delay_message(params):
 
     # validate repeat string
     if repeat:
-        if not re.match('(hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
+        if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
             await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
             return
 
@@ -194,7 +194,7 @@ async def schedule_delay_message(msg):
         # If this is a repeating message, check for the previous delivery
         skip_delivery = False
         if msg.repeat is not None and msg.last_repeat_message is not None:
-            match = re.match(r'(hours:\d+|daily|weekly|monthly);skip_if=(\d+)', msg.repeat)
+            match = re.match(r'(minutes:\d+|hours:\d+|daily|weekly|monthly);skip_if=(\d+)', msg.repeat)
             if match:
                 skip_if = int(match.group(2))
             else:
@@ -216,10 +216,12 @@ async def schedule_delay_message(msg):
         if not skip_delivery:
             sent_message = await msg.delivery_channel(client).send(content)
         if msg.repeat is not None:
-            match = re.match(r'(hours:(\d+)|daily|weekly|monthly)', msg.repeat)
+            match = re.match(r'(minutes:(\d+)|hours:(\d+)|daily|weekly|monthly)', msg.repeat)
             if match:
                 if match.group(2):
-                    msg.delivery_time = gigtz.add_hours(msg.delivery_time, int(match.group(2)), giguser.users[msg.author_id].timezone)
+                    msg.delivery_time = gigtz.add_minutes(msg.delivery_time, int(match.group(2)), giguser.users[msg.author_id].timezone)
+                elif match.group(3):
+                    msg.delivery_time = gigtz.add_hours(msg.delivery_time, int(match.group(3)), giguser.users[msg.author_id].timezone)
                 elif match.group(1) == 'daily':
                     msg.delivery_time = gigtz.add_day(msg.delivery_time, giguser.users[msg.author_id].timezone)
                 elif match.group(1) == 'weekly':
@@ -400,7 +402,7 @@ async def edit_delay_message(params):
     
     # validate repeat string
     if repeat:
-        if not re.match('(hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
+        if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
             await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
             return
 
