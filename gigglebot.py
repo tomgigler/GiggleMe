@@ -171,28 +171,46 @@ async def schedule_delay_message(msg):
             # At this point, we'll just leave {role} in the content
             pass
 
-        if msg.repeat is not None and msg.last_repeat_message == msg.delivery_channel(client).last_message_id:
-            try:
-                old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
-                await old_message.delete()
-            except:
-                pass
-
-        sent_message = await msg.delivery_channel(client).send(content)
-        if msg.repeat is not None:
-            match = re.match(r'hours:(\d+)', msg.repeat)
+        # If this is a repeating message, check for the previous delivery
+        skip_delivery = False
+        if msg.repeat is not None and msg.last_repeat_message is not None:
+            match = re.match(r'(hours:\d+|daily|weekly|monthly);skip_if=(\d+)', msg.repeat)
             if match:
-                msg.delivery_time = gigtz.add_hours(msg.delivery_time, int(match.group(1)), giguser.users[msg.author_id].timezone)
-            elif msg.repeat == 'daily':
-                msg.delivery_time = gigtz.add_day(msg.delivery_time, giguser.users[msg.author_id].timezone)
-            elif msg.repeat == 'weekly':
-                msg.delivery_time = gigtz.add_week(msg.delivery_time, giguser.users[msg.author_id].timezone)
-            elif msg.repeat == 'monthly':
-                msg.delivery_time = gigtz.add_month(msg.delivery_time, giguser.users[msg.author_id].timezone)
-            msg.last_repeat_message = sent_message.id
-            msg.update_db()
-            loop = asyncio.get_event_loop()
-            loop.create_task(schedule_delay_message(msg))
+                skip_if = int(match.group(2))
+            else:
+                skip_if = 1
+            old_message_id = None
+            async for old_message in msg.delivery_channel(client).history(limit=skip_if):
+                if old_message.id == msg.last_repeat_message:
+                    skip_delivery = True
+
+            if skip_if != 0 and msg.last_repeat_message == msg.delivery_channel(client).last_message_id:
+                try:
+                    old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                    await old_message.delete()
+                    skip_delivery = False
+                except:
+                    pass
+
+        sent_message = None
+        if not skip_delivery:
+            sent_message = await msg.delivery_channel(client).send(content)
+        if msg.repeat is not None:
+            match = re.match(r'(hours:(\d+)|daily|weekly|monthly)', msg.repeat)
+            if match:
+                if match.group(2):
+                    msg.delivery_time = gigtz.add_hours(msg.delivery_time, int(match.group(2)), giguser.users[msg.author_id].timezone)
+                elif match.group(1) == 'daily':
+                    msg.delivery_time = gigtz.add_day(msg.delivery_time, giguser.users[msg.author_id].timezone)
+                elif match.group(1) == 'weekly':
+                    msg.delivery_time = gigtz.add_week(msg.delivery_time, giguser.users[msg.author_id].timezone)
+                elif match.group(1) == 'monthly':
+                    msg.delivery_time = gigtz.add_month(msg.delivery_time, giguser.users[msg.author_id].timezone)
+                if sent_message:
+                    msg.last_repeat_message = sent_message.id
+                msg.update_db()
+                loop = asyncio.get_event_loop()
+                loop.create_task(schedule_delay_message(msg))
         else:
             delayed_messages.pop(msg.id)
             msg.delete_from_db()
@@ -537,22 +555,22 @@ async def on_message(msg):
                     await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
                     return
 
-                match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)([Nn]one|hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+                match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)(([Nn]one|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
                 if match:
                     if match.group(7) and not match.group(6):
                         await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(5),
-                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
+                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(21), 'content': match.group(24), 'author': msg.author})
                     else:
                         await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
-                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(19), 'content': match.group(22), 'author': msg.author})
+                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(21), 'content': match.group(24), 'author': msg.author})
                     return
 
-                match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)(hours:\d+|daily|weekly|monthly))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+                match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)((hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
                 if match:
                     if match.group(4) and not match.group(3):
-                        await process_delay_message(msg, f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
+                        await process_delay_message(msg, f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(2), match.group(10), match.group(13), match.group(18), match.group(21))
                     else:
-                        await process_delay_message(msg, match.group(2), match.group(10), match.group(13), match.group(16), match.group(19))
+                        await process_delay_message(msg, match.group(2), match.group(10), match.group(13), match.group(18), match.group(21))
                     return
 
                 if re.match(r'~g(iggle)? +reload *$', msg.content) and msg.author.id == 669370838478225448:
