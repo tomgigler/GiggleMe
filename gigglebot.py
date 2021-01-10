@@ -78,10 +78,28 @@ async def process_delay_message(params):
     channel = params.pop('channel', None)
     repeat = params.pop('repeat', None)
     description = params.pop('desc', None)
+    from_template = params.pop('from_template', None)
 
     if params:
         await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
         return
+
+    if not content and not from_template:
+        await discord_message.channel.send(embed=discord.Embed(description=f"Message body required if not creating a message from a template\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
+        return
+    elif content and from_template:
+        await discord_message.channel.send(embed=discord.Embed(description=f"Message body not allowed when creating a message from a template\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
+        return
+
+    if from_template:
+        if from_template not in delayed_messages:
+            await discord_message.channel.send(embed=discord.Embed(description=f"Cannot find template {from_template}", color=0xff0000))
+            return
+        content = delayed_messages[from_template].content
+        if not channel:
+            channel = delayed_messages[from_template].delivery_channel(client).name
+        if not description:
+            description = delayed_messages[from_template].description
 
     # validate repeat string
     if repeat:
