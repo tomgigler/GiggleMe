@@ -11,6 +11,10 @@ def show_help(command):
 > 
 > repeat is optional.  If included, your message will be repeated at the given frequency until you cancel the message or edit it with repeat=none
 > <frequency> may be `daily`, `weekly`, `monthly`, or `hours:NUM` where `NUM` is a positive integer
+> <frequency> may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
+> If skip_if is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
+> 
+> for example: `repeat=daily;skip_if=5`
 > 
 > desc is an optional description of the message
 > 
@@ -74,6 +78,10 @@ def show_help(command):
 > 
 > repeat is optional.  If included, your message will be repeated at the given frequency until you cancel the message or edit it with repeat=none
 > <frequency> may be `none`, `daily`, `weekly`, `monthly`, or `hours:NUM` where `NUM` is a positive integer
+> <frequency> may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
+> If skip_if is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
+> 
+> for example: `repeat=daily;skip_if=5`
 > 
 > desc is an optional description of the message
 > 
