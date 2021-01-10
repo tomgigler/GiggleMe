@@ -2,28 +2,31 @@
 
 def show_help(command):
     if not command:
-        return """> To schedule <message> to be delivered to <channel> at <time>:
+        return """> To schedule **<message>** to be delivered to **<channel>** at **<time>**:
 > 
-> `~giggle <time> channel=<channel> repeat=<frequency> desc="<brief description>"`
+> `~giggle <time> channel=<channel> repeat=<frequency> desc="<brief description>" from_template=<template_id>`
 > `<message>`
 > 
-> <time> may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
+> **<time>** may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
 > 
-> repeat is optional.  If included, your message will be repeated at the given frequency until you cancel the message or edit it with repeat=none
-> <frequency> may be `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
-> <frequency> may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
-> If skip_if is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
+> **repeat** is optional.  If included, your message will be repeated at the given frequency until you cancel the message or **edit** it with **repeat=none**
+> **<frequency>** may be `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
+> If the previous delivery of a repeating message is the last message in the channel the message will be deleted and replaced with the new delivery
+> **<frequency>** may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
+> If **skip_if** is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
+> If **skip_if** is 0, the message will always be delivered and will not delete the previouse delivery as specified above
 > 
 > for example: `repeat=daily;skip_if=5`
 > 
-> desc is an optional description of the message
+> **desc** is an optional description of the message
+> 
+> **from_template** creates the message body from the <template_id> template
+> Do not include a message body when using from_template
 > 
 > To create a template:
 > 
 > `~giggle template channel=<channel> desc="<brief description>"`
 > `<message>`
-> 
-> **Note:**  For both messages and templates, the optional parameters (when provided) must appear in the order shown above
 > 
 > The following commands may be used to manage scheduled messages:
 > 
@@ -88,8 +91,6 @@ def show_help(command):
 > <message> is optional.  If specified, it will replace the body of the current message
 > 
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message
-> 
-> The optional parameters to the command (when provided) must appear in the order above
 > 
 > `edit` may be used to edit templates.  When editing a template, the <time> and repeat options are not allowed"""
 
