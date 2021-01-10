@@ -383,7 +383,7 @@ async def edit_delay_message(params):
     type = "Message"
 
     if not delay and not channel and not repeat and not description and not content:
-        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of time, channel, repeat, description, or content"))
+        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, or content"))
         return
 
     if message_id == 'last':
