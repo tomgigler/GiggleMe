@@ -30,7 +30,7 @@ def show_help(command):
 > 
 > The following commands may be used to manage scheduled messages:
 > 
-> `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`
+> `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `time-format`, `help`
 > 
 > To see help for one of the above commands:
 > 
@@ -113,6 +113,15 @@ def show_help(command):
 > `~giggle timezone`
 > 
 > Display your currently set time zone"""
+
+    if command == "time-format":
+        return """> `~giggle time-format <12 or 24>`
+> 
+> Set your time format for times displayed by the bot
+> 
+> `~giggle time-format`
+> 
+> Display your currently set time format"""
 
     if command == "timezones":
         return """> `~giggle timezones`
