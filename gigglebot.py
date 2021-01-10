@@ -82,62 +82,52 @@ async def process_delay_message(discord_message, delay, channel, repeat, descrip
         # default to current channel
         delivery_channel = discord_message.channel
 
+    if delay == 'template':
+        delivery_time = None
+        if repeat is not None:
+            await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
+            return
+    elif re.match(r'-?\d+$', delay):
+        if delay == '0':
+            delivery_time = 0
+        else:
+            delivery_time = time() + int(delay) * 60
+    else:
+        try:
+            delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[discord_message.author.id].timezone)
+        except:
+            await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+            return
+
+    #Make sure {roles} exist
     try:
-        # TODO:  for now, user needs manage_channels permissions in the target channel
-        has_permission = discord_message.author.permissions_in(delivery_channel).manage_channels
-    except:
-        await discord_message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {delivery_channel.name}", color=0xff0000))
+        replace_mentions(content, discord_message.guild.id)
+    except Exception as e:
+        await discord_message.channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
         return
 
-    if not has_permission:
-        await discord_message.channel.send(embed=discord.Embed(description=f"You do not have permission to send delayed messages in {delivery_channel.name}", color=0xff0000))
-    else:
-        if delay == 'template':
-            delivery_time = None
-            if repeat is not None:
-                await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
-                return
-        elif re.match(r'-?\d+$', delay):
-            if delay == '0':
-                delivery_time = 0
-            else:
-                delivery_time = time() + int(delay) * 60
-        else:
-            try:
-                delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[discord_message.author.id].timezone)
-            except:
-                await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                return
+    # create new DelayedMessage
+    newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, repeat, None, description, content)
+    newMessage.insert_into_db()
 
-        #Make sure {roles} exist
-        try:
-            replace_mentions(content, discord_message.guild.id)
-        except Exception as e:
-            await discord_message.channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
-            return
-
-        # create new DelayedMessage
-        newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, repeat, None, description, content)
-        newMessage.insert_into_db()
-
-        if delivery_time is None:
-            embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
-            embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
-            delayed_messages[newMessage.id] = newMessage
-            await discord_message.channel.send(embed=embed)
-            return
-        elif delivery_time == 0:
-            await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
-        else:
-            embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone)}", color=0x00ff00)
-            embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
-            await discord_message.channel.send(embed=embed)
-
+    if delivery_time is None:
+        embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
+        embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
         delayed_messages[newMessage.id] = newMessage
+        await discord_message.channel.send(embed=embed)
+        return
+    elif delivery_time == 0:
+        await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
+    else:
+        embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone)}", color=0x00ff00)
+        embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
+        await discord_message.channel.send(embed=embed)
 
-        giguser.users[discord_message.author.id].set_last_message(newMessage.id)
+    delayed_messages[newMessage.id] = newMessage
 
-        await schedule_delay_message(newMessage)
+    giguser.users[discord_message.author.id].set_last_message(newMessage.id)
+
+    await schedule_delay_message(newMessage)
 
 def replace_mentions(content, guild_id):
         guild = discord.utils.get(client.guilds, id=int(guild_id))
