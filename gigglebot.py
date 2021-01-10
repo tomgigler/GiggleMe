@@ -13,6 +13,7 @@ import gigtz
 from gigdb import db_connect
 import giguser
 from delayed_message import DelayedMessage
+from gigparse import parse_args, GigParseException
 
 client = discord.Client()
 delayed_messages = {}
@@ -70,7 +71,23 @@ def load_from_db(delayed_messages):
     gigtz.load_timezones()
     giguser.load_users()
 
-async def process_delay_message(discord_message, delay, channel, repeat, description, content):
+async def process_delay_message(params):
+    discord_message = params.pop('discord_message', None)
+    delay = params.pop('delay', None)
+    content = params.pop('content', None)
+    channel = params.pop('channel', None)
+    repeat = params.pop('repeat', None)
+    description = params.pop('desc', None)
+
+    if params:
+        await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
+        return
+
+    # validate repeat string
+    if repeat:
+        if not re.match('(hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
+            await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
+            return
 
     # get channel if provided
     if channel:
@@ -96,8 +113,11 @@ async def process_delay_message(discord_message, delay, channel, repeat, descrip
         try:
             delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[discord_message.author.id].timezone)
         except:
-            await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-            return
+            try:
+                delivery_time = gigtz.local_time_str_to_utc(f"{gigtz.get_current_year(giguser.users[discord_message.author.id].timezone)}-{delay}", giguser.users[discord_message.author.id].timezone)
+            except:
+                await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                return
 
     #Make sure {roles} exist
     try:
@@ -366,24 +386,33 @@ async def send_delay_message(params):
         await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
 async def edit_delay_message(params):
-    discord_message = params['discord_message']
-    message_id = params['message_id']
-    delay = params['delay']
-    channel = params['channel']
-    repeat = params['repeat']
-    description = params['description']
-    content = params['content']
-    author = params['author']
+    discord_message = params.pop('discord_message', None)
+    message_id = params.pop('message_id', None)
+    delay = params.pop('delay', None)
+    channel = params.pop('channel', None)
+    repeat = params.pop('repeat', None)
+    description = params.pop('desc', None)
+    content = params.pop('content', None)
+
+    if params:
+        await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`", color=0xff0000))
+        return
     
+    # validate repeat string
+    if repeat:
+        if not re.match('(hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
+            await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
+            return
+
     need_to_confirm = False
     type = "Message"
 
     if not delay and not channel and not repeat and not description and not content:
-        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of time, channel, repeat, description, or content"))
+        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, or content"))
         return
 
     if message_id == 'last':
-        message_id = giguser.users[author.id].last_message_id
+        message_id = giguser.users[discord_message.author.id].last_message_id
         need_to_confirm = True
 
     if message_id in delayed_messages:
@@ -409,8 +438,11 @@ async def edit_delay_message(params):
                 try:
                     delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[discord_message.author.id].timezone)
                 except:
-                    await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                    return
+                    try:
+                        delivery_time = gigtz.local_time_str_to_utc(f"{gigtz.get_current_year(giguser.users[discord_message.author.id].timezone)}-{delay}", giguser.users[discord_message.author.id].timezone)
+                    except:
+                        await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                        return
 
         if channel:
             try:
@@ -430,8 +462,8 @@ async def edit_delay_message(params):
                 return
 
         if need_to_confirm:
-            await confirm_request(discord_message.channel, author, f"Edit message {message_id}?", 10, edit_delay_message,
-                    {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'description': description, 'content': content, 'author': author}, client)
+            await confirm_request(discord_message.channel, discord_message.author, f"Edit message {message_id}?", 10, edit_delay_message,
+                    {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'desc': description, 'content': content}, client)
             return
 
         embed = discord.Embed(description=f"{type} edited", color=0x00ff00)
@@ -555,23 +587,21 @@ async def on_message(msg):
                     await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
                     return
 
-                match = re.match(r'~g(iggle)? +edit +(\S+)(( +)((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+))?(( +channel=)(\S+))?(( +repeat=)(([Nn]one|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?))?(( +desc=")([^"]+)")? *((\n)(.*))?$', msg.content, re.MULTILINE|re.DOTALL)
+                match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|-?\d+))?( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    if match.group(7) and not match.group(6):
-                        await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(5),
-                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(21), 'content': match.group(24), 'author': msg.author})
-                    else:
-                        await edit_delay_message({'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(5),
-                        'channel': match.group(13), 'repeat': match.group(16), 'description': match.group(21), 'content': match.group(24), 'author': msg.author})
-                    return
+                    try:
+                        await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
+                        return
+                    except GigParseException:
+                        pass
 
-                match = re.match(r'~g(iggle)? +((\d{4}-)?(\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2})(:\d{1,2})?( +(AM|PM))?|-?\d+|template)(( +channel=)(\S+))?(( +repeat=)((hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?))?(( +desc=")([^"]+)")? *((\n)(.+))$', msg.content, re.MULTILINE|re.DOTALL)
+                match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|-?\d+|template)( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    if match.group(4) and not match.group(3):
-                        await process_delay_message(msg, f"{gigtz.get_current_year(giguser.users[msg.author.id].timezone)}-" + match.group(2), match.group(10), match.group(13), match.group(18), match.group(21))
-                    else:
-                        await process_delay_message(msg, match.group(2), match.group(10), match.group(13), match.group(18), match.group(21))
-                    return
+                    try:
+                        await parse_args(process_delay_message, {'discord_message': msg, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
+                        return
+                    except GigParseException:
+                        pass
 
                 if re.match(r'~g(iggle)? +reload *$', msg.content) and msg.author.id == 669370838478225448:
                     load_from_db(delayed_messages)
