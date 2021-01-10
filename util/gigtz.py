@@ -33,9 +33,12 @@ def local_time_str_to_utc(time_str, tz_id):
                 dt = tz.localize(datetime.strptime(time_str, '%Y-%m-%d %H:%M:%S'))
     return dt.timestamp()
 
-def display_localized_time(time, tz_id):
+def display_localized_time(time, tz_id, format_24):
     tz = timezone(timezones[tz_id].name)
-    return datetime.fromtimestamp(time).astimezone(tz).strftime('%-I:%M:%S %p %a %b %d, %Y %Z')
+    if format_24:
+        return datetime.fromtimestamp(time).astimezone(tz).strftime('%-H:%M:%S %a %b %d, %Y %Z')
+    else:
+        return datetime.fromtimestamp(time).astimezone(tz).strftime('%-I:%M:%S %p %a %b %d, %Y %Z')
 
 def load_timezones():
     mydb = gigdb.db_connect()

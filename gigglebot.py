@@ -157,7 +157,7 @@ async def process_delay_message(params):
     elif delivery_time == 0:
         await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
     else:
-        embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone)}", color=0x00ff00)
+        embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone, giguser.users[discord_message.author.id].format_24)}", color=0x00ff00)
         embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
         await discord_message.channel.send(embed=embed)
 
@@ -301,7 +301,7 @@ async def list_delay_messages(channel, author_id, list_all, tmps_repeats=None):
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
-                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone)}\n"
+                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
             output += f"> **Description:**  {msg.description}\n"
             count += 1
             total += 1
@@ -364,7 +364,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
             if round((msg.delivery_time - time())/60, 1) < 0:
                 content += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone)}\n"
+                content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
         else:
             content = "> **Template**\n" + content
         content += f"> **Description:**  {msg.description}\n"
@@ -507,7 +507,7 @@ async def edit_delay_message(params):
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
             else:
-                embed.add_field(name="Deliver", value=f"{gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone)}", inline=False)
+                embed.add_field(name="Deliver", value=f"{gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone, giguser.users[discord_message.author.id].format_24)}", inline=False)
             loop.create_task(schedule_delay_message(newMessage))
             newMessage.update_db()
         else:
@@ -626,6 +626,17 @@ async def on_message(msg):
                 if re.match(r'~g(iggle)? +reload *$', msg.content) and msg.author.id == 669370838478225448:
                     load_from_db(delayed_messages)
                     await list_delay_messages(msg.channel, msg.author.id, "all")
+                    return
+
+                match = re.match(r'~g(iggle)? +(time-format|tf)( +(12|24))? *$', msg.content)
+                if match:
+                    if match.group(4):
+                        giguser.users[msg.author.id].set_time_format(match.group(4))
+                        await msg.channel.send(embed=discord.Embed(description=f"Your time display format has been set to {match.group(4)}-hour", color=0x00ff00))
+                    elif giguser.users[msg.author.id].format_24:
+                        await msg.channel.send(embed=discord.Embed(description="Your time display format is 24-hour", color=0x00ff00))
+                    else:
+                        await msg.channel.send(embed=discord.Embed(description=f"Your time display format is 12-hour", color=0x00ff00))
                     return
 
                 match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
