@@ -5,12 +5,13 @@ users = {}
 user_guilds = {}
 
 class User:
-    def __init__(self, id, name, timezone, last_active, last_message_id=None):
+    def __init__(self, id, name, timezone, last_active, last_message_id, format_24):
         self.id = id
         self.name = name
         self.timezone = timezone
         self.last_active = last_active
         self.last_message_id = last_message_id
+        self.format_24 = format_24
 
     def set_last_active(self, last_active):
         mydb = gigdb.db_connect()
@@ -36,6 +37,22 @@ class User:
         mycursor.close()
         mydb.disconnect()
 
+    def set_time_format(self, time_format):
+        if time_format == "24":
+            self.format_24 = 1
+        else:
+            self.format_24 = 0
+
+        mydb = gigdb.db_connect()
+
+        sql = "UPDATE users SET format_24 = %s WHERE user = %s"
+
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, (self.format_24, self.id))
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
+
 def load_users():
     mydb = gigdb.db_connect()
 
@@ -43,7 +60,7 @@ def load_users():
 
     mycursor.execute("select * from users")
     for user in mycursor.fetchall():
-        users[user[0]] = User(user[0], user[1], user[2], user[3], user[4])
+        users[user[0]] = User(user[0], user[1], user[2], user[3], user[4], user[5])
 
     mycursor.execute("select * from user_guilds")
 
@@ -98,8 +115,8 @@ def save_user(user_id, name, guild_id, guild_name):
     mycursor.close()
     mydb.disconnect()
 
-    if user not in users.keys():
-        users[user_id] = User(user_id, name, None, 0)
+    if user_id not in users.keys():
+        users[user_id] = User(user_id, name, None, 0, None, None)
 
     if user_id in user_guilds.keys():
         user_guilds[user_id].append(guild_id)
