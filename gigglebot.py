@@ -83,6 +83,12 @@ async def process_delay_message(params):
         await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
         return
 
+    # validate repeat string
+    if repeat:
+        if not re.match('(hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
+            await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
+            return
+
     # get channel if provided
     if channel:
         delivery_channel = discord.utils.get(discord_message.guild.channels, name=channel)
@@ -392,6 +398,12 @@ async def edit_delay_message(params):
         await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`", color=0xff0000))
         return
     
+    # validate repeat string
+    if repeat:
+        if not re.match('(hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
+            await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
+            return
+
     need_to_confirm = False
     type = "Message"
 
