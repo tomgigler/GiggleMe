@@ -10,7 +10,7 @@ def show_help(command):
 > <time> may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
 > 
 > repeat is optional.  If included, your message will be repeated at the given frequency until you cancel the message or edit it with repeat=none
-> <frequency> may be `daily`, `weekly`, `monthly`, or `hours:NUM` where `NUM` is a positive integer
+> <frequency> may be `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
 > <frequency> may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
 > If skip_if is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
 > 
@@ -77,7 +77,7 @@ def show_help(command):
 > channel=<channel> is optional.  If not specified, the current delivery channel will be used
 > 
 > repeat is optional.  If included, your message will be repeated at the given frequency until you cancel the message or edit it with repeat=none
-> <frequency> may be `none`, `daily`, `weekly`, `monthly`, or `hours:NUM` where `NUM` is a positive integer
+> <frequency> may be `none`, `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
 > <frequency> may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
 > If skip_if is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
 > 
