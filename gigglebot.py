@@ -565,7 +565,7 @@ async def on_message(msg):
     if re.match(r'~(giggle|g |g$)', msg.content):
         if msg.author.id in giguser.user_guilds.keys() and msg.guild.id in giguser.user_guilds[msg.author.id]:
             try:
-                if (not giguser.users[msg.author.id].last_active or time() - giguser.users[msg.author.id].last_active > 3600) and msg.author.id != 669370838478225448:
+                if time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != 669370838478225448:
                     await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 

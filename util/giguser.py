@@ -36,17 +36,6 @@ class User:
         mycursor.close()
         mydb.disconnect()
 
-    def save(self):
-        mydb = gigdb.db_connect()
-
-        sql = "INSERT into users values ( %s, %s, %s, %s, %s )"
-
-        mycursor = mydb.cursor()
-        mycursor.execute(sql, (self.id, self.name, self.timezone, self.last_active, self.last_message_id))
-        mydb.commit()
-        mycursor.close()
-        mydb.disconnect()
-
 def load_users():
     mydb = gigdb.db_connect()
 
@@ -84,7 +73,7 @@ def save_user(user_id, name, guild_id, guild_name):
     if update:
         sql = "UPDATE users SET name = %s WHERE user = %s"
     else:
-        sql = "INSERT INTO users ( name, user ) values ( %s, %s )"
+        sql = "INSERT INTO users ( name, user, last_active ) values ( %s, %s, 0 )"
 
     mycursor.execute(sql, ( name, user_id ) )
 
@@ -108,6 +97,9 @@ def save_user(user_id, name, guild_id, guild_name):
 
     mycursor.close()
     mydb.disconnect()
+
+    if user not in users.keys():
+        users[user_id] = User(user_id, name, None, 0)
 
     if user_id in user_guilds.keys():
         user_guilds[user_id].append(guild_id)
