@@ -2,6 +2,7 @@
 import gigdb
 
 users = {}
+user_guilds = {}
 
 class User:
     def __init__(self, id, name, timezone, last_active, last_message_id=None):
@@ -54,6 +55,14 @@ def load_users():
     mycursor.execute("select * from users")
     for user in mycursor.fetchall():
         users[user[0]] = User(user[0], user[1], user[2], user[3], user[4])
+
+    mycursor.execute("select * from user_guilds")
+
+    for row in mycursor.fetchall():
+        if row[0] in user_guilds.keys():
+            user_guilds[row[0]].append(row[1])
+        else:
+            user_guilds[row[0]] = [ row[1] ]
 
     mycursor.close()
     mydb.disconnect()
