@@ -435,7 +435,7 @@ async def edit_delay_message(params):
 
         if need_to_confirm:
             await confirm_request(discord_message.channel, discord_message.author, f"Edit message {message_id}?", 10, edit_delay_message,
-                    {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'desc': description, 'content': content, 'author': author}, client)
+                    {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'desc': description, 'content': content}, client)
             return
 
         embed = discord.Embed(description=f"{type} edited", color=0x00ff00)
