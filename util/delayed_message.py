@@ -20,7 +20,7 @@ class DelayedMessage:
 
     def delivery_channel(self, client):
         guild = discord.utils.get(client.guilds, id=self.guild_id)
-        return discord.utils.get(guild.text_channels, id=self.delivery_channel_id)
+        return discord.utils.get(self.guild(client).text_channels, id=self.delivery_channel_id)
 
     def author(self, client):
         return client.get_user(self.author_id)
