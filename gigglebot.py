@@ -107,9 +107,11 @@ async def process_delay_message(params):
             await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
             return
 
-    # get channel if provided
+    # get channel
     if channel:
         delivery_channel = discord.utils.get(discord_message.guild.channels, name=channel)
+        if not delivery_channel:
+            delivery_channel = discord.utils.get(discord_message.guild.channels, id=int(channel))
         if not delivery_channel:
             await discord_message.channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
             return
@@ -465,12 +467,12 @@ async def edit_delay_message(params):
                         await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                         return
 
+        # Confirm channel exists
         if channel:
-            try:
-                delivery_channel = discord.utils.get(discord_message.guild.channels, name=channel)
-                if not delivery_channel:
-                    raise Exception()
-            except:
+            delivery_channel = discord.utils.get(discord_message.guild.channels, name=channel)
+            if not delivery_channel:
+                delivery_channel = discord.utils.get(discord_message.guild.channels, id=int(channel))
+            if not delivery_channel:
                 await discord_message.channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
                 return
 
