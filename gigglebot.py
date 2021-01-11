@@ -504,7 +504,7 @@ async def edit_delay_message(params):
             msg.content = content
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage =  DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.description, msg.content)
+            newMessage = DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.description, msg.content)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
