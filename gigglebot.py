@@ -219,7 +219,6 @@ async def schedule_delay_message(msg):
                 skip_if = int(match.group(2))
             else:
                 skip_if = 1
-            old_message_id = None
             async for old_message in msg.delivery_channel(client).history(limit=skip_if):
                 if old_message.id == msg.last_repeat_message:
                     skip_delivery = True
