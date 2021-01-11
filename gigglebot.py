@@ -190,6 +190,8 @@ async def schedule_delay_message(msg):
 
     if msg.delivery_time == 0:
         delay = 0
+        if msg.repeat:
+            msg.delivery_time = time()
     else:
         delay = msg.delivery_time - time()
     if delay < 0:
