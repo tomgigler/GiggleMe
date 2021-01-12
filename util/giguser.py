@@ -3,6 +3,27 @@ import gigdb
 
 users = {}
 user_guilds = {}
+vips = {}
+
+class Vip:
+    def __init__(self, vip_id, guild_id, template_id, grace_period = None, last_sent = None):
+        self.vip_id = int(vip_id)
+        self.guild_id = guild_id
+        self.template_id = template_id
+        self.grace_period = grace_period
+        self.last_sent = last_sent
+
+    def set_last_sent(self, last_sent):
+        mydb = gigdb.db_connect()
+
+        sql = "UPDATE vips SET last_sent = %s WHERE vip_id = %s and guild_id = %s"
+
+        mycursor = mydb.cursor()
+        mycursor.execute(sql, (last_sent, self.vip_id, self.guild_id))
+        self.last_sent = last_sent
+        mydb.commit()
+        mycursor.close()
+        mydb.disconnect()
 
 class User:
     def __init__(self, id, name, timezone, last_active, last_message_id, format_24):
@@ -70,6 +91,11 @@ def load_users():
         else:
             user_guilds[row[0]] = [ row[1] ]
 
+    mycursor.execute("select * from vips")
+
+    for row in mycursor.fetchall():
+        vips[(row[0], row[1])] = Vip(row[0], row[1], row[2], row[3], row[4])
+
     mycursor.close()
     mydb.disconnect()
 
@@ -122,3 +148,48 @@ def save_user(user_id, name, guild_id, guild_name):
         user_guilds[user_id].append(guild_id)
     else:
         user_guilds[user_id] = [ guild_id ]
+
+def save_vip(vip):
+
+    mydb = gigdb.db_connect()
+    mycursor = mydb.cursor(buffered=True)
+
+    sql = "SELECT * FROM vips WHERE vip_id = %s and guild_id = %s"
+
+    mycursor.execute(sql, ( vip.vip_id, vip.guild_id ))
+
+    if mycursor.rowcount > 0:
+        update = True
+    else:
+        update = False
+
+    if update:
+        sql = "UPDATE vips SET template_id = %s, last_sent = %s, grace_period = %s WHERE vip_id = %s and guild_id = %s"
+    else:
+        sql = "INSERT INTO vips ( template_id, last_sent, grace_period, vip_id, guild_id ) values (%s, %s, %s, %s, %s)"
+
+    mycursor.execute(sql, ( vip.template_id, vip.last_sent, vip.grace_period, vip.vip_id, vip.guild_id ) )
+
+    mydb.commit()
+
+    mycursor.close()
+    mydb.disconnect()
+
+    vips[(vip.vip_id, vip.guild_id)] = vip
+
+def delete_vip(vip):
+
+    mydb = gigdb.db_connect()
+    mycursor = mydb.cursor(buffered=True)
+
+    sql = "DELETE FROM vips WHERE vip_id = %s and guild_id = %s"
+
+    mycursor.execute(sql, ( vip.vip_id, vip.guild_id ))
+
+    mydb.commit()
+
+    mycursor.close()
+    mydb.disconnect()
+
+    vips.pop((vip.vip_id, vip.guild_id), None)
+

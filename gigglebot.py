@@ -72,7 +72,10 @@ def load_from_db(delayed_messages):
     giguser.load_users()
 
 async def process_delay_message(params):
-    discord_message = params.pop('discord_message', None)
+    guild = params.pop('guild', None)
+    request_channel = params.pop('request_channel', None)
+    request_message_id = params.pop('request_message_id', None)
+    author_id = params.pop('author_id', None)
     delay = params.pop('delay', None)
     content = params.pop('content', None)
     channel = params.pop('channel', None)
@@ -81,19 +84,23 @@ async def process_delay_message(params):
     from_template = params.pop('from_template', None)
 
     if params:
-        await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
+        if request_channel:
+            await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
         return
 
     if not content and not from_template:
-        await discord_message.channel.send(embed=discord.Embed(description=f"Message body required if not creating a message from a template\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
+        if request_channel:
+            await request_channel.send(embed=discord.Embed(description=f"Message body required if not creating a message from a template\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
         return
     elif content and from_template:
-        await discord_message.channel.send(embed=discord.Embed(description=f"Message body not allowed when creating a message from a template\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
+        if request_channel:
+            await request_channel.send(embed=discord.Embed(description=f"Message body not allowed when creating a message from a template\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
         return
 
     if from_template:
         if from_template not in delayed_messages:
-            await discord_message.channel.send(embed=discord.Embed(description=f"Cannot find template {from_template}", color=0xff0000))
+            if request_channel:
+                await request_channel.send(embed=discord.Embed(description=f"Cannot find template {from_template}", color=0xff0000))
             return
         content = delayed_messages[from_template].content
         if not channel:
@@ -104,25 +111,28 @@ async def process_delay_message(params):
     # validate repeat string
     if repeat:
         if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
-            await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
+            if request_channel:
+                await request_channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
             return
 
     # get channel
     if channel:
-        delivery_channel = discord.utils.get(discord_message.guild.channels, name=channel)
+        delivery_channel = discord.utils.get(guild.channels, name=channel)
         if not delivery_channel:
-            delivery_channel = discord.utils.get(discord_message.guild.channels, id=int(channel))
+            delivery_channel = discord.utils.get(guild.channels, id=int(channel))
         if not delivery_channel:
-            await discord_message.channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
+            if request_channel:
+                await request_channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
             return
     else:
         # default to current channel
-        delivery_channel = discord_message.channel
+        delivery_channel = request_channel
 
     if delay == 'template':
         delivery_time = None
         if repeat is not None:
-            await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
+            if request_channel:
+                await request_channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
             return
     elif re.match(r'-?\d+$', delay):
         if delay == '0':
@@ -131,41 +141,46 @@ async def process_delay_message(params):
             delivery_time = time() + int(delay) * 60
     else:
         try:
-            delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[discord_message.author.id].timezone)
+            delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[author_id].timezone)
         except:
             try:
-                delivery_time = gigtz.local_time_str_to_utc(f"{gigtz.get_current_year(giguser.users[discord_message.author.id].timezone)}-{delay}", giguser.users[discord_message.author.id].timezone)
+                delivery_time = gigtz.local_time_str_to_utc(f"{gigtz.get_current_year(giguser.users[author_id].timezone)}-{delay}", giguser.users[author_id].timezone)
             except:
-                await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
+                if request_channel:
+                    await request_channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
 
     #Make sure {roles} exist
     try:
-        replace_mentions(content, discord_message.guild.id)
+        replace_mentions(content, guild.id)
     except Exception as e:
-        await discord_message.channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
+        if request_channel:
+            await request_channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
         return
 
     # create new DelayedMessage
-    newMessage =  DelayedMessage(DelayedMessage.id_gen(discord_message.id), discord_message.guild.id, delivery_channel.id, delivery_time, discord_message.author.id, repeat, None, description, content)
+    newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, description, content)
     newMessage.insert_into_db()
 
     if delivery_time is None:
-        embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
-        embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
+        if request_channel:
+            embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
+            embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
+            await request_channel.send(embed=embed)
         delayed_messages[newMessage.id] = newMessage
-        await discord_message.channel.send(embed=embed)
         return
     elif delivery_time == 0:
-        await discord_message.channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server now", color=0x00ff00))
-    else:
-        embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {discord_message.guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone, giguser.users[discord_message.author.id].format_24)}", color=0x00ff00)
+        if request_channel:
+            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {guild.name} server now", color=0x00ff00))
+    elif request_channel:
+        embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}", color=0x00ff00)
         embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
-        await discord_message.channel.send(embed=embed)
+        await request_channel.send(embed=embed)
 
     delayed_messages[newMessage.id] = newMessage
 
-    giguser.users[discord_message.author.id].set_last_message(newMessage.id)
+    if author_id:
+        giguser.users[author_id].set_last_message(newMessage.id)
 
     await schedule_delay_message(newMessage)
 
@@ -574,6 +589,42 @@ async def cancel_delayed_message(params):
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
+async def add_vip(msg, vip_id, template_id, grace_period):
+    if not client.get_user(int(vip_id)):
+        await msg.channel.send(embed=discord.Embed(description=f"Cannot find user {vip_id}", color=0xff0000))
+        return
+    if template_id not in delayed_messages.keys():
+        await msg.channel.send(embed=discord.Embed(description=f"Cannot find template {template_id}", color=0xff0000))
+        return
+    if delayed_messages[template_id].delivery_time:
+        await msg.channel.send(embed=discord.Embed(description=f"{template_id} is not a template", color=0xff0000))
+        return
+    giguser.save_vip(giguser.Vip(vip_id, msg.guild.id, template_id, grace_period))
+    await msg.channel.send(embed=discord.Embed(description="Updated Vip", color=0x00ff00))
+
+async def remove_vip(msg, vip_id):
+    if (int(vip_id), msg.guild.id) not in giguser.vips:
+        await msg.channel.send(embed=discord.Embed(description=f"{vip_id} not in vips list", color=0xff0000))
+    giguser.delete_vip(giguser.vips[int(vip_id), msg.guild.id])
+    await msg.channel.send(embed=discord.Embed(description="Removed Vip", color=0x00ff00))
+
+async def list_vips(msg):
+    output = ""
+    for vip in giguser.vips:
+        if giguser.vips[vip].guild_id == msg.guild.id: 
+           output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
+           output += " **-** "
+           output += "**" + giguser.vips[vip].template_id + "**"
+           output += " **-** "
+           if giguser.vips[vip].grace_period:
+               output += "**" + giguser.vips[vip].grace_period + "**"
+           else:
+               output += "**None**"
+           output += "\n" 
+    if output:
+        output = "**Vip** - **Template** - **Grace Period**\n===================================\n" + output
+        await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+
 @client.event
 async def on_message(msg):
     if msg.author == client.user:
@@ -621,7 +672,7 @@ async def on_message(msg):
                 match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|-?\d+|template)( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
                 if match:
                     try:
-                        await parse_args(process_delay_message, {'discord_message': msg, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
+                        await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
                         return
                     except GigParseException:
                         pass
@@ -659,6 +710,20 @@ async def on_message(msg):
                     await msg.channel.send(embed=discord.Embed(description=gigtz.display_timezones(client.user.mention), color=0x00ff00))
                     return
 
+                if re.match(r'~g(iggle)? +vip +list *$', msg.content):
+                    await list_vips(msg)
+                    return
+
+                match = re.match(r'~g(iggle)? +vip +add +(\d+) +(\S+)( +(\d))? *$', msg.content)
+                if match:
+                    await add_vip(msg, match.group(2), match.group(3), match.group(5))
+                    return
+
+                match = re.match(r'~g(iggle)? +vip +remove +(\d+) *$', msg.content)
+                if match:
+                    await remove_vip(msg, match.group(2))
+                    return
+
                 match = re.match(r'^~g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
                 if match and msg.author.id == 669370838478225448:
                     if match.group(3):
@@ -679,6 +744,17 @@ async def on_message(msg):
                     await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
         else:
             await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\nPlease include the server id ({msg.guild.id}) in your message", color=0xff0000))
+
+@client.event
+async def on_voice_state_update(member, before, after):
+    if not before.channel and after.channel and (member.id, member.guild.id) in giguser.vips:
+        # Make sure we're not in the grace period
+        grace_period = 7200 # Default is two hours
+        if giguser.vips[(member.id, member.guild.id)].grace_period:
+            grace_period = giguser.vips[(member.id, member.guild.id)].grace_period * 60 * 60
+        if not giguser.vips[(member.id, member.guild.id)].last_sent or time() - giguser.vips[(member.id, member.guild.id)].last_sent > grace_period:
+            giguser.vips[(member.id, member.guild.id)].set_last_sent(time())
+            await process_delay_message({'guild': member.guild, 'request_message_id': time(), 'delay': '0', 'from_template': giguser.vips[(member.id, member.guild.id)].template_id })
 
 @client.event
 async def on_ready():
