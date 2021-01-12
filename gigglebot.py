@@ -307,7 +307,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
         if templates:
             if delayed_messages[msg_id].delivery_time is None:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
-        elif delayed_messages[msg_id].delivery_time is not None:
+        elif delayed_messages[msg_id].delivery_time and delayed_messages[msg_id].delivery_time >= 0:
             if tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
                 if delayed_messages[msg_id].repeat is not None:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
