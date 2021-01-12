@@ -666,7 +666,7 @@ async def on_message(msg):
                     await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
                     return
 
-                match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)) *$', msg.content)
+                match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)|next) *$', msg.content)
                 if match:
                     await show_delayed_message(msg.channel, msg.author.id, match.group(5), match.group(3))
                     return
