@@ -623,19 +623,22 @@ async def remove_vip(msg, vip_id):
     giguser.delete_vip(giguser.vips[int(vip_id), msg.guild.id])
     await msg.channel.send(embed=discord.Embed(description="Removed Vip", color=0x00ff00))
 
-async def list_vips(msg):
+async def list_vips(msg, list_all):
     output = ""
     for vip in giguser.vips:
-        if giguser.vips[vip].guild_id == msg.guild.id: 
-           output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
-           output += " **-** "
-           output += "**" + giguser.vips[vip].template_id + "**"
-           output += " **-** "
-           if giguser.vips[vip].grace_period:
-               output += "**" + str(giguser.vips[vip].grace_period) + "**"
-           else:
-               output += "**None**"
-           output += "\n" 
+        if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == 669370838478225448:
+            output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
+            output += " **-** "
+            output += "**" + giguser.vips[vip].template_id + "**"
+            output += " **-** "
+            if giguser.vips[vip].grace_period:
+                output += "**" + str(giguser.vips[vip].grace_period) + "**"
+            else:
+                output += "**None**"
+            if list_all:
+                output += " **-** "
+                output += "**" + client.get_guild(giguser.vips[vip].guild_id).name + "**"
+            output += "\n"
     if output:
         output = "**Vip** - **Template** - **Grace Period**\n===================================\n" + output
     else:
@@ -727,8 +730,9 @@ async def on_message(msg):
                     await msg.channel.send(embed=discord.Embed(description=gigtz.display_timezones(client.user.mention), color=0x00ff00))
                     return
 
-                if re.match(r'~g(iggle)? +vip +list *$', msg.content):
-                    await list_vips(msg)
+                match = re.match(r'~g(iggle)? +vip +list( +(all))? *$', msg.content)
+                if match:
+                    await list_vips(msg, match.group(3))
                     return
 
                 match = re.match(r'~g(iggle)? +vip +add +(\d+) +(\S+)( +(\d))? *$', msg.content)
