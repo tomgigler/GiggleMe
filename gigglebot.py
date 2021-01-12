@@ -53,8 +53,6 @@ def load_from_db(delayed_messages):
                 delayed_messages[message_id].delivery_time = delivery_time
 
                 newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
-                if g_id not in delayed_messages:
-                    delayed_messages = {}
                 delayed_messages[message_id] = newMessage
                 loop.create_task(schedule_delay_message(newMessage))
         else:
