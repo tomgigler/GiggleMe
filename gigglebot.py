@@ -54,13 +54,14 @@ def load_from_db(delayed_messages):
 
                 newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
                 delayed_messages[message_id] = newMessage
-                loop.create_task(schedule_delay_message(newMessage))
+                if delivery_time and delivery_time >= 0:
+                    loop.create_task(schedule_delay_message(newMessage))
         else:
 
             newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
 
             delayed_messages[message_id] = newMessage
-            if delivery_time is not None:
+            if delivery_time and delivery_time >= 0:
                 loop.create_task(schedule_delay_message(newMessage))
 
     mycursor.close()
