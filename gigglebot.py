@@ -623,7 +623,9 @@ async def list_vips(msg):
            output += "\n" 
     if output:
         output = "**Vip** - **Template** - **Grace Period**\n===================================\n" + output
-        await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+    else:
+        output = "No VIPs found"
+    await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 @client.event
 async def on_message(msg):
