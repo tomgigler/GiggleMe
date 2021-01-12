@@ -273,12 +273,25 @@ async def schedule_delay_message(msg):
             delayed_messages.pop(msg.id)
             msg.delete_from_db()
 
-async def list_delay_messages(channel, author_id, list_all, tmps_repeats=None):
+async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None):
     count = 0
     total = 0
     templates = False
+    max_count = None
+    if next_or_all:
+        match = re.match(r'next( +(\d+))?', next_or_all)
+        if match:
+            if match.group(2):
+                max_count = int(match.group(2))
+            else:
+                max_count = 1
+        else:
+            max_count = None
     if tmps_repeats == 'templates' or tmps_repeats == 'tmp':
         templates = True
+        if max_count:
+            await channel.send(embed=discord.Embed(description="next not valid with Templates", color=0xff0000))
+            return
     if templates:
         output = "> \n> **=========================**\n>  **Templates**\n> **=========================**\n"
     elif tmps_repeats == 'repeats':
@@ -303,7 +316,7 @@ async def list_delay_messages(channel, author_id, list_all, tmps_repeats=None):
 
     for msg_id in sorted_messages:
         msg = sorted_messages[msg_id]
-        if msg.guild_id == channel.guild.id or list_all and author_id == 669370838478225448:
+        if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == 669370838478225448:
             output += f"> \n> **ID:**  {msg.id}\n"
             output += f"> **Author:**  {msg.author(client).name}\n"
             output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
@@ -327,6 +340,8 @@ async def list_delay_messages(channel, author_id, list_all, tmps_repeats=None):
                 await channel.send(output)
                 output = ""
                 count = 0
+            if total == max_count:
+                break
     if total > 0:
         await channel.send(output + "> \n> **====================**\n")
     else:
@@ -643,9 +658,9 @@ async def on_message(msg):
                     await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
-                match = re.match(r'~g(iggle)? +(list|ls)( +(all))?( +(templates|tmp|repeats))? *$', msg.content)
+                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates|tmp|repeats))? *$', msg.content)
                 if match:
-                    await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(6))
+                    await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
                     return
 
                 match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)) *$', msg.content)
