@@ -379,6 +379,15 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         if author_id in giguser.users:
             msg_num = giguser.users[author_id].last_message_id
             content += f"> **ID:**  {msg_num}\n"
+    if msg_num == 'next':
+        messages = {}
+        for msg_id in delayed_messages:
+            if delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].guild_id == channel.guild.id:
+                messages[msg_id] = delayed_messages[msg_id]
+        if messages:
+            msg_num = min(messages.values(), key=lambda x: x.delivery_time).id
+            content += f"> **ID:**  {msg_num}\n"
+
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
         content += f"> **Author:**  {msg.author(client).name}\n"
