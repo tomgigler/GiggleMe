@@ -287,14 +287,14 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
                 max_count = 1
         else:
             max_count = None
-    if tmps_repeats == 'templates' or tmps_repeats == 'tmp':
+    if tmps_repeats == 'templates' or tmps_repeats == 'template' or tmps_repeats == 'tmp':
         templates = True
         if max_count:
             await channel.send(embed=discord.Embed(description="next not valid with Templates", color=0xff0000))
             return
     if templates:
         output = "> \n> **=========================**\n>  **Templates**\n> **=========================**\n"
-    elif tmps_repeats == 'repeats':
+    elif tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
         output = "> \n> **====================**\n>  **Repeating Messages**\n> **====================**\n"
     else:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
@@ -305,7 +305,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
             if delayed_messages[msg_id].delivery_time is None:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
         elif delayed_messages[msg_id].delivery_time is not None:
-            if tmps_repeats == 'repeats':
+            if tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
                 if delayed_messages[msg_id].repeat is not None:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
             else:
@@ -658,7 +658,7 @@ async def on_message(msg):
                     await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
-                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates|tmp|repeats))? *$', msg.content)
+                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?))? *$', msg.content)
                 if match:
                     await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
                     return
