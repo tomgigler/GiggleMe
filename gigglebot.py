@@ -287,6 +287,10 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
                 max_count = 1
         else:
             max_count = None
+    if max_count == 0:
+        await channel.send(embed=discord.Embed(description="Value for next must be greater than 0", color=0xff0000))
+        return
+
     if tmps_repeats == 'templates' or tmps_repeats == 'template' or tmps_repeats == 'tmp':
         templates = True
         if max_count:
