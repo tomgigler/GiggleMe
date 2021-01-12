@@ -588,7 +588,7 @@ async def cancel_delayed_message(params):
     need_to_confirm = False
     
     if msg_num == 'all':
-        await confirm_request(channel, author, "Cancel all messages?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
+        await confirm_request(channel, author, "Cancel all messages authored by you?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
         return
 
     if msg_num == 'last':
