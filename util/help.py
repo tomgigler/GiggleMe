@@ -37,17 +37,18 @@ def show_help(command):
 > `~giggle help <command>`"""
 
     if command == "list":
-        return """> `~giggle list`
+        return """> `~giggle list <range>`
 > 
 > Display a list of currently scheduled messages for all users on this server
+> **<range>** is optional and may be either `next` or `next <N>` where <N> is a positive integer
+> 
+> `~giggle list <range> repeats`
+> 
+> Display a list of repeating messages for all users on this server
 > 
 > `~giggle list templates`
 > 
-> Display a list of templates for all users on this server
-> 
-> `~giggle list repeats`
-> 
-> Display a list of repeating messages for all users on this server"""
+> Display a list of templates for all users on this server"""
 
     if command == "show":
         return """> `~giggle show <message-id>`
@@ -59,6 +60,7 @@ def show_help(command):
 > Show the raw (Markdown) message
 > 
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message
+> `next` may be used as <message-id> to reference the next message in the queue
 > 
 > Both `show` and `show raw` may be used to show templates"""
 
