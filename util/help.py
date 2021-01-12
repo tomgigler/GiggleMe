@@ -9,14 +9,7 @@ def show_help(command):
 > 
 > **<time>** may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
 > 
-> **repeat** is optional.  If included, your message will be repeated at the given frequency until you cancel the message or **edit** it with **repeat=none**
-> **<frequency>** may be `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
-> If the previous delivery of a repeating message is the last message in the channel the message will be deleted and replaced with the new delivery
-> **<frequency>** may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
-> If **skip_if** is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
-> If **skip_if** is 0, the message will always be delivered and will not delete the previouse delivery as specified above
-> 
-> for example: `repeat=daily;skip_if=5`
+> **repeat** is optional.  For more information on repeating messages type `~giggle help repeat`
 > 
 > **desc** is an optional description of the message
 > 
@@ -138,4 +131,24 @@ def show_help(command):
 > `~giggle help`
 > 
 > Show the main help"""
+
+    if command == "repeat":
+        return """> **repeat** is optional.  If included, your message will be repeated at the given frequency until you cancel the message or **edit** it with **repeat=none**
+> 
+> **Note:** Editing a message with `repeat=none` **does not** cancel the next scheduled delivery of the message
+> 
+> **<frequency>** may be `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
+> 
+> For example: `repeat=minutes:20`
+> 
+> If the previous delivery of a repeating message is the last message in the channel the message will be deleted and replaced with the new delivery
+> 
+> **<frequency>** may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
+> 
+> If **skip_if** is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
+> 
+> If **skip_if** is 0, the message will always be delivered and will not delete the previouse delivery as specified above
+> 
+> For example: `repeat=daily;skip_if=5`"""
+
     return f"> \"{command}\" is not a recognized command\n> \n> Available commands are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`"
