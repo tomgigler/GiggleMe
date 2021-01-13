@@ -222,7 +222,9 @@ async def process_delay_message(params):
 
 async def propose_message(msg, propose_in_channel, request_channel):
     votes.vote(msg.id, client.user.id, 1)
-    output = f"> **{msg.author(client).name} has proposed the following message be delivered in the {msg.delivery_channel(client).name} channel:**\n"
+    output = f"> **A MESSAGE HAS BEEN PROPOSED**\n"
+    output += f"> **Author:** {msg.author(client).name}\n"
+    output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
     output += "> **Current Votes:** 0\n"
     output += msg.content
     proposal_message = await propose_in_channel.send(output)
@@ -241,7 +243,9 @@ async def process_proposal_reaction(payload, msg_id, vote):
         votes.vote(msg_id, payload.user_id, vote)
     else:
         votes.vote(msg_id, payload.user_id, vote)
-    output = f"> **{msg.author(client).name} has proposed the following message be delivered in the {msg.delivery_channel(client).name} channel:**\n"
+    output = f"> **A MESSAGE HAS BEEN PROPOSED**\n"
+    output += f"> **Author:** {msg.author(client).name}\n"
+    output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
     output += f"> **Current Votes:** {votes.vote_count(msg_id)}\n"
     output += msg.content
     guild = client.get_guild(payload.guild_id)
