@@ -14,10 +14,11 @@ from gigdb import db_connect
 import giguser
 from delayed_message import DelayedMessage
 from gigparse import parse_args, GigParseException
+import gigvotes
 
 client = discord.Client()
 delayed_messages = {}
-votes = {}
+votes = gigvotes.GigVote()
 
 def load_from_db(delayed_messages):
     mydb = db_connect()
@@ -64,6 +65,9 @@ def load_from_db(delayed_messages):
             delayed_messages[message_id] = newMessage
             if delivery_time and delivery_time >= 0:
                 loop.create_task(schedule_delay_message(newMessage))
+
+        if delayed_messages[message_id].delivery_time and delayed_messages[message_id].delivery_time < 0:
+            votes.load_proposal_votes(message_id)
 
     mycursor.close()
     mydb.disconnect()
@@ -217,27 +221,33 @@ async def process_delay_message(params):
     await schedule_delay_message(newMessage)
 
 async def propose_message(msg, propose_in_channel, request_channel):
-    votes[msg.id] = {}
+    votes.vote(msg.id, client.user.id, 1)
     output = f"> **{msg.author(client).name} has proposed the following message be delivered in the {msg.delivery_channel(client).name} channel:**\n"
     output += "> **Current Votes:** 0\n"
     output += msg.content
     proposal_message = await propose_in_channel.send(output)
     await proposal_message.add_reaction('☑️')
     delayed_messages[msg.id].last_repeat_message = proposal_message.id
+    delayed_messages[msg.id].update_db()
     embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
     await request_channel.send(embed=embed)
 
-async def process_proposal_reaction(reaction, user, msg_id, vote):
+async def process_proposal_reaction(payload, msg_id, vote):
+    if payload.user_id == client.user.id:
+        return
     msg = delayed_messages[msg_id]
     if vote:
-        votes[msg_id].update({user.id: 1})
+        votes.vote(msg_id, payload.user_id, vote)
     else:
-        votes[msg_id].pop(user.id, None)
+        votes.vote(msg_id, payload.user_id, vote)
     output = f"> **{msg.author(client).name} has proposed the following message be delivered in the {msg.delivery_channel(client).name} channel:**\n"
-    output += f"> **Current Votes:** {len(votes[msg_id])}\n"
+    output += f"> **Current Votes:** {votes.vote_count(msg_id)}\n"
     output += msg.content
-    await reaction.message.edit(content=output)
+    guild = client.get_guild(payload.guild_id)
+    channel = guild.get_channel(payload.channel_id)
+    message = channel.get_message(payload.message_id)
+    await message.edit(content=output)
 
 def replace_mentions(content, guild_id):
         guild = discord.utils.get(client.guilds, id=int(guild_id))
@@ -683,6 +693,13 @@ async def cancel_delayed_message(params):
                 return
             else:
                 await channel.send(embed=discord.Embed(description="Template deleted", color=0x00ff00))
+        elif delayed_messages[msg_num].delivery_time < 0:
+            if not confirmed:
+                await confirm_request(channel, author, f"Delete proposal {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num, 'confirmed': True}, client)
+                return
+            else:
+                await channel.send(embed=discord.Embed(description="Proposal deleted", color=0x00ff00))
+                votes.remove_proposal(msg_num)
         else:
             await channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
 
@@ -876,21 +893,21 @@ async def on_ready():
     await client.change_presence(activity=discord.Game('with thegigler'))
 
 @client.event
-async def on_reaction_add(reaction, user):
-    if reaction.emoji == '☑️':
+async def on_raw_reaction_add(payload):
+    if payload.emoji == '☑️':
         for msg_id in delayed_messages:
-            if reaction.message.id == delayed_messages[msg_id].last_repeat_message:
-                await process_proposal_reaction(reaction, user, msg_id, True)
+            if payload.message_id == delayed_messages[msg_id].last_repeat_message:
+                await process_proposal_reaction(payload, msg_id, True)
                 return
 
-    await process_reaction(reaction, user, client)
+    await process_reaction(payload, client)
 
 @client.event
-async def on_reaction_remove(reaction, user):
-    if reaction.emoji == '☑️':
+async def on_reaction_remove(payload, user):
+    if payload.emoji == '☑️':
         for msg_id in delayed_messages:
-            if reaction.message.id == delayed_messages[msg_id].last_repeat_message:
-                await process_proposal_reaction(reaction, user, msg_id, False)
+            if payload.message_id == delayed_messages[msg_id].last_repeat_message:
+                await process_proposal_reaction(payload, msg_id, False)
                 return
 
 @client.event

@@ -29,18 +29,18 @@ class GigVote:
 
         if vote:
             if proposal_id in self.votes:
-                self.votes[proposal_id]].update({user_id: vote})
+                self.votes[proposal_id].update({user_id: vote})
             else:
-                self.votes[proposal_id]] = {user_id: vote}
+                self.votes[proposal_id] = {user_id: vote}
 
             sql = "INSERT INTO votes (proposal_id, user_id, vote) VALUES(%s, %s, %s) ON DUPLICATE KEY UPDATE vote=%s"
             mycursor.execute(sql, (proposal_id, user_id, vote, vote))
             
         else:
             if proposal_id in self.votes:
-                self.votes[proposal_id]].pop(user_id, None)
+                self.votes[proposal_id].pop(user_id, None)
             sql = "DELETE FROM votes WHERE proposal_id = %s and user_id = %s"
-            mycursor.execute(sql, (proposal_id, user_id, vote, vote))
+            mycursor.execute(sql, (proposal_id, user_id))
 
         mydb.commit()
         mycursor.close()
@@ -56,3 +56,6 @@ class GigVote:
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
+
+    def vote_count(self, proposal_id):
+        return len(self.votes[proposal_id]) - 1
