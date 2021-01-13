@@ -246,7 +246,7 @@ async def process_proposal_reaction(payload, msg_id, vote):
     output += msg.content
     guild = client.get_guild(payload.guild_id)
     channel = guild.get_channel(payload.channel_id)
-    message = channel.get_message(payload.message_id)
+    message = await channel.fetch_message(payload.message_id)
     await message.edit(content=output)
 
 def replace_mentions(content, guild_id):
@@ -894,7 +894,7 @@ async def on_ready():
 
 @client.event
 async def on_raw_reaction_add(payload):
-    if payload.emoji == '☑️':
+    if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
             if payload.message_id == delayed_messages[msg_id].last_repeat_message:
                 await process_proposal_reaction(payload, msg_id, True)
@@ -904,7 +904,7 @@ async def on_raw_reaction_add(payload):
 
 @client.event
 async def on_raw_reaction_remove(payload):
-    if payload.emoji == '☑️':
+    if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
             if payload.message_id == delayed_messages[msg_id].last_repeat_message:
                 await process_proposal_reaction(payload, msg_id, False)

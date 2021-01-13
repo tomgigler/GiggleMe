@@ -33,7 +33,7 @@ async def process_reaction(payload, client):
     if payload.message_id in confirmation_requests:
         if(payload.user_id == confirmation_requests[payload.message_id].member.id):
             found = True
-            if payload.emoji == '✅':
+            if payload.emoji.name == '✅':
                 confirmation_request = confirmation_requests.pop(payload.message_id, None)
                 await confirmation_request.func(confirmation_request.params)
             else:
@@ -43,9 +43,8 @@ async def process_reaction(payload, client):
         try:
             guild = client.get_guild(payload.guild_id)
             channel = guild.get_channel(payload.channel_id)
-            message = channel.get_message(payload.message_id)
+            message = await channel.fetch_message(payload.message_id)
             await message.remove_reaction('✅', client.user)
             await message.remove_reaction('❌', client.user)
         except:
             pass
-
