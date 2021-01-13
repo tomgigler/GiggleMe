@@ -222,6 +222,7 @@ async def propose_message(msg, propose_in_channel, request_channel):
     output += "> **Current Votes:** 0\n"
     output += msg.content
     proposal_message = await propose_in_channel.send(output)
+    await proposal_message.add_reaction('☑️')
     delayed_messages[msg.id].last_repeat_message = proposal_message.id
     embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
@@ -876,19 +877,21 @@ async def on_ready():
 
 @client.event
 async def on_reaction_add(reaction, user):
-    for msg_id in delayed_messages:
-        if reaction.message.id == delayed_messages[msg_id].last_repeat_message:
-            await process_proposal_reaction(reaction, user, msg_id, True)
-            return
+    if reaction.emoji == '☑️':
+        for msg_id in delayed_messages:
+            if reaction.message.id == delayed_messages[msg_id].last_repeat_message:
+                await process_proposal_reaction(reaction, user, msg_id, True)
+                return
 
     await process_reaction(reaction, user, client)
 
 @client.event
 async def on_reaction_remove(reaction, user):
-    for msg_id in delayed_messages:
-        if reaction.message.id == delayed_messages[msg_id].last_repeat_message:
-            await process_proposal_reaction(reaction, user, msg_id, False)
-            return
+    if reaction.emoji == '☑️':
+        for msg_id in delayed_messages:
+            if reaction.message.id == delayed_messages[msg_id].last_repeat_message:
+                await process_proposal_reaction(reaction, user, msg_id, False)
+                return
 
 @client.event
 async def on_guild_join(guild):
