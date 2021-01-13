@@ -17,6 +17,7 @@ from gigparse import parse_args, GigParseException
 
 client = discord.Client()
 delayed_messages = {}
+votes = {}
 
 def load_from_db(delayed_messages):
     mydb = db_connect()
@@ -191,17 +192,16 @@ async def process_delay_message(params):
     newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, description, content)
     newMessage.insert_into_db()
 
+    delayed_messages[newMessage.id] = newMessage
 
     if not delivery_time >= 0:
         if request_channel:
             if delay == 'template':
                 embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
                 embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
+                await request_channel.send(embed=embed)
             else:
-                embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{delivery_channel.name}** channel when it is approved", color=0x00ff00)
-                embed.add_field(name="Proposal ID", value=f"{newMessage.id}", inline=True)
-            await request_channel.send(embed=embed)
-        delayed_messages[newMessage.id] = newMessage
+                await propose_message(newMessage, propose_in_channel, request_channel)
         return
     elif delivery_time == 0:
         if request_channel:
@@ -211,12 +211,32 @@ async def process_delay_message(params):
         embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
         await request_channel.send(embed=embed)
 
-    delayed_messages[newMessage.id] = newMessage
-
     if author_id:
         giguser.users[author_id].set_last_message(newMessage.id)
 
     await schedule_delay_message(newMessage)
+
+async def propose_message(msg, propose_in_channel, request_channel):
+    votes[msg.id] = {}
+    output = f"> **{msg.author(client).name} has proposed the following message be delivered in the {msg.delivery_channel(client).name} channel:**\n"
+    output += "> **Current Votes:** 0\n"
+    output += msg.content
+    proposal_message = await propose_in_channel.send(output)
+    delayed_messages[msg.id].last_repeat_message = proposal_message.id
+    embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
+    embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
+    await request_channel.send(embed=embed)
+
+async def process_proposal_reaction(reaction, user, msg_id, vote):
+    msg = delayed_messages[msg_id]
+    if vote:
+        votes[msg_id].update({user.id: 1})
+    else:
+        votes[msg_id].pop(user.id, None)
+    output = f"> **{msg.author(client).name} has proposed the following message be delivered in the {msg.delivery_channel(client).name} channel:**\n"
+    output += f"> **Current Votes:** {len(votes[msg_id])}\n"
+    output += msg.content
+    await reaction.message.edit(content=output)
 
 def replace_mentions(content, guild_id):
         guild = discord.utils.get(client.guilds, id=int(guild_id))
@@ -467,11 +487,10 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         content += f"> **Description:**  {msg.description}\n"
         if msg.delivery_time < 0:
             content += f"> **Current Votes:**  3\n"
-        await channel.send(content)
         if raw:
-            await channel.send("```\n" + msg.content + "\n```")
+            await channel.send(content + "```\n" + msg.content + "\n```")
         else:
-            await channel.send(msg.content)
+            await channel.send(content + msg.content)
         message_found = True
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
@@ -857,7 +876,19 @@ async def on_ready():
 
 @client.event
 async def on_reaction_add(reaction, user):
+    for msg_id in delayed_messages:
+        if reaction.message.id == delayed_messages[msg_id].last_repeat_message:
+            await process_proposal_reaction(reaction, user, msg_id, True)
+            return
+
     await process_reaction(reaction, user, client)
+
+@client.event
+async def on_reaction_remove(reaction, user):
+    for msg_id in delayed_messages:
+        if reaction.message.id == delayed_messages[msg_id].last_repeat_message:
+            await process_proposal_reaction(reaction, user, msg_id, False)
+            return
 
 @client.event
 async def on_guild_join(guild):
