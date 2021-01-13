@@ -903,7 +903,7 @@ async def on_raw_reaction_add(payload):
     await process_reaction(payload, client)
 
 @client.event
-async def on_reaction_remove(payload, user):
+async def on_raw_reaction_remove(payload):
     if payload.emoji == '☑️':
         for msg_id in delayed_messages:
             if payload.message_id == delayed_messages[msg_id].last_repeat_message:
