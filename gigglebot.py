@@ -363,7 +363,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
 
     if tmps_repeats == 'templates' or tmps_repeats == 'template' or tmps_repeats == 'tmp':
         templates = True
-    if tmps_repeats == 'proposals' or tmps_repeats == 'proposal':
+    if tmps_repeats == 'proposals' or tmps_repeats == 'proposal' or tmps_repeats == 'p':
         proposals = True
     if templates or proposals:
         if max_count:
@@ -768,7 +768,7 @@ async def on_message(msg):
                     await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
-                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|proposals?))? *$', msg.content)
+                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
                 if match:
                     await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
                     return
@@ -825,10 +825,10 @@ async def on_message(msg):
                     await msg.channel.send(help.show_help(match.group(4)))
                     return
 
-                match = re.match(r'~g(iggle)? +propose( +([^\n]+))?(\n(.+))?$', msg.content, re.DOTALL)
+                match = re.match(r'~g(iggle)? +p(ropose)?( +([^\n]+))?(\n(.+))?$', msg.content, re.DOTALL)
                 if match:
                     try:
-                        await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': 'proposal', 'content': match.group(5)}, match.group(3))
+                        await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': 'proposal', 'content': match.group(6)}, match.group(4))
                         return
                     except GigParseException:
                         pass
