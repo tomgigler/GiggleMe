@@ -27,7 +27,9 @@ def show_help(command):
 > 
 > To see help for one of the above commands:
 > 
-> `~giggle help <command>`"""
+> `~giggle help <command>`
+> 
+> You may also propose messages to be sent once approved.  For more information on proposing messages type `~giggle help proposals`"""
 
     if command == "list":
         return """> `~giggle list <range>`
@@ -151,4 +153,23 @@ def show_help(command):
 > 
 > For example: `repeat=daily;skip_if=5`"""
 
-    return f"> \"{command}\" is not a recognized command\n> \n> Available commands are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`"
+    if command == "proposals":
+        return """> The `propose` command is used to propose messages.  To propose <message>:
+> 
+> `~giggle propose propose_in_channel=<proposal-channel> channel=<delivery-channel>`
+> `<message>`
+> 
+> **<proposal-channel>** is the channel where the message will be proposed
+> **<delivery-channel>** is the channel where the message will be deilvered once approved
+> 
+> The following optional parameters may also be used when proposing a message:
+> 
+> `description="<description>"` A brief description of the message
+> 
+> `from_template=<template-id>` create the message body from the <template_id> template
+> Do not include a message body when using **from_template**
+> 
+> `required_approvals=<N>`  The number of approvals required before the message is sent
+> If **required_approvals** is not specified, the message will be sent after it receives two approvals"""
+
+    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `proposals`"

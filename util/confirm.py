@@ -28,21 +28,23 @@ async def confirm_request(channel, member, prompt, timeout, func, params, client
 
     confirmation_requests.pop(confirmation_message.id, None)
 
-async def process_reaction(reaction, user, client):
+async def process_reaction(payload, client):
     found = False
-    if reaction.message.id in confirmation_requests:
-        if(user == confirmation_requests[reaction.message.id].member):
+    if payload.message_id in confirmation_requests:
+        if(payload.user_id == confirmation_requests[payload.message_id].member.id):
             found = True
-            if reaction.emoji == '✅':
-                confirmation_request = confirmation_requests.pop(reaction.message.id, None)
+            if payload.emoji.name == '✅':
+                confirmation_request = confirmation_requests.pop(payload.message_id, None)
                 await confirmation_request.func(confirmation_request.params)
             else:
-                confirmation_message = confirmation_requests.pop(reaction.message.id, None)
+                confirmation_message = confirmation_requests.pop(payload.message_id, None)
 
     if found:
         try:
-            await reaction.message.remove_reaction('✅', client.user)
-            await reaction.message.remove_reaction('❌', client.user)
+            guild = client.get_guild(payload.guild_id)
+            channel = guild.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            await message.remove_reaction('✅', client.user)
+            await message.remove_reaction('❌', client.user)
         except:
             pass
-

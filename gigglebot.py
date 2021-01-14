@@ -14,9 +14,11 @@ from gigdb import db_connect
 import giguser
 from delayed_message import DelayedMessage
 from gigparse import parse_args, GigParseException
+import gigvotes
 
 client = discord.Client()
 delayed_messages = {}
+votes = gigvotes.GigVote()
 
 def load_from_db(delayed_messages):
     mydb = db_connect()
@@ -64,6 +66,9 @@ def load_from_db(delayed_messages):
             if delivery_time and delivery_time >= 0:
                 loop.create_task(schedule_delay_message(newMessage))
 
+        if delayed_messages[message_id].delivery_time and delayed_messages[message_id].delivery_time < 0:
+            votes.load_proposal_votes(message_id)
+
     mycursor.close()
     mydb.disconnect()
 
@@ -81,6 +86,8 @@ async def process_delay_message(params):
     repeat = params.pop('repeat', None)
     description = params.pop('desc', None)
     from_template = params.pop('from_template', None)
+    propose_in_channel_name = params.pop('propose_in_channel', None)
+    required_approvals = params.pop('required_approvals', None)
 
     if params:
         if request_channel:
@@ -118,7 +125,10 @@ async def process_delay_message(params):
     if channel:
         delivery_channel = discord.utils.get(guild.channels, name=channel)
         if not delivery_channel:
-            delivery_channel = discord.utils.get(guild.channels, id=int(channel))
+            try:
+                delivery_channel = discord.utils.get(guild.channels, id=int(channel))
+            except:
+                pass
         if not delivery_channel:
             if request_channel:
                 await request_channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
@@ -127,17 +137,55 @@ async def process_delay_message(params):
         # default to current channel
         delivery_channel = request_channel
 
-    if delay == 'template':
+    # get propose_in_channel
+    if propose_in_channel_name:
+        if delay == 'proposal':
+            delivery_time = -1
+            propose_in_channel = discord.utils.get(guild.channels, name=propose_in_channel_name)
+            if not propose_in_channel:
+                try:
+                    propose_in_channel = discord.utils.get(guild.channels, id=int(propose_in_channel))
+                except:
+                    pass
+            if not propose_in_channel:
+                if request_channel:
+                    await request_channel.send(embed=discord.Embed(description=f"Cannot find {propose_in_channel_name} channel", color=0xff0000))
+                return
+        else:
+            await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
+            return
+    elif delay == 'proposal':
+        await request_channel.send(embed=discord.Embed(description=f"Parameter **propose_in_channel** is required with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
+        return
+
+    # get required_approvals
+    if required_approvals:
+        if delay == 'proposal':
+            if not re.match(r'\d+$', required_approvals) or int(required_approvals) == 0:
+                await request_channel.send(embed=discord.Embed(description=f"Invalid value for **required_approvals**.  Must be a positive integer greater than 0\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
+                return
+        else:
+            await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **required_approvals** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
+            return
+    else:
+        required_approvals = '2'
+
+    if delay == 'proposal':
+        pass
+
+    elif delay == 'template':
         delivery_time = None
         if repeat is not None:
             if request_channel:
                 await request_channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
             return
+
     elif re.match(r'-?\d+$', delay):
         if delay == '0':
             delivery_time = 0
         else:
             delivery_time = time() + int(delay) * 60
+
     else:
         try:
             delivery_time = gigtz.local_time_str_to_utc(delay, giguser.users[author_id].timezone)
@@ -161,27 +209,78 @@ async def process_delay_message(params):
     newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, description, content)
     newMessage.insert_into_db()
 
-    if delivery_time is None:
+    delayed_messages[newMessage.id] = newMessage
+
+    if not delivery_time >= 0:
         if request_channel:
-            embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
-            embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
-            await request_channel.send(embed=embed)
-        delayed_messages[newMessage.id] = newMessage
+            if delay == 'template':
+                embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
+                embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
+                await request_channel.send(embed=embed)
+            else:
+                await propose_message(newMessage, propose_in_channel, request_channel, required_approvals)
         return
     elif delivery_time == 0:
         if request_channel:
-            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {guild.name} server now", color=0x00ff00))
+            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to the **{delivery_channel.name}** channel now", color=0x00ff00))
     elif request_channel:
-        embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.name} channel in the {guild.name} server at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}", color=0x00ff00)
+        embed=discord.Embed(description=f"Your message will be delivered to the **{delivery_channel.name}** channel at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}", color=0x00ff00)
         embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
         await request_channel.send(embed=embed)
-
-    delayed_messages[newMessage.id] = newMessage
 
     if author_id:
         giguser.users[author_id].set_last_message(newMessage.id)
 
     await schedule_delay_message(newMessage)
+
+async def propose_message(msg, propose_in_channel, request_channel, required_approvals):
+    votes.vote(msg.id, client.user.id, int(required_approvals))
+    output = "> **A MESSAGE HAS BEEN PROPOSED**\n"
+    output += f"> **Author:** {msg.author(client).name}\n"
+    output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
+    output += "> **Current approvals:** 0\n"
+    output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, client.user.id)}\n"
+    output += msg.content
+    proposal_message = await propose_in_channel.send(output)
+    await proposal_message.add_reaction('☑️')
+    delayed_messages[msg.id].last_repeat_message = proposal_message.id
+    delayed_messages[msg.id].update_db()
+    embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
+    embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
+    await request_channel.send(embed=embed)
+
+async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, msg_id, vote=None):
+    if user_id == client.user.id:
+        return
+    msg = delayed_messages[msg_id]
+    required_approvals = votes.get_required_approvals(msg_id, client.user.id)
+    if vote is not None:
+        votes.vote(msg_id, user_id, vote)
+    else:
+        votes.remove_proposal(msg_id)
+        votes.vote(msg_id, client.user.id, int(required_approvals))
+    total_approvals = votes.vote_count(msg_id)
+    output = f"> **Author:** {msg.author(client).name}\n"
+    output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
+
+    if total_approvals < required_approvals:
+        output = "> **A MESSAGE HAS BEEN PROPOSED**\n" + output
+        output += f"> **Current approvals:** {total_approvals}\n"
+        output += f"> **Required approvals:** {required_approvals}\n"
+    else:
+        output = "> **MESSAGE APPROVED AND SENT**\n" + output
+        output += f"> **Sent:** {gigtz.display_localized_time(time(), giguser.users[msg.author_id].timezone, giguser.users[msg.author_id].format_24)}\n"
+        output += f"> **Total approvals:** {required_approvals}\n"
+        msg.last_repeat_message = None
+        msg.delivery_time = 0
+        msg.update_db()
+        await schedule_delay_message(msg)
+
+    output += msg.content
+    guild = client.get_guild(guild_id)
+    channel = guild.get_channel(channel_id)
+    message = await channel.fetch_message(message_id)
+    await message.edit(content=output)
 
 def replace_mentions(content, guild_id):
         guild = discord.utils.get(client.guilds, id=int(guild_id))
@@ -276,6 +375,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
     count = 0
     total = 0
     templates = False
+    proposals = False
     max_count = None
     if next_or_all:
         match = re.match(r'next( +(\d+))?', next_or_all)
@@ -292,11 +392,16 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
 
     if tmps_repeats == 'templates' or tmps_repeats == 'template' or tmps_repeats == 'tmp':
         templates = True
+    if tmps_repeats == 'proposals' or tmps_repeats == 'proposal' or tmps_repeats == 'p':
+        proposals = True
+    if templates or proposals:
         if max_count:
-            await channel.send(embed=discord.Embed(description="next not valid with Templates", color=0xff0000))
+            await channel.send(embed=discord.Embed(description="**next** not valid with Templates and Proposals", color=0xff0000))
             return
     if templates:
         output = "> \n> **=========================**\n>  **Templates**\n> **=========================**\n"
+    elif proposals:
+        output = "> \n> **=========================**\n>  **Proposals**\n> **=========================**\n"
     elif tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
         output = "> \n> **====================**\n>  **Repeating Messages**\n> **====================**\n"
     else:
@@ -307,14 +412,17 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
         if templates:
             if delayed_messages[msg_id].delivery_time is None:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
-        elif delayed_messages[msg_id].delivery_time is not None:
+        elif proposals:
+            if delayed_messages[msg_id].delivery_time and delayed_messages[msg_id].delivery_time < 0:
+                sorted_messages[msg_id] = delayed_messages[msg_id]
+        elif delayed_messages[msg_id].delivery_time and delayed_messages[msg_id].delivery_time >= 0:
             if tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
                 if delayed_messages[msg_id].repeat is not None:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
             else:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
 
-    if not templates:
+    if not templates or proposals:
         sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
@@ -323,7 +431,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
             output += f"> \n> **ID:**  {msg.id}\n"
             output += f"> **Author:**  {msg.author(client).name}\n"
             output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-            if not templates:
+            if not templates and not  proposals:
                 output += f"> **Repeat:**  {msg.repeat}\n"
                 if msg.repeat and msg.last_repeat_message:
                     try:
@@ -337,6 +445,8 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
                 else:
                     output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
             output += f"> **Description:**  {msg.description}\n"
+            if proposals:
+                output += "> **Current Votes:**  3\n"
             count += 1
             total += 1
             if count == 4:
@@ -350,6 +460,8 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
     else:
         if templates:
             await channel.send(embed=discord.Embed(description="No templates found", color=0x00ff00))
+        elif proposals:
+            await channel.send(embed=discord.Embed(description="No proposals found", color=0x00ff00))
         else:
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
@@ -395,7 +507,8 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         msg = delayed_messages[msg_num]
         content += f"> **Author:**  {msg.author(client).name}\n"
         content += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-        content += f"> **Repeat:**  {msg.repeat}\n"
+        if msg.delivery_time and msg.delivery_time >= 0:
+            content += f"> **Repeat:**  {msg.repeat}\n"
         if msg.repeat and msg.last_repeat_message:
             try:
                 old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
@@ -405,19 +518,23 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
 
         if channel.guild.id != msg.guild_id:
             content += f"> **Deliver in:**  {msg.guild(client).name}\n"
-        if msg.delivery_time is not None:
+        if msg.delivery_time and msg.delivery_time >= 0:
             if round((msg.delivery_time - time())/60, 1) < 0:
                 content += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
                 content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
         else:
-            content = "> **Template**\n" + content
+            if msg.delivery_time:
+                content = "> **Proposal**\n" + content
+            else:
+                content = "> **Template**\n" + content
         content += f"> **Description:**  {msg.description}\n"
-        await channel.send(content)
+        if msg.delivery_time < 0:
+            content += f"> **Current Votes:**  3\n"
         if raw:
-            await channel.send("```\n" + msg.content + "\n```")
+            await channel.send(content + "```\n" + msg.content + "\n```")
         else:
-            await channel.send(msg.content)
+            await channel.send(content + msg.content)
         message_found = True
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
@@ -483,11 +600,22 @@ async def edit_delay_message(params):
     if message_id in delayed_messages:
 
         msg = delayed_messages[message_id]
-        if msg.delivery_time == None:
-            type = "Template"
-            if repeat is not None:
-                await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a template", color=0xff0000))
-                return
+        if not msg.delivery_time or msg.delivery_time < 0:
+            if msg.delivery_time == None:
+                type = "Template"
+                if repeat is not None:
+                    await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a template", color=0xff0000))
+                    return
+
+            else:
+                type = "Proposal"
+                if repeat is not None:
+                    await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a proposal", color=0xff0000))
+                    return
+                if delay:
+                    await discord_message.channel.send(embed=discord.Embed(description="A delivery time may not be specified when editing a proposal", color=0xff0000))
+                    return
+
 
         if delay:
             if msg.delivery_time == None:
@@ -558,6 +686,18 @@ async def edit_delay_message(params):
         else:
             msg.update_db()
 
+        if type == "Proposal":
+            # We need to update the proposal
+            proposal_message = None
+            for channel in discord_message.guild.text_channels:
+                async for message in channel.history(limit=200):
+                    if message.id == msg.last_repeat_message:
+                        proposal_message = message
+                        break
+                if proposal_message:
+                    break
+            await process_proposal_reaction(None, msg.guild_id, channel.id, proposal_message.id, msg.id)
+
         await discord_message.channel.send(embed=embed)
 
     else:
@@ -570,7 +710,7 @@ async def cancel_all_delay_message(params):
     message_count = 0
     messages_to_remove = []
     for msg_id in delayed_messages:
-        if delayed_messages[msg_id].delivery_time is not None:
+        if delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].delivery_time >= 0:
             messages_to_remove.append(delayed_messages[msg_id])
     for msg in messages_to_remove:
         if msg.author_id == member.id:
@@ -609,6 +749,13 @@ async def cancel_delayed_message(params):
                 return
             else:
                 await channel.send(embed=discord.Embed(description="Template deleted", color=0x00ff00))
+        elif delayed_messages[msg_num].delivery_time < 0:
+            if not confirmed:
+                await confirm_request(channel, author, f"Delete proposal {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num, 'confirmed': True}, client)
+                return
+            else:
+                await channel.send(embed=discord.Embed(description="Proposal deleted", color=0x00ff00))
+                votes.remove_proposal(msg_num)
         else:
             await channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
 
@@ -673,7 +820,7 @@ async def on_message(msg):
                     await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
-                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?))? *$', msg.content)
+                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
                 if match:
                     await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
                     return
@@ -729,6 +876,14 @@ async def on_message(msg):
                 if match:
                     await msg.channel.send(help.show_help(match.group(4)))
                     return
+
+                match = re.match(r'~g(iggle)? +p(ropose)?( +([^\n]+))?(\n(.+))?$', msg.content, re.DOTALL)
+                if match:
+                    try:
+                        await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': 'proposal', 'content': match.group(6)}, match.group(4))
+                        return
+                    except GigParseException:
+                        pass
 
                 match = re.match(r'~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
                 if match:
@@ -794,8 +949,22 @@ async def on_ready():
     await client.change_presence(activity=discord.Game('with thegigler'))
 
 @client.event
-async def on_reaction_add(reaction, user):
-    await process_reaction(reaction, user, client)
+async def on_raw_reaction_add(payload):
+    if payload.emoji.name == '☑️':
+        for msg_id in delayed_messages:
+            if payload.message_id == delayed_messages[msg_id].last_repeat_message:
+                await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, True)
+                return
+
+    await process_reaction(payload, client)
+
+@client.event
+async def on_raw_reaction_remove(payload):
+    if payload.emoji.name == '☑️':
+        for msg_id in delayed_messages:
+            if payload.message_id == delayed_messages[msg_id].last_repeat_message:
+                await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, False)
+                return
 
 @client.event
 async def on_guild_join(guild):
