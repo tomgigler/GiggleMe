@@ -235,7 +235,7 @@ async def process_delay_message(params):
 
 async def propose_message(msg, propose_in_channel, request_channel, required_approvals):
     votes.vote(msg.id, client.user.id, int(required_approvals))
-    output = f"> **A MESSAGE HAS BEEN PROPOSED**\n"
+    output = "> **A MESSAGE HAS BEEN PROPOSED**\n"
     output += f"> **Author:** {msg.author(client).name}\n"
     output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
     output += "> **Current approvals:** 0\n"
@@ -253,15 +253,25 @@ async def process_proposal_reaction(payload, msg_id, vote):
     if payload.user_id == client.user.id:
         return
     msg = delayed_messages[msg_id]
-    if vote:
-        votes.vote(msg_id, payload.user_id, vote)
-    else:
-        votes.vote(msg_id, payload.user_id, vote)
-    output = f"> **A MESSAGE HAS BEEN PROPOSED**\n"
-    output += f"> **Author:** {msg.author(client).name}\n"
+    votes.vote(msg_id, payload.user_id, vote)
+    required_approvals = votes.get_required_approvals(msg_id, client.user.id)
+    total_approvals = votes.vote_count(msg_id)
+    output = f"> **Author:** {msg.author(client).name}\n"
     output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
-    output += f"> **Current approvals:** {votes.vote_count(msg_id)}\n"
-    output += f"> **Required approvals:** {votes.get_required_approvals(msg_id, client.user.id)}\n"
+
+    if total_approvals < required_approvals:
+        output = "> **A MESSAGE HAS BEEN PROPOSED**\n" + output
+        output += f"> **Current approvals:** {total_approvals}\n"
+        output += f"> **Required approvals:** {required_approvals}\n"
+    else:
+        output = "> **MESSAGE APPROVED AND SENT**\n" + output
+        output += f"> **Sent:** {gigtz.display_localized_time(time(), giguser.users[msg.author_id].timezone, giguser.users[msg.author_id].format_24)}\n"
+        output += f"> **Total approvals:** {required_approvals}\n"
+        msg.last_repeat_message = None
+        msg.delivery_time = 0
+        msg.update_db()
+        await schedule_delay_message(msg)
+
     output += msg.content
     guild = client.get_guild(payload.guild_id)
     channel = guild.get_channel(payload.channel_id)
