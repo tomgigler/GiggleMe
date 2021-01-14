@@ -249,11 +249,14 @@ async def propose_message(msg, propose_in_channel, request_channel, required_app
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
     await request_channel.send(embed=embed)
 
-async def process_proposal_reaction(payload, msg_id, vote):
-    if payload.user_id == client.user.id:
+async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, msg_id, vote=None):
+    if user_id == client.user.id:
         return
     msg = delayed_messages[msg_id]
-    votes.vote(msg_id, payload.user_id, vote)
+    if vote is not None:
+        votes.vote(msg_id, user_id, vote)
+    else:
+        pass
     required_approvals = votes.get_required_approvals(msg_id, client.user.id)
     total_approvals = votes.vote_count(msg_id)
     output = f"> **Author:** {msg.author(client).name}\n"
@@ -273,9 +276,9 @@ async def process_proposal_reaction(payload, msg_id, vote):
         await schedule_delay_message(msg)
 
     output += msg.content
-    guild = client.get_guild(payload.guild_id)
-    channel = guild.get_channel(payload.channel_id)
-    message = await channel.fetch_message(payload.message_id)
+    guild = client.get_guild(guild_id)
+    channel = guild.get_channel(channel_id)
+    message = await channel.fetch_message(message_id)
     await message.edit(content=output)
 
 def replace_mentions(content, guild_id):
@@ -596,11 +599,22 @@ async def edit_delay_message(params):
     if message_id in delayed_messages:
 
         msg = delayed_messages[message_id]
-        if msg.delivery_time == None:
-            type = "Template"
-            if repeat is not None:
-                await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a template", color=0xff0000))
-                return
+        if not msg.delivery_time or msg.delivery_time < 0:
+            if msg.delivery_time == None:
+                type = "Template"
+                if repeat is not None:
+                    await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a template", color=0xff0000))
+                    return
+
+            else:
+                type = "Proposal"
+                if repeat is not None:
+                    await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a proposal", color=0xff0000))
+                    return
+                if delay:
+                    await discord_message.channel.send(embed=discord.Embed(description="A delivery time may not be specified when editing a proposal", color=0xff0000))
+                    return
+
 
         if delay:
             if msg.delivery_time == None:
@@ -670,6 +684,18 @@ async def edit_delay_message(params):
             newMessage.update_db()
         else:
             msg.update_db()
+
+        if type == "Proposal":
+            # We need to update the proposal
+            proposal_message = None
+            for channel in discord_message.guild.text_channels:
+                async for message in channel.history(limit=200):
+                    if message.id == msg.last_repeat_message:
+                        proposal_message = message
+                        break
+                if proposal_message:
+                    break
+            await process_proposal_reaction(None, msg.guild_id, channel.id, proposal_message.id, msg.id)
 
         await discord_message.channel.send(embed=embed)
 
@@ -926,7 +952,7 @@ async def on_raw_reaction_add(payload):
     if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
             if payload.message_id == delayed_messages[msg_id].last_repeat_message:
-                await process_proposal_reaction(payload, msg_id, True)
+                await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, True)
                 return
 
     await process_reaction(payload, client)
@@ -936,7 +962,7 @@ async def on_raw_reaction_remove(payload):
     if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
             if payload.message_id == delayed_messages[msg_id].last_repeat_message:
-                await process_proposal_reaction(payload, msg_id, False)
+                await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, False)
                 return
 
 @client.event
