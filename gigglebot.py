@@ -253,11 +253,12 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
     if user_id == client.user.id:
         return
     msg = delayed_messages[msg_id]
+    required_approvals = votes.get_required_approvals(msg_id, client.user.id)
     if vote is not None:
         votes.vote(msg_id, user_id, vote)
     else:
-        pass
-    required_approvals = votes.get_required_approvals(msg_id, client.user.id)
+        votes.remove_proposal(msg_id)
+        votes.vote(msg_id, client.user.id, int(required_approvals))
     total_approvals = votes.vote_count(msg_id)
     output = f"> **Author:** {msg.author(client).name}\n"
     output += f"> **Channel:** {msg.delivery_channel(client).name}\n"

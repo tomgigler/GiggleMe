@@ -53,6 +53,8 @@ class GigVote:
         sql = "DELETE FROM votes WHERE proposal_id = %s"
         mycursor.execute(sql, (proposal_id,))
 
+        self.votes.pop(proposal_id, None)
+
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
