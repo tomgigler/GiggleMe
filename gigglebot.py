@@ -87,6 +87,7 @@ async def process_delay_message(params):
     description = params.pop('desc', None)
     from_template = params.pop('from_template', None)
     propose_in_channel_name = params.pop('propose_in_channel', None)
+    required_approvals = params.pop('required_approvals', None)
 
     if params:
         if request_channel:
@@ -157,6 +158,18 @@ async def process_delay_message(params):
         await request_channel.send(embed=discord.Embed(description=f"Parameter **propose_in_channel** is required with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
         return
 
+    # get required_approvals
+    if required_approvals:
+        if delay == 'proposal':
+            if not re.match(r'\d+$', required_approvals) or int(required_approvals) == 0:
+                await request_channel.send(embed=discord.Embed(description=f"Invalid value for **required_approvals**.  Must be a positive integer greater than 0\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
+                return
+        else:
+            await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **required_approvals** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
+            return
+    else:
+        required_approvals = '2'
+
     if delay == 'proposal':
         pass
 
@@ -205,7 +218,7 @@ async def process_delay_message(params):
                 embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
                 await request_channel.send(embed=embed)
             else:
-                await propose_message(newMessage, propose_in_channel, request_channel)
+                await propose_message(newMessage, propose_in_channel, request_channel, required_approvals)
         return
     elif delivery_time == 0:
         if request_channel:
@@ -220,12 +233,13 @@ async def process_delay_message(params):
 
     await schedule_delay_message(newMessage)
 
-async def propose_message(msg, propose_in_channel, request_channel):
-    votes.vote(msg.id, client.user.id, 1)
+async def propose_message(msg, propose_in_channel, request_channel, required_approvals):
+    votes.vote(msg.id, client.user.id, int(required_approvals))
     output = f"> **A MESSAGE HAS BEEN PROPOSED**\n"
     output += f"> **Author:** {msg.author(client).name}\n"
     output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
-    output += "> **Current Votes:** 0\n"
+    output += "> **Current approvals:** 0\n"
+    output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, client.user.id)}\n"
     output += msg.content
     proposal_message = await propose_in_channel.send(output)
     await proposal_message.add_reaction('☑️')
@@ -246,7 +260,8 @@ async def process_proposal_reaction(payload, msg_id, vote):
     output = f"> **A MESSAGE HAS BEEN PROPOSED**\n"
     output += f"> **Author:** {msg.author(client).name}\n"
     output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
-    output += f"> **Current Votes:** {votes.vote_count(msg_id)}\n"
+    output += f"> **Current approvals:** {votes.vote_count(msg_id)}\n"
+    output += f"> **Required approvals:** {votes.get_required_approvals(msg_id, client.user.id)}\n"
     output += msg.content
     guild = client.get_guild(payload.guild_id)
     channel = guild.get_channel(payload.channel_id)

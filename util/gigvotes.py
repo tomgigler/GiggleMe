@@ -59,3 +59,6 @@ class GigVote:
 
     def vote_count(self, proposal_id):
         return len(self.votes[proposal_id]) - 1
+
+    def get_required_approvals(self, proposal_id, client_id):
+        return self.votes[proposal_id][client_id]
