@@ -4,7 +4,7 @@ from hashlib import md5
 import gigdb
 
 class DelayedMessage:
-    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content):
+    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description):
         self.id = id
         self.guild_id = guild_id
         self.delivery_channel_id = delivery_channel_id

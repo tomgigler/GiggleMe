@@ -24,45 +24,15 @@ def load_from_db(delayed_messages):
 
     loop = asyncio.get_event_loop()
 
-    for msg in gigdb.get_all("messages"):
-        message_id = msg[0]
-        guild_id = msg[1]
-        delivery_channel_id = msg[2]
-        delivery_time = msg[3]
-        author_id = msg[4]
-        repeat = msg[5]
-        last_repeat_message = msg[6]
-        content = msg[7]
-        description = msg[8]
+    for row in gigdb.get_all("messages"):
+        message_id = row[0]
+        delivery_time = row[3]
+        delayed_messages[message_id] = DelayedMessage(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8])
 
-        if message_id in delayed_messages:
+        if delivery_time and delivery_time >= 0:
+            loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
-            # TODO:  If guild_id changes in the database, we need to move the delayed_message in the dict
-            # that may have an impact on the code dealing with delivery_time change below
-            delayed_messages[message_id].guild_id = guild_id
-            delayed_messages[message_id].delivery_channel_id = delivery_channel_id
-            delayed_messages[message_id].author_id = author_id
-            delayed_messages[message_id].repeat = repeat
-            delayed_messages[message_id].last_repeat_message = last_repeat_message
-            delayed_messages[message_id].content = content
-            delayed_messages[message_id].description = description
-
-            if delayed_messages[message_id].delivery_time != delivery_time:
-                delayed_messages[message_id].delivery_time = delivery_time
-
-                newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
-                delayed_messages[message_id] = newMessage
-                if delivery_time and delivery_time >= 0:
-                    loop.create_task(schedule_delay_message(newMessage))
-        else:
-
-            newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
-
-            delayed_messages[message_id] = newMessage
-            if delivery_time and delivery_time >= 0:
-                loop.create_task(schedule_delay_message(newMessage))
-
-        if delayed_messages[message_id].delivery_time and delayed_messages[message_id].delivery_time < 0:
+        if delivery_time and delivery_time < 0:
             votes.load_proposal_votes(message_id)
 
     gigtz.load_timezones()
@@ -199,7 +169,7 @@ async def process_delay_message(params):
         return
 
     # create new DelayedMessage
-    newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, description, content)
+    newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description)
     newMessage.update_db()
 
     delayed_messages[newMessage.id] = newMessage
@@ -653,7 +623,7 @@ async def edit_delay_message(params):
             msg.content = content
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage = DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.description, msg.content)
+            newMessage = DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
@@ -842,11 +812,6 @@ async def on_message(msg):
                         return
                     except GigParseException:
                         pass
-
-                if re.match(r'~g(iggle)? +reload *$', msg.content) and msg.author.id == 669370838478225448:
-                    load_from_db(delayed_messages)
-                    await list_delay_messages(msg.channel, msg.author.id, "all")
-                    return
 
                 match = re.match(r'~g(iggle)? +(time-format|tf)( +(12|24))? *$', msg.content)
                 if match:
