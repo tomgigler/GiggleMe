@@ -10,7 +10,7 @@ from traceback import format_exc
 import help
 from confirm import confirm_request, process_reaction
 import gigtz
-from gigdb import db_connect
+import gigdb
 import giguser
 from delayed_message import DelayedMessage
 from gigparse import parse_args, GigParseException
@@ -21,14 +21,10 @@ delayed_messages = {}
 votes = gigvotes.GigVote()
 
 def load_from_db(delayed_messages):
-    mydb = db_connect()
 
     loop = asyncio.get_event_loop()
-    mycursor = mydb.cursor()
 
-    mycursor.execute("select * from messages")
-
-    for msg in mycursor.fetchall():
+    for msg in gigdb.get_messages():
         message_id = msg[0]
         guild_id = msg[1]
         delivery_channel_id = msg[2]
@@ -68,9 +64,6 @@ def load_from_db(delayed_messages):
 
         if delayed_messages[message_id].delivery_time and delayed_messages[message_id].delivery_time < 0:
             votes.load_proposal_votes(message_id)
-
-    mycursor.close()
-    mydb.disconnect()
 
     gigtz.load_timezones()
     giguser.load_users()
@@ -472,7 +465,7 @@ async def show_user_timezone(channel, author_id):
 async def set_user_timezone(channel, author, tz):
     for tz_id in gigtz.timezones:
         if gigtz.timezones[tz_id].name == tz:
-            mydb = db_connect()
+            mydb = gigdb.db_connect()
 
             sql = "UPDATE users SET timezone = %s, name = %s WHERE user = %s"
 
