@@ -10,7 +10,7 @@ from traceback import format_exc
 import help
 from confirm import confirm_request, process_reaction
 import gigtz
-from gigdb import db_connect
+import gigdb
 import giguser
 from delayed_message import DelayedMessage
 from gigparse import parse_args, GigParseException
@@ -21,14 +21,10 @@ delayed_messages = {}
 votes = gigvotes.GigVote()
 
 def load_from_db(delayed_messages):
-    mydb = db_connect()
 
     loop = asyncio.get_event_loop()
-    mycursor = mydb.cursor()
 
-    mycursor.execute("select * from messages")
-
-    for msg in mycursor.fetchall():
+    for msg in gigdb.get_all("messages"):
         message_id = msg[0]
         guild_id = msg[1]
         delivery_channel_id = msg[2]
@@ -68,9 +64,6 @@ def load_from_db(delayed_messages):
 
         if delayed_messages[message_id].delivery_time and delayed_messages[message_id].delivery_time < 0:
             votes.load_proposal_votes(message_id)
-
-    mycursor.close()
-    mydb.disconnect()
 
     gigtz.load_timezones()
     giguser.load_users()
@@ -207,7 +200,7 @@ async def process_delay_message(params):
 
     # create new DelayedMessage
     newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, description, content)
-    newMessage.insert_into_db()
+    newMessage.update_db()
 
     delayed_messages[newMessage.id] = newMessage
 
@@ -470,23 +463,8 @@ async def show_user_timezone(channel, author_id):
     await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_user_timezone(channel, author, tz):
-    for tz_id in gigtz.timezones:
-        if gigtz.timezones[tz_id].name == tz:
-            mydb = db_connect()
-
-            sql = "UPDATE users SET timezone = %s, name = %s WHERE user = %s"
-
-            mycursor = mydb.cursor()
-            mycursor.execute(sql, (tz_id, author.name, author.id))
-            mydb.commit()
-            mycursor.close()
-            mydb.disconnect()
-
-            giguser.users[author.id].timezone = tz_id
-            await channel.send(embed=discord.Embed(description=f"Your time zone has been set to {tz}", color=0x00ff00))
-            return
-    else:
-        await channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
+    output, color = giguser.users[author.id].set_timezone(tz)
+    await channel.send(embed=discord.Embed(description=output, color=color))
 
 async def show_delayed_message(channel, author_id, msg_num, raw):
     content = ""
