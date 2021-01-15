@@ -463,23 +463,8 @@ async def show_user_timezone(channel, author_id):
     await channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_user_timezone(channel, author, tz):
-    for tz_id in gigtz.timezones:
-        if gigtz.timezones[tz_id].name == tz:
-            mydb = gigdb.db_connect()
-
-            sql = "UPDATE users SET timezone = %s, name = %s WHERE user = %s"
-
-            mycursor = mydb.cursor()
-            mycursor.execute(sql, (tz_id, author.name, author.id))
-            mydb.commit()
-            mycursor.close()
-            mydb.disconnect()
-
-            giguser.users[author.id].timezone = tz_id
-            await channel.send(embed=discord.Embed(description=f"Your time zone has been set to {tz}", color=0x00ff00))
-            return
-    else:
-        await channel.send(embed=discord.Embed(description=f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", color=0xff0000))
+    output, color = giguser.users[author.id].set_user_timezone(tz)
+    await channel.send(embed=discord.Embed(description=output, color=color))
 
 async def show_delayed_message(channel, author_id, msg_num, raw):
     content = ""

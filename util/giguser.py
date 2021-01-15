@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import gigdb
+import gigtz
 
 users = {}
 user_guilds = {}
@@ -73,6 +74,24 @@ class User:
         mydb.commit()
         mycursor.close()
         mydb.disconnect()
+
+    def set_user_timezone(self, tz):
+        for tz_id in gigtz.timezones:
+            if gigtz.timezones[tz_id].name == tz:
+                mydb = gigdb.db_connect()
+
+                sql = "UPDATE users SET timezone = %s, name = %s WHERE user = %s"
+
+                mycursor = mydb.cursor()
+                mycursor.execute(sql, (tz_id, self.name, self.id))
+                mydb.commit()
+                mycursor.close()
+                mydb.disconnect()
+
+                users[self.id].timezone = tz_id
+                return (f"Your time zone has been set to {tz}", 0x00ff00)
+
+        return (f"Time zone **{tz}** not found\nTo see a list of available time zones:\n`~giggle timezones`", 0xff0000)
 
 def load_users():
     mydb = gigdb.db_connect()
