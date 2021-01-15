@@ -15,16 +15,8 @@ class Vip:
         self.last_sent = last_sent
 
     def set_last_sent(self, last_sent):
-        mydb = gigdb.db_connect()
-
-        sql = "UPDATE vips SET last_sent = %s WHERE vip_id = %s and guild_id = %s"
-
-        mycursor = mydb.cursor()
-        mycursor.execute(sql, (last_sent, self.vip_id, self.guild_id))
+        gigdb.update_vip_last_sent(last_sent, self.vip_id, self.guild_id)
         self.last_sent = last_sent
-        mydb.commit()
-        mycursor.close()
-        mydb.disconnect()
 
 class User:
     def __init__(self, id, name, timezone, last_active, last_message_id, format_24):

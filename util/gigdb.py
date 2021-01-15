@@ -45,3 +45,6 @@ def remove_vote(proposal_id, user_id):
 
 def get_timezones():
     return db_execute_sql("SELECT * FROM timezones ORDER BY name", True)
+
+def update_vip_last_sent(last_sent, vip_id, guild_id):
+    db_execute_sql("UPDATE vips SET last_sent = %s WHERE vip_id = %s and guild_id = %s", False, last_sent=last_sent, vip_id=vip_id, guild_id=guild_id)
