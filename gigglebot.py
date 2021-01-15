@@ -211,7 +211,7 @@ async def process_delay_message(params):
 
     delayed_messages[newMessage.id] = newMessage
 
-    if not delivery_time >= 0:
+    if not delivery_time or delivery_time < 0:
         if request_channel:
             if delay == 'template':
                 embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
