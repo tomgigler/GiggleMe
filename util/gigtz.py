@@ -41,16 +41,8 @@ def display_localized_time(time, tz_id, format_24):
         return datetime.fromtimestamp(time).astimezone(tz).strftime('%-I:%M:%S %p %a %b %d, %Y %Z')
 
 def load_timezones():
-    mydb = gigdb.db_connect()
-
-    mycursor = mydb.cursor()
-
-    mycursor.execute("select * from timezones order by name")
-    for tz in mycursor.fetchall():
+    for tz in gigdb.get_timezones():
         timezones[tz[0]] = TimeZone(tz[0], tz[1])
-
-    mycursor.close()
-    mydb.disconnect()
 
 def add_minutes(time, num, tz_id):
     tz = timezone(timezones[tz_id].name)

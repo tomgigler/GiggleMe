@@ -42,3 +42,6 @@ def replace_vote(proposal_id, user_id, vote):
             
 def remove_vote(proposal_id, user_id):
     db_execute_sql("DELETE FROM votes WHERE proposal_id = %s and user_id = %s", False, proposal_id=proposal_id, user_id=user_id)
+
+def get_timezones():
+    return db_execute_sql("SELECT * FROM timezones ORDER BY name", True)
