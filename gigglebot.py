@@ -211,7 +211,7 @@ async def process_delay_message(params):
 
     delayed_messages[newMessage.id] = newMessage
 
-    if not delivery_time or delivery_time < 0:
+    if delivery_time is None or delivery_time < 0:
         if request_channel:
             if delay == 'template':
                 embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
@@ -938,7 +938,7 @@ async def on_voice_state_update(member, before, after):
     if not before.channel and after.channel and (member.id, member.guild.id) in giguser.vips:
         # Make sure we're not in the grace period
         grace_period = 7200 # Default is two hours
-        if giguser.vips[(member.id, member.guild.id)].grace_period:
+        if giguser.vips[(member.id, member.guild.id)].grace_period is not None:
             grace_period = giguser.vips[(member.id, member.guild.id)].grace_period * 60 * 60
         if not giguser.vips[(member.id, member.guild.id)].last_sent or time() - giguser.vips[(member.id, member.guild.id)].last_sent > grace_period:
             giguser.vips[(member.id, member.guild.id)].set_last_sent(time())
