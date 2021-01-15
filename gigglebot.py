@@ -200,7 +200,7 @@ async def process_delay_message(params):
 
     # create new DelayedMessage
     newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, description, content)
-    newMessage.insert_into_db()
+    newMessage.update_db()
 
     delayed_messages[newMessage.id] = newMessage
 
