@@ -46,5 +46,31 @@ def remove_vote(proposal_id, user_id):
 def get_timezones():
     return db_execute_sql("SELECT * FROM timezones ORDER BY name", True)
 
+def save_vip(vip_id, guild_id, template_id, grace_period, last_sent):
+    db_execute_sql("INSERT INTO vips (vip_id, guild_id, template_id, grace_period, last_sent) VALUES(%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE template_id=%s, grace_period=%s, last_sent=%s",
+            False, vip_id=vip_id, guild_id=guild_id, template_id_1=template_id, grace_period_1=grace_period, last_sent_1=last_sent, template_id_2=template_id, grace_period_2=grace_period, last_sent_2=last_sent)
+
 def update_vip_last_sent(last_sent, vip_id, guild_id):
     db_execute_sql("UPDATE vips SET last_sent = %s WHERE vip_id = %s and guild_id = %s", False, last_sent=last_sent, vip_id=vip_id, guild_id=guild_id)
+
+def delete_vip(vip_id, guild_id):
+    db_execute_sql("DELETE FROM vips WHERE vip_id = %s and guild_id = %s", False, vip_id=vip_id, guild_id=guild_id )
+
+def save_user(user_id, name):
+    db_execute_sql("INSERT INTO users ( user, name, last_active ) values ( %s, %s, 0 ) ON DUPLICATE KEY UPDATE name = %s", False, user_id=user_id, name_1=name, name_2=name)
+
+def save_user_guild(user_id, guild_id, guild_name):
+    db_execute_sql("INSERT INTO user_guilds ( user_id, guild_id, guild_name ) values (%s, %s, %s) ON DUPLICATE KEY UPDATE guild_name = %s",
+            False, user_id=user_id, guild_id=guild_id, guild_name_1=guild_name, guild_name_2=guild_name)
+
+def set_user_last_active(last_active, user_id):
+    db_execute_sql("UPDATE users SET last_active = %s WHERE user = %s", False, last_active=last_active, user_id=user_id)
+
+def set_user_last_message(message_id, user_id):
+    db_execute_sql("UPDATE users SET last_message_id = %s WHERE user = %s", False, message_id=message_id, user_id=user_id)
+
+def set_user_format_24(format_24, user_id):
+    db_execute_sql("UPDATE users SET format_24 = %s WHERE user = %s", False, format_24=format_24, user_id=user_id)
+
+def set_user_timezone(tz_id, name, user_id):
+    db_execute_sql("UPDATE users SET timezone = %s, name = %s WHERE user = %s", False, tz_id=tz_id, name=name, user_id=user_id)
