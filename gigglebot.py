@@ -169,8 +169,7 @@ async def process_delay_message(params):
         return
 
     # create new DelayedMessage
-    newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description)
-    newMessage.update_db()
+    newMessage =  DelayedMessage(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description)
 
     delayed_messages[newMessage.id] = newMessage
 
@@ -630,7 +629,6 @@ async def edit_delay_message(params):
             else:
                 embed.add_field(name="Deliver", value=f"{gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone, giguser.users[discord_message.author.id].format_24)}", inline=False)
             loop.create_task(schedule_delay_message(newMessage))
-            newMessage.update_db()
         else:
             msg.update_db()
 
