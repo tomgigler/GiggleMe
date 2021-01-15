@@ -28,8 +28,8 @@ def db_execute_sql(sql, fetch, **kwargs):
 
     return rows
 
-def get_messages():
-    return db_execute_sql("SELECT * FROM messages", True)
+def get_all(table):
+    return db_execute_sql(f"SELECT * FROM {table}", True)
 
 def get_votes(proposal_id):
     return db_execute_sql("SELECT * FROM votes WHERE proposal_id = %s", True, proposal_id=proposal_id)

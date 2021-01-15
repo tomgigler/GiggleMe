@@ -24,7 +24,7 @@ def load_from_db(delayed_messages):
 
     loop = asyncio.get_event_loop()
 
-    for msg in gigdb.get_messages():
+    for msg in gigdb.get_all("messages"):
         message_id = msg[0]
         guild_id = msg[1]
         delivery_channel_id = msg[2]
