@@ -330,8 +330,7 @@ async def schedule_delay_message(msg):
                 loop = asyncio.get_event_loop()
                 loop.create_task(schedule_delay_message(msg))
         else:
-            delayed_messages.pop(msg.id)
-            msg.delete_from_db()
+            delayed_messages.pop(msg.id).delete_from_db()
 
 async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None):
     count = 0
@@ -660,9 +659,8 @@ async def cancel_all_delay_message(params):
             messages_to_remove.append(delayed_messages[msg_id])
     for msg in messages_to_remove:
         if msg.author_id == member.id:
-            delayed_messages.pop(msg.id)
+            delayed_messages.pop(msg.id).delete_from_db()
             message_count += 1
-            msg.delete_from_db()
     if message_count > 0:
         await channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
     else:
