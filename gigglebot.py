@@ -853,7 +853,7 @@ async def on_message(msg):
             await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\nPlease include the server id ({msg.guild.id}) in your message", color=0xff0000))
     elif discord.utils.get(msg.guild.channels, name='proposals') and msg.channel.id == discord.utils.get(msg.guild.channels, name='proposals').id:
         await process_delay_message({'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': time(), 'author_id': msg.author.id, 'delay': 'proposal',
-            'content': msg.content, 'channel': 'general', 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': 'staff-only'})
+            'content': msg.content, 'channel': 'general-text', 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': 'staff-only'})
 
 @client.event
 async def on_voice_state_update(member, before, after):
