@@ -716,6 +716,15 @@ async def cancel_delayed_message(params):
         need_to_confirm = True
         msg_num = giguser.users[author.id].last_message_id
 
+    if msg_num == 'next':
+        messages = {}
+        for msg_id in delayed_messages:
+            if delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].guild_id == channel.guild.id:
+                messages[msg_id] = delayed_messages[msg_id]
+        if messages:
+            msg_num = min(messages.values(), key=lambda x: x.delivery_time).id
+            need_to_confirm = True
+
     if msg_num in delayed_messages:
         if need_to_confirm:
             await confirm_request(channel, author, f"Cancel message {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num, 'confirmed': True}, client)
