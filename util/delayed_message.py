@@ -65,7 +65,7 @@ class DelayedMessage:
             else:
                 output = "> **Template**\n" + output
         output += f"> **Description:**  {self.description}\n"
-        if self.delivery_time < 0:
+        if self.delivery_time and self.delivery_time < 0:
             output += f"> **Current Votes:**  3\n"
         if raw:
             return output + "```\n" + self.content + "\n```"
