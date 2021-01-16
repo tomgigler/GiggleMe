@@ -19,14 +19,13 @@ class DelayedMessage:
         self.content = content
         self.update_db()
 
-    def guild(self, client):
+    def get_guild(self, client):
         return discord.utils.get(client.guilds, id=self.guild_id)
 
-    def delivery_channel(self, client):
-        guild = discord.utils.get(client.guilds, id=self.guild_id)
-        return discord.utils.get(self.guild(client).text_channels, id=self.delivery_channel_id)
+    def get_delivery_channel(self, client):
+        return discord.utils.get(self.get_guild(client).text_channels, id=self.delivery_channel_id)
 
-    def author(self, client):
+    def get_author(self, client):
         return client.get_user(self.author_id)
 
     def update_db(self):

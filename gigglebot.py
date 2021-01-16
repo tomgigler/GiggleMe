@@ -73,7 +73,7 @@ async def process_delay_message(params):
             return
         content = delayed_messages[from_template].content
         if not channel:
-            channel = delayed_messages[from_template].delivery_channel(client).name
+            channel = delayed_messages[from_template].get_delivery_channel(client).name
         if not description:
             description = delayed_messages[from_template].description
 
@@ -198,8 +198,8 @@ async def process_delay_message(params):
 async def propose_message(msg, propose_in_channel, request_channel, required_approvals):
     votes.vote(msg.id, client.user.id, int(required_approvals))
     output = "> **A MESSAGE HAS BEEN PROPOSED**\n"
-    output += f"> **Author:** {msg.author(client).name}\n"
-    output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
+    output += f"> **Author:** {msg.get_author(client).name}\n"
+    output += f"> **Channel:** {msg.get_delivery_channel(client).name}\n"
     output += "> **Current approvals:** 0\n"
     output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, client.user.id)}\n"
     output += msg.content
@@ -207,7 +207,7 @@ async def propose_message(msg, propose_in_channel, request_channel, required_app
     await proposal_message.add_reaction('☑️')
     delayed_messages[msg.id].last_repeat_message = proposal_message.id
     delayed_messages[msg.id].update_db()
-    embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
+    embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.get_delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
     await request_channel.send(embed=embed)
 
@@ -222,8 +222,8 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
         votes.remove_proposal(msg_id)
         votes.vote(msg_id, client.user.id, int(required_approvals))
     total_approvals = votes.vote_count(msg_id)
-    output = f"> **Author:** {msg.author(client).name}\n"
-    output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
+    output = f"> **Author:** {msg.get_author(client).name}\n"
+    output += f"> **Channel:** {msg.get_delivery_channel(client).name}\n"
 
     if total_approvals < required_approvals:
         output = "> **A MESSAGE HAS BEEN PROPOSED**\n" + output
@@ -275,7 +275,7 @@ async def schedule_delay_message(msg):
         return
     await asyncio.sleep(int(delay))
 
-    guild = msg.guild(client)
+    guild = msg.get_guild(client)
 
     # after sleep, make sure msg has not been canceled
     if msg.id in delayed_messages and delayed_messages[msg.id] == msg:
@@ -296,13 +296,13 @@ async def schedule_delay_message(msg):
                 skip_if = int(match.group(2))
             else:
                 skip_if = 1
-            async for old_message in msg.delivery_channel(client).history(limit=skip_if):
+            async for old_message in msg.get_delivery_channel(client).history(limit=skip_if):
                 if old_message.id == msg.last_repeat_message:
                     skip_delivery = True
 
-            if skip_if != 0 and msg.last_repeat_message == msg.delivery_channel(client).last_message_id:
+            if skip_if != 0 and msg.last_repeat_message == msg.get_delivery_channel(client).last_message_id:
                 try:
-                    old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                    old_message = await msg.get_delivery_channel(client).fetch_message(msg.last_repeat_message)
                     await old_message.delete()
                     skip_delivery = False
                 except:
@@ -310,7 +310,7 @@ async def schedule_delay_message(msg):
 
         sent_message = None
         if not skip_delivery:
-            sent_message = await msg.delivery_channel(client).send(content)
+            sent_message = await msg.get_delivery_channel(client).send(content)
         if msg.repeat is not None:
             match = re.match(r'(minutes:(\d+)|hours:(\d+)|daily|weekly|monthly)', msg.repeat)
             if match:
@@ -390,13 +390,13 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
         msg = sorted_messages[msg_id]
         if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == 669370838478225448:
             output += f"> \n> **ID:**  {msg.id}\n"
-            output += f"> **Author:**  {msg.author(client).name}\n"
-            output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
+            output += f"> **Author:**  {msg.get_author(client).name}\n"
+            output += f"> **Channel:**  {msg.get_delivery_channel(client).name}\n"
             if not templates and not  proposals:
                 output += f"> **Repeat:**  {msg.repeat}\n"
                 if msg.repeat and msg.last_repeat_message:
                     try:
-                        old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                        old_message = await msg.get_delivery_channel(client).fetch_message(msg.last_repeat_message)
                         output += f"> **Last Delivery:**  {old_message.jump_url}\n"
                     except:
                         pass
@@ -451,19 +451,19 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
 
     if msg_num in delayed_messages:
         msg = delayed_messages[msg_num]
-        content += f"> **Author:**  {msg.author(client).name}\n"
-        content += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
+        content += f"> **Author:**  {msg.get_author(client).name}\n"
+        content += f"> **Channel:**  {msg.get_delivery_channel(client).name}\n"
         if msg.delivery_time and msg.delivery_time >= 0:
             content += f"> **Repeat:**  {msg.repeat}\n"
         if msg.repeat and msg.last_repeat_message:
             try:
-                old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                old_message = await msg.get_delivery_channel(client).fetch_message(msg.last_repeat_message)
                 content += f"> **Last Delivery:**  {old_message.jump_url}\n"
             except:
                 pass
 
         if channel.guild.id != msg.guild_id:
-            content += f"> **Deliver in:**  {msg.guild(client).name}\n"
+            content += f"> **Deliver in:**  {msg.get_guild(client).name}\n"
         if msg.delivery_time and msg.delivery_time >= 0:
             if round((msg.delivery_time - time())/60, 1) < 0:
                 content += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
