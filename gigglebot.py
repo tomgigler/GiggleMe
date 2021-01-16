@@ -436,10 +436,11 @@ async def set_user_timezone(channel, author, tz):
 
 async def show_delayed_message(channel, author_id, msg_num, raw):
     content = ""
+    show_id = False
     if msg_num == 'last':
         if author_id in giguser.users:
             msg_num = giguser.users[author_id].last_message_id
-            content += f"> **ID:**  {msg_num}\n"
+            show_id = True
     if msg_num == 'next':
         messages = {}
         for msg_id in delayed_messages:
@@ -447,41 +448,10 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
                 messages[msg_id] = delayed_messages[msg_id]
         if messages:
             msg_num = min(messages.values(), key=lambda x: x.delivery_time).id
-            content += f"> **ID:**  {msg_num}\n"
+            show_id = True
 
     if msg_num in delayed_messages:
-        msg = delayed_messages[msg_num]
-        content += f"> **Author:**  {msg.get_author(client).name}\n"
-        content += f"> **Channel:**  {msg.get_delivery_channel(client).name}\n"
-        if msg.delivery_time and msg.delivery_time >= 0:
-            content += f"> **Repeat:**  {msg.repeat}\n"
-        if msg.repeat and msg.last_repeat_message:
-            try:
-                old_message = await msg.get_delivery_channel(client).fetch_message(msg.last_repeat_message)
-                content += f"> **Last Delivery:**  {old_message.jump_url}\n"
-            except:
-                pass
-
-        if channel.guild.id != msg.guild_id:
-            content += f"> **Deliver in:**  {msg.get_guild(client).name}\n"
-        if msg.delivery_time and msg.delivery_time >= 0:
-            if round((msg.delivery_time - time())/60, 1) < 0:
-                content += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
-            else:
-                content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
-        else:
-            if msg.delivery_time:
-                content = "> **Proposal**\n" + content
-            else:
-                content = "> **Template**\n" + content
-        content += f"> **Description:**  {msg.description}\n"
-        if msg.delivery_time < 0:
-            content += f"> **Current Votes:**  3\n"
-        if raw:
-            await channel.send(content + "```\n" + msg.content + "\n```")
-        else:
-            await channel.send(content + msg.content)
-        message_found = True
+        await channel.send(delayed_messages[msg_num].get_show_output(msg_num, client, raw=raw, show_id=show_id, guild_id=channel.guild.id))
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
 
