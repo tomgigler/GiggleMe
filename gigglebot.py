@@ -16,6 +16,9 @@ from delayed_message import DelayedMessage
 from gigparse import parse_args, GigParseException
 import gigvotes
 
+class GigException(Exception):
+    pass
+
 client = discord.Client()
 delayed_messages = {}
 votes = gigvotes.GigVote()
@@ -38,6 +41,17 @@ def load_from_db(delayed_messages):
     gigtz.load_timezones()
     giguser.load_users()
 
+def get_channel_by_name_or_id(guild, channel_param):
+    channel = discord.utils.get(guild.channels, name=channel_param)
+    if not channel:
+        try:
+            channel = discord.utils.get(guild.channels, id=int(channel_param))
+        except:
+            pass
+    if not channel:
+        raise GigException(f"Cannot find {channel_param} channel")
+    return channel
+
 async def process_delay_message(params):
     guild = params.pop('guild', None)
     request_channel = params.pop('request_channel', None)
@@ -51,7 +65,6 @@ async def process_delay_message(params):
     from_template = params.pop('from_template', None)
     propose_in_channel_name = params.pop('propose_in_channel', None)
     required_approvals = params.pop('required_approvals', None)
-
     if params:
         if request_channel:
             await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
@@ -86,34 +99,15 @@ async def process_delay_message(params):
 
     # get channel
     if channel:
-        delivery_channel = discord.utils.get(guild.channels, name=channel)
-        if not delivery_channel:
-            try:
-                delivery_channel = discord.utils.get(guild.channels, id=int(channel))
-            except:
-                pass
-        if not delivery_channel:
-            if request_channel:
-                await request_channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
-            return
+        delivery_channel = get_channel_by_name_or_id(guild, channel)
     else:
-        # default to current channel
         delivery_channel = request_channel
 
     # get propose_in_channel
     if propose_in_channel_name:
         if delay == 'proposal':
             delivery_time = -1
-            propose_in_channel = discord.utils.get(guild.channels, name=propose_in_channel_name)
-            if not propose_in_channel:
-                try:
-                    propose_in_channel = discord.utils.get(guild.channels, id=int(propose_in_channel))
-                except:
-                    pass
-            if not propose_in_channel:
-                if request_channel:
-                    await request_channel.send(embed=discord.Embed(description=f"Cannot find {propose_in_channel_name} channel", color=0xff0000))
-                return
+            propose_in_channel = get_channel_by_name_or_id(guild, propose_in_channel_name)
         else:
             if request_channel:
                 await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
@@ -561,12 +555,7 @@ async def edit_delay_message(params):
 
         # Confirm channel exists
         if channel:
-            delivery_channel = discord.utils.get(discord_message.guild.channels, name=channel)
-            if not delivery_channel:
-                delivery_channel = discord.utils.get(discord_message.guild.channels, id=int(channel))
-            if not delivery_channel:
-                await discord_message.channel.send(embed=discord.Embed(description=f"Cannot find {channel} channel", color=0xff0000))
-                return
+            delivery_channel = get_channel_by_name_or_id(discord_message.guild, channel)
 
         if content:
             #Make sure {roles} exist
@@ -733,6 +722,41 @@ async def list_vips(msg, list_all):
         output = "No VIPs found"
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
+async def show_guild_config(msg):
+    output = f"**Config Settings**"
+    output += "\n**proposal_channel**:  "
+    output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].proposal_channel_id).name
+    output += "\n**approval_channel**:  "
+    output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].approval_channel_id).name
+    output += "\n**delivery_channel**:  "
+    output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].delivery_channel_id).name
+    await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+
+async def set_guild_config(params):
+    msg = params.pop('msg')
+    proposal_channel_param = params.pop('proposal_channel', None)
+    approval_channel_param = params.pop('approval_channel', None)
+    delivery_channel_param = params.pop('delivery_channel', None)
+
+    if params:
+        raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
+
+    output = ""
+    if proposal_channel_param:
+        proposal_channel = get_channel_by_name_or_id(msg.guild, proposal_channel_param)
+        giguser.guilds[msg.guild.id].set_proposal_channel_id(proposal_channel.id)
+        output += f"**proposal_channel** set to **{proposal_channel.name}**\n"
+    if approval_channel_param:
+        approval_channel = get_channel_by_name_or_id(msg.guild, approval_channel_param)
+        giguser.guilds[msg.guild.id].set_approval_channel_id(approval_channel.id)
+        output += f"**approval_channel** set to **{approval_channel.name}**\n"
+    if delivery_channel_param:
+        delivery_channel = get_channel_by_name_or_id(msg.guild, delivery_channel_param)
+        giguser.guilds[msg.guild.id].set_delivery_channel_id(delivery_channel.id)
+        output += f"**delivery_channel** set to **{delivery_channel.name}**\n"
+
+    await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+
 @client.event
 async def on_message(msg):
     if msg.author == client.user:
@@ -836,6 +860,14 @@ async def on_message(msg):
                     await remove_vip(msg, match.group(2))
                     return
 
+                match = re.match(r'~g(iggle)? +set( +([^\n]+))? *$', msg.content)
+                if match:
+                    if match.group(3):
+                        await parse_args(set_guild_config, {'msg': msg}, match.group(3))
+                    else:
+                        await show_guild_config(msg)
+                    return
+
                 match = re.match(r'^~g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
                 if match and msg.author.id == 669370838478225448:
                     if match.group(3):
@@ -848,6 +880,12 @@ async def on_message(msg):
 
                 await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
 
+            except GigParseException:
+                await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
+
+            except GigException as e:
+                await msg.channel.send(embed=discord.Embed(description=str(e), color=0xff0000))
+
             except Exception as e:
                 if msg.author.id == 669370838478225448:
                     await msg.channel.send(f"`{format_exc()}`")
@@ -855,10 +893,12 @@ async def on_message(msg):
                     await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
                     await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
         else:
-            await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\nPlease include the server id ({msg.guild.id}) in your message", color=0xff0000))
-    elif discord.utils.get(msg.guild.channels, name='proposals') and msg.channel.id == discord.utils.get(msg.guild.channels, name='proposals').id:
+            await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\n"
+                    "Please include the server id ({msg.guild.id}) in your message", color=0xff0000))
+
+    elif giguser.guilds[msg.guild.id] and msg.channel.id == giguser.guilds[msg.guild.id].proposal_channel_id and giguser.guilds[msg.guild.id].delivery_channel_id and giguser.guilds[msg.guild.id].approval_channel_id:
         await process_delay_message({'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': time(), 'author_id': msg.author.id, 'delay': 'proposal',
-            'content': msg.content, 'channel': 'general-text', 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': 'staff-only'})
+            'content': msg.content, 'channel': giguser.guilds[msg.guild.id].delivery_channel_id, 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': giguser.guilds[msg.guild.id].approval_channel_id})
 
 @client.event
 async def on_voice_state_update(member, before, after):

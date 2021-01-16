@@ -5,6 +5,31 @@ import gigtz
 users = {}
 user_guilds = {}
 vips = {}
+guilds = {}
+
+class Guild:
+    def __init__(self, id, guild_name, proposal_channel_id=None, approval_channel_id=None, delivery_channel_id=None):
+        self.id = id
+        self.guild_name = guild_name
+        self.proposal_channel_id = proposal_channel_id
+        self.approval_channel_id = approval_channel_id
+        self.delivery_channel_id = delivery_channel_id
+        self.save()
+
+    def save(self):
+        gigdb.save_guild(self.id, self.guild_name, self.proposal_channel_id, self.approval_channel_id, self.delivery_channel_id)
+
+    def set_proposal_channel_id(self, proposal_channel_id):
+        self.proposal_channel_id = proposal_channel_id
+        self.save()
+
+    def set_approval_channel_id(self, approval_channel_id):
+        self.approval_channel_id = approval_channel_id
+        self.save()
+
+    def set_delivery_channel_id(self, delivery_channel_id):
+        self.delivery_channel_id = delivery_channel_id
+        self.save()
 
 class Vip:
     def __init__(self, vip_id, guild_id, template_id, grace_period = None, last_sent = None):
@@ -62,6 +87,9 @@ def load_users():
         else:
             user_guilds[row[0]] = [ row[1] ]
 
+    for row in gigdb.get_all("guilds"):
+        guilds[row[0]] = Guild(row[0], row[1], row[2], row[3], row[4])
+
     for row in gigdb.get_all("vips"):
         vips[(row[0], row[1])] = Vip(row[0], row[1], row[2], row[3], row[4])
 
@@ -77,6 +105,12 @@ def save_user(user_id, name, guild_id, guild_name):
         user_guilds[user_id].append(guild_id)
     else:
         user_guilds[user_id] = [ guild_id ]
+
+    if guild_id in guilds.keys():
+        guilds[guild_id].guild_name = guild_name
+        guilds[guild_id].save()
+    else:
+        guilds[guild_id] = Guild(guild_id, guild_name)
 
 def save_vip(vip):
     gigdb.save_vip(vip.vip_id, vip.guild_id, vip.template_id, vip.grace_period, vip.last_sent)
