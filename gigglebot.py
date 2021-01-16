@@ -115,7 +115,8 @@ async def process_delay_message(params):
                     await request_channel.send(embed=discord.Embed(description=f"Cannot find {propose_in_channel_name} channel", color=0xff0000))
                 return
         else:
-            await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
+            if request_channel:
+                await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
             return
     elif delay == 'proposal':
         await request_channel.send(embed=discord.Embed(description=f"Parameter **propose_in_channel** is required with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
