@@ -231,8 +231,13 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
         output += f"> **Current approvals:** {total_approvals}\n"
         output += f"> **Required approvals:** {required_approvals}\n"
     else:
+        timezone = None
+        format_24 = None
+        if msg.author_id in giguser.users:
+            timezone = giguser.users[msg.author_id].timezone
+            format_24 = giguser.users[msg.author_id].format_24
         output = "> **MESSAGE APPROVED AND SENT**\n" + output
-        output += f"> **Sent:** {gigtz.display_localized_time(time(), giguser.users[msg.author_id].timezone, giguser.users[msg.author_id].format_24)}\n"
+        output += f"> **Sent:** {gigtz.display_localized_time(time(), timezone, format_24)}\n"
         output += f"> **Total approvals:** {required_approvals}\n"
         msg.last_repeat_message = None
         msg.delivery_time = 0
