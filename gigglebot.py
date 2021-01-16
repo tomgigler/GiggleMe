@@ -24,45 +24,15 @@ def load_from_db(delayed_messages):
 
     loop = asyncio.get_event_loop()
 
-    for msg in gigdb.get_all("messages"):
-        message_id = msg[0]
-        guild_id = msg[1]
-        delivery_channel_id = msg[2]
-        delivery_time = msg[3]
-        author_id = msg[4]
-        repeat = msg[5]
-        last_repeat_message = msg[6]
-        content = msg[7]
-        description = msg[8]
+    for row in gigdb.get_all("messages"):
+        message_id = row[0]
+        delivery_time = row[3]
+        delayed_messages[message_id] = DelayedMessage(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8])
 
-        if message_id in delayed_messages:
+        if delivery_time and delivery_time >= 0:
+            loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
-            # TODO:  If guild_id changes in the database, we need to move the delayed_message in the dict
-            # that may have an impact on the code dealing with delivery_time change below
-            delayed_messages[message_id].guild_id = guild_id
-            delayed_messages[message_id].delivery_channel_id = delivery_channel_id
-            delayed_messages[message_id].author_id = author_id
-            delayed_messages[message_id].repeat = repeat
-            delayed_messages[message_id].last_repeat_message = last_repeat_message
-            delayed_messages[message_id].content = content
-            delayed_messages[message_id].description = description
-
-            if delayed_messages[message_id].delivery_time != delivery_time:
-                delayed_messages[message_id].delivery_time = delivery_time
-
-                newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
-                delayed_messages[message_id] = newMessage
-                if delivery_time and delivery_time >= 0:
-                    loop.create_task(schedule_delay_message(newMessage))
-        else:
-
-            newMessage =  DelayedMessage(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, description, content)
-
-            delayed_messages[message_id] = newMessage
-            if delivery_time and delivery_time >= 0:
-                loop.create_task(schedule_delay_message(newMessage))
-
-        if delayed_messages[message_id].delivery_time and delayed_messages[message_id].delivery_time < 0:
+        if delivery_time and delivery_time < 0:
             votes.load_proposal_votes(message_id)
 
     gigtz.load_timezones()
@@ -103,7 +73,7 @@ async def process_delay_message(params):
             return
         content = delayed_messages[from_template].content
         if not channel:
-            channel = delayed_messages[from_template].delivery_channel(client).name
+            channel = delayed_messages[from_template].get_delivery_channel(client).name
         if not description:
             description = delayed_messages[from_template].description
 
@@ -199,8 +169,7 @@ async def process_delay_message(params):
         return
 
     # create new DelayedMessage
-    newMessage =  DelayedMessage(DelayedMessage.id_gen(request_message_id), guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, description, content)
-    newMessage.update_db()
+    newMessage =  DelayedMessage(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description)
 
     delayed_messages[newMessage.id] = newMessage
 
@@ -229,8 +198,8 @@ async def process_delay_message(params):
 async def propose_message(msg, propose_in_channel, request_channel, required_approvals):
     votes.vote(msg.id, client.user.id, int(required_approvals))
     output = "> **A MESSAGE HAS BEEN PROPOSED**\n"
-    output += f"> **Author:** {msg.author(client).name}\n"
-    output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
+    output += f"> **Author:** {msg.get_author(client).name}\n"
+    output += f"> **Channel:** {msg.get_delivery_channel(client).name}\n"
     output += "> **Current approvals:** 0\n"
     output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, client.user.id)}\n"
     output += msg.content
@@ -238,7 +207,7 @@ async def propose_message(msg, propose_in_channel, request_channel, required_app
     await proposal_message.add_reaction('☑️')
     delayed_messages[msg.id].last_repeat_message = proposal_message.id
     delayed_messages[msg.id].update_db()
-    embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
+    embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.get_delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
     await request_channel.send(embed=embed)
 
@@ -253,8 +222,8 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
         votes.remove_proposal(msg_id)
         votes.vote(msg_id, client.user.id, int(required_approvals))
     total_approvals = votes.vote_count(msg_id)
-    output = f"> **Author:** {msg.author(client).name}\n"
-    output += f"> **Channel:** {msg.delivery_channel(client).name}\n"
+    output = f"> **Author:** {msg.get_author(client).name}\n"
+    output += f"> **Channel:** {msg.get_delivery_channel(client).name}\n"
 
     if total_approvals < required_approvals:
         output = "> **A MESSAGE HAS BEEN PROPOSED**\n" + output
@@ -306,7 +275,7 @@ async def schedule_delay_message(msg):
         return
     await asyncio.sleep(int(delay))
 
-    guild = msg.guild(client)
+    guild = msg.get_guild(client)
 
     # after sleep, make sure msg has not been canceled
     if msg.id in delayed_messages and delayed_messages[msg.id] == msg:
@@ -327,13 +296,13 @@ async def schedule_delay_message(msg):
                 skip_if = int(match.group(2))
             else:
                 skip_if = 1
-            async for old_message in msg.delivery_channel(client).history(limit=skip_if):
+            async for old_message in msg.get_delivery_channel(client).history(limit=skip_if):
                 if old_message.id == msg.last_repeat_message:
                     skip_delivery = True
 
-            if skip_if != 0 and msg.last_repeat_message == msg.delivery_channel(client).last_message_id:
+            if skip_if != 0 and msg.last_repeat_message == msg.get_delivery_channel(client).last_message_id:
                 try:
-                    old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                    old_message = await msg.get_delivery_channel(client).fetch_message(msg.last_repeat_message)
                     await old_message.delete()
                     skip_delivery = False
                 except:
@@ -341,7 +310,7 @@ async def schedule_delay_message(msg):
 
         sent_message = None
         if not skip_delivery:
-            sent_message = await msg.delivery_channel(client).send(content)
+            sent_message = await msg.get_delivery_channel(client).send(content)
         if msg.repeat is not None:
             match = re.match(r'(minutes:(\d+)|hours:(\d+)|daily|weekly|monthly)', msg.repeat)
             if match:
@@ -361,8 +330,7 @@ async def schedule_delay_message(msg):
                 loop = asyncio.get_event_loop()
                 loop.create_task(schedule_delay_message(msg))
         else:
-            delayed_messages.pop(msg.id)
-            msg.delete_from_db()
+            delayed_messages.pop(msg.id).delete_from_db()
 
 async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None):
     count = 0
@@ -422,13 +390,13 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
         msg = sorted_messages[msg_id]
         if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == 669370838478225448:
             output += f"> \n> **ID:**  {msg.id}\n"
-            output += f"> **Author:**  {msg.author(client).name}\n"
-            output += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
+            output += f"> **Author:**  {msg.get_author(client).name}\n"
+            output += f"> **Channel:**  {msg.get_delivery_channel(client).name}\n"
             if not templates and not  proposals:
                 output += f"> **Repeat:**  {msg.repeat}\n"
                 if msg.repeat and msg.last_repeat_message:
                     try:
-                        old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
+                        old_message = await msg.get_delivery_channel(client).fetch_message(msg.last_repeat_message)
                         output += f"> **Last Delivery:**  {old_message.jump_url}\n"
                     except:
                         pass
@@ -468,10 +436,11 @@ async def set_user_timezone(channel, author, tz):
 
 async def show_delayed_message(channel, author_id, msg_num, raw):
     content = ""
+    show_id = False
     if msg_num == 'last':
         if author_id in giguser.users:
             msg_num = giguser.users[author_id].last_message_id
-            content += f"> **ID:**  {msg_num}\n"
+            show_id = True
     if msg_num == 'next':
         messages = {}
         for msg_id in delayed_messages:
@@ -479,41 +448,10 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
                 messages[msg_id] = delayed_messages[msg_id]
         if messages:
             msg_num = min(messages.values(), key=lambda x: x.delivery_time).id
-            content += f"> **ID:**  {msg_num}\n"
+            show_id = True
 
     if msg_num in delayed_messages:
-        msg = delayed_messages[msg_num]
-        content += f"> **Author:**  {msg.author(client).name}\n"
-        content += f"> **Channel:**  {msg.delivery_channel(client).name}\n"
-        if msg.delivery_time and msg.delivery_time >= 0:
-            content += f"> **Repeat:**  {msg.repeat}\n"
-        if msg.repeat and msg.last_repeat_message:
-            try:
-                old_message = await msg.delivery_channel(client).fetch_message(msg.last_repeat_message)
-                content += f"> **Last Delivery:**  {old_message.jump_url}\n"
-            except:
-                pass
-
-        if channel.guild.id != msg.guild_id:
-            content += f"> **Deliver in:**  {msg.guild(client).name}\n"
-        if msg.delivery_time and msg.delivery_time >= 0:
-            if round((msg.delivery_time - time())/60, 1) < 0:
-                content += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
-            else:
-                content += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
-        else:
-            if msg.delivery_time:
-                content = "> **Proposal**\n" + content
-            else:
-                content = "> **Template**\n" + content
-        content += f"> **Description:**  {msg.description}\n"
-        if msg.delivery_time < 0:
-            content += f"> **Current Votes:**  3\n"
-        if raw:
-            await channel.send(content + "```\n" + msg.content + "\n```")
-        else:
-            await channel.send(content + msg.content)
-        message_found = True
+        await channel.send(delayed_messages[msg_num].get_show_output(msg_num, client, raw=raw, show_id=show_id, guild_id=channel.guild.id))
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
 
@@ -653,14 +591,13 @@ async def edit_delay_message(params):
             msg.content = content
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage = DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.description, msg.content)
+            newMessage = DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
             else:
                 embed.add_field(name="Deliver", value=f"{gigtz.display_localized_time(newMessage.delivery_time, giguser.users[discord_message.author.id].timezone, giguser.users[discord_message.author.id].format_24)}", inline=False)
             loop.create_task(schedule_delay_message(newMessage))
-            newMessage.update_db()
         else:
             msg.update_db()
 
@@ -692,9 +629,8 @@ async def cancel_all_delay_message(params):
             messages_to_remove.append(delayed_messages[msg_id])
     for msg in messages_to_remove:
         if msg.author_id == member.id:
-            delayed_messages.pop(msg.id)
+            delayed_messages.pop(msg.id).delete_from_db()
             message_count += 1
-            msg.delete_from_db()
     if message_count > 0:
         await channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
     else:
@@ -842,11 +778,6 @@ async def on_message(msg):
                         return
                     except GigParseException:
                         pass
-
-                if re.match(r'~g(iggle)? +reload *$', msg.content) and msg.author.id == 669370838478225448:
-                    load_from_db(delayed_messages)
-                    await list_delay_messages(msg.channel, msg.author.id, "all")
-                    return
 
                 match = re.match(r'~g(iggle)? +(time-format|tf)( +(12|24))? *$', msg.content)
                 if match:
