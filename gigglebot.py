@@ -30,7 +30,7 @@ def load_from_db(delayed_messages):
     for row in gigdb.get_all("messages"):
         message_id = row[0]
         delivery_time = row[3]
-        delayed_messages[message_id] = DelayedMessage(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8])
+        delayed_messages[message_id] = DelayedMessage(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
 
         if delivery_time and delivery_time >= 0:
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
@@ -65,6 +65,8 @@ async def process_delay_message(params):
     from_template = params.pop('from_template', None)
     propose_in_channel_name = params.pop('propose_in_channel', None)
     required_approvals = params.pop('required_approvals', None)
+    duration = params.pop('duration', None)
+
     if params:
         if request_channel:
             await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
@@ -97,6 +99,7 @@ async def process_delay_message(params):
                 await request_channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
             return
 
+        # Confirm channel exists
     # get channel
     if channel:
         delivery_channel = get_channel_by_name_or_id(guild, channel)
@@ -138,7 +141,7 @@ async def process_delay_message(params):
                 await request_channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
             return
 
-    elif re.match(r'-?\d+$', delay):
+    elif re.match(r'\d+$', delay):
         if delay == '0':
             delivery_time = 0
         else:
@@ -155,6 +158,15 @@ async def process_delay_message(params):
                     await request_channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                 return
 
+    # validate duration
+    repeat_until = None
+    if duration:
+        if not repeat:
+            raise GigException("Duration may only be used with repeating messages")
+        if not re.match(r'(minutes:\d+|hours:\d+|days:\d+|[Nn]one)$', duration):
+            raise GigException("Invalid value for duration")
+        repeat_until = add_duration(delivery_time, duration, author_id)
+
     #Make sure {roles} exist
     try:
         replace_mentions(content, guild.id)
@@ -164,7 +176,7 @@ async def process_delay_message(params):
         return
 
     # create new DelayedMessage
-    newMessage =  DelayedMessage(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description)
+    newMessage =  DelayedMessage(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
 
     delayed_messages[newMessage.id] = newMessage
 
@@ -319,7 +331,7 @@ async def schedule_delay_message(msg):
                 elif match.group(3):
                     msg.delivery_time = gigtz.add_hours(msg.delivery_time, int(match.group(3)), giguser.users[msg.author_id].timezone)
                 elif match.group(1) == 'daily':
-                    msg.delivery_time = gigtz.add_day(msg.delivery_time, giguser.users[msg.author_id].timezone)
+                    msg.delivery_time = gigtz.add_days(msg.delivery_time, 1, giguser.users[msg.author_id].timezone)
                 elif match.group(1) == 'weekly':
                     msg.delivery_time = gigtz.add_week(msg.delivery_time, giguser.users[msg.author_id].timezone)
                 elif match.group(1) == 'monthly':
@@ -327,8 +339,11 @@ async def schedule_delay_message(msg):
                 if sent_message:
                     msg.last_repeat_message = sent_message.id
                 msg.update_db()
-                loop = asyncio.get_event_loop()
-                loop.create_task(schedule_delay_message(msg))
+                if msg.repeat_until and msg.delivery_time > msg.repeat_until:
+                    delayed_messages.pop(msg.id).delete_from_db()
+                else:
+                    loop = asyncio.get_event_loop()
+                    loop.create_task(schedule_delay_message(msg))
         else:
             delayed_messages.pop(msg.id).delete_from_db()
 
@@ -393,6 +408,11 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
             output += f"> **Author:**  {msg.get_author(client).name}\n"
             output += f"> **Channel:**  {msg.get_delivery_channel(client).name}\n"
             if not templates and not  proposals:
+                if round((msg.delivery_time - time())/60, 1) < 0:
+                    output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
+                else:
+                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
+
                 output += f"> **Repeat:**  {msg.repeat}\n"
                 if msg.repeat and msg.last_repeat_message:
                     try:
@@ -400,11 +420,9 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
                         output += f"> **Last Delivery:**  {old_message.jump_url}\n"
                     except:
                         pass
+                if msg.repeat and msg.repeat_until:
+                    output += f"> **Repeat Until:**  {gigtz.display_localized_time(msg.repeat_until, giguser.users[msg.author_id].timezone, giguser.users[msg.author_id].format_24)}\n"
 
-                if round((msg.delivery_time - time())/60, 1) < 0:
-                    output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
-                else:
-                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
             output += f"> **Description:**  {msg.description}\n"
             if proposals:
                 output += "> **Current Votes:**  3\n"
@@ -491,6 +509,7 @@ async def edit_delay_message(params):
     repeat = params.pop('repeat', None)
     description = params.pop('desc', None)
     content = params.pop('content', None)
+    duration = params.pop('duration', None)
 
     if params:
         await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`", color=0xff0000))
@@ -498,15 +517,15 @@ async def edit_delay_message(params):
     
     # validate repeat string
     if repeat:
-        if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
+        if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly|[Nn]one)(;skip_if=\d+)?$', repeat):
             await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
             return
 
     need_to_confirm = False
     type = "Message"
 
-    if not delay and not channel and not repeat and not description and not content:
-        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, or content"))
+    if not delay and not channel and not repeat and not description and not content and not duration:
+        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, content, or duration"))
         return
 
     if message_id == 'last':
@@ -532,13 +551,13 @@ async def edit_delay_message(params):
                     await discord_message.channel.send(embed=discord.Embed(description="A delivery time may not be specified when editing a proposal", color=0xff0000))
                     return
 
-
+        delivery_time = msg.delivery_time
         if delay:
             if msg.delivery_time == None:
                 await discord_message.channel.send(embed=discord.Embed(description="Cannot set a delivery time for a template", color=0xff0000))
                 return
                 
-            if re.match(r'-?\d+$', delay):
+            if re.match(r'\d+$', delay):
                 if delay == '0':
                     delivery_time = 0
                 else:
@@ -553,6 +572,13 @@ async def edit_delay_message(params):
                         await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
                         return
 
+        # validate duration
+        if duration:
+            if not msg.repeat and not repeat or repeat and (repeat == 'None' or repeat == 'none'):
+                raise GigException("Duration may only be used with repeating messages")
+            if not re.match(r'(minutes:\d+|hours:\d+|days:\d+|[Nn]one)$', duration):
+                raise GigException("Invalid value for duration")
+
         # Confirm channel exists
         if channel:
             delivery_channel = get_channel_by_name_or_id(discord_message.guild, channel)
@@ -566,8 +592,8 @@ async def edit_delay_message(params):
                 return
 
         if need_to_confirm:
-            await confirm_request(discord_message.channel, discord_message.author, f"Edit message {message_id}?", 10, edit_delay_message,
-                    {'discord_message': discord_message, 'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'desc': description, 'content': content}, client)
+            await confirm_request(discord_message.channel, discord_message.author, f"Edit message {message_id}?", 10, edit_delay_message, {'discord_message': discord_message,
+                'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'desc': description, 'content': content, 'duration': duration}, client)
             return
 
         embed = discord.Embed(description=f"{type} edited", color=0x00ff00)
@@ -584,9 +610,15 @@ async def edit_delay_message(params):
             embed.add_field(name="Description", value=f"{description}", inline=False)
         if content:
             msg.content = content
+        if duration:
+            if duration == 'none' or duration == 'None':
+                msg.repeat_until = None
+            else:
+                msg.repeat_until = add_duration(delivery_time, duration, msg.author_id)
+
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage = DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description)
+            newMessage = DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description, msg.repeat_until)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
@@ -612,6 +644,15 @@ async def edit_delay_message(params):
 
     else:
         await discord_message.channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
+
+def add_duration(delivery_time, duration, user_id):
+    match = re.match(r'(minutes|hours|days):(\d+)$', duration)
+    if match.group(1) == 'minutes':
+        return gigtz.add_minutes(delivery_time, int(match.group(2)), giguser.users[user_id].timezone)
+    elif match.group(1) == 'hours':
+        return gigtz.add_hours(delivery_time, int(match.group(2)), giguser.users[user_id].timezone)
+    elif match.group(1) == 'days':
+        return gigtz.add_days(delivery_time, int(match.group(2)), giguser.users[user_id].timezone)
 
 async def cancel_all_delay_message(params):
     member = params['member']
@@ -803,7 +844,7 @@ async def on_message(msg):
                     await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
                     return
 
-                match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|-?\d+))?( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
+                match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
                 if match:
                     try:
                         await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
@@ -811,7 +852,7 @@ async def on_message(msg):
                     except GigParseException:
                         pass
 
-                match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|-?\d+|template)( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
+                match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+|template)( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
                 if match:
                     try:
                         await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))

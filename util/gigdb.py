@@ -34,12 +34,12 @@ def get_all(table):
 def get_votes(proposal_id):
     return db_execute_sql("SELECT * FROM votes WHERE proposal_id = %s", True, proposal_id=proposal_id)
 
-def update_message(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description):
-    db_execute_sql("INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE guild_id = %s, delivery_channel_id = %s, "
-        "delivery_time =  %s, author_id = %s, repeats = %s, last_repeat_message = %s, content = %s, description = %s",
+def update_message(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until):
+    db_execute_sql("INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE guild_id = %s, delivery_channel_id = %s, "
+        "delivery_time =  %s, author_id = %s, repeats = %s, last_repeat_message = %s, content = %s, description = %s, repeat_until = %s",
         False, message_id=message_id, guild_id=guild_id, delivery_channel_id=delivery_channel_id, delivery_time=delivery_time, author_id=author_id,
-        repeat=repeat, last_repeat_message=last_repeat_message, content=content, description=description, guild_id_2=guild_id, delivery_channel_id_2=delivery_channel_id,
-        delivery_time_2=delivery_time, author_id_2=author_id, repeat_2=repeat, last_repeat_message_2=last_repeat_message, content_2=content, description_2=description)
+        repeat=repeat, last_repeat_message=last_repeat_message, content=content, description=description, repeat_until=repeat_until, guild_id_2=guild_id, delivery_channel_id_2=delivery_channel_id,
+        delivery_time_2=delivery_time, author_id_2=author_id, repeat_2=repeat, last_repeat_message_2=last_repeat_message, content_2=content, description_2=description, repeat_until_2=repeat_until)
 
 def delete_message(message_id):
     db_execute_sql("DELETE FROM messages WHERE id=%s", False, message_id=message_id)
