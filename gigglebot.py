@@ -774,6 +774,7 @@ async def on_message(msg):
     if isinstance(msg.channel, discord.channel.DMChannel):
         user = client.get_user(669370838478225448)
         await user.send(f"{msg.author.mention} said {msg.content}")
+        return
 
     if re.match(r'~(giggle|g |g$)', msg.content):
         if msg.author.id in giguser.user_guilds.keys() and msg.guild.id in giguser.user_guilds[msg.author.id]:
