@@ -72,10 +72,10 @@ def add_hours(time, num, tz_id):
         to_dt = datetime.fromtimestamp(time)
     return to_dt.timestamp()
 
-def add_day(time, tz_id):
+def add_days(time, num, tz_id):
     tz = timezone(timezones[tz_id].name)
     from_dt = datetime.fromtimestamp(time)
-    to_dt = datetime.fromtimestamp(time) + relativedelta(days=+1)
+    to_dt = datetime.fromtimestamp(time) + relativedelta(days=+num)
     time = to_dt.timestamp()
     if not from_dt.astimezone(tz).dst() and to_dt.astimezone(tz).dst():
         to_dt = datetime.fromtimestamp(time) + relativedelta(hours=-1)
