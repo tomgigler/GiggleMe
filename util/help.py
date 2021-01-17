@@ -66,7 +66,7 @@ def show_help(command):
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message"""
 
     if command == "edit":
-        return """> `~giggle edit <message-id> <time> channel=<channel> repeat=<frequency> desc="<desc>"`
+        return """> `~giggle edit <message-id> <time> channel=<channel> repeat=<frequency> duration=<duration> desc="<desc>"`
 > `<message>`
 > 
 > Edit message identified by <message-id>
@@ -76,16 +76,20 @@ def show_help(command):
 > 
 > channel=<channel> is optional.  If not specified, the current delivery channel will be used
 > 
-> repeat is optional.  If included, your message will be repeated at the given frequency until you cancel the message or edit it with repeat=none
-> <frequency> may be `none`, `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
-> <frequency> may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
-> If skip_if is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
+> **repeat** will repeat your message at the given frequency until you cancel the message or edit it with **repeat=none** unless you have specified a **duration** (see below)
+> **<frequency>** may be `none`, `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
+> **<frequency>** may also optionally be followed by `;skip_if=<N>` where <N> is a non-negative integer
+> If **skip_if** is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
 > 
 > for example: `repeat=daily;skip_if=5`
 > 
-> desc is an optional description of the message
+> **duration is a duration for repeating messages.  Your message will repeat with the given frequency for **<duration>**
+> **<duration>** may be `minutes:<N>`, `hours:<N>`, or `days:<N>` where <N> is a positive integer
+> You may also use `duration=none` to remove the current duration when editing a message.  This will result in the message repeating until you cancel it or edit again
 > 
-> <message> is optional.  If specified, it will replace the body of the current message
+> **desc** is an optional description of the message
+> 
+> **<message>** is optional.  If specified, it will replace the body of the current message
 > 
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message
 > 
@@ -135,9 +139,11 @@ def show_help(command):
 > Show the main help"""
 
     if command == "repeat":
-        return """> **repeat** is optional.  If included, your message will be repeated at the given frequency until you cancel the message or **edit** it with **repeat=none**
+        return """> **repeat** is optional.  If included, your message will be repeated at the given frequency until you cancel the message
+> or **edit** it with **repeat=none** or if an end time is set with **duration** (see below)
 > 
-> **Note:** Editing a message with `repeat=none` **does not** cancel the next scheduled delivery of the message
+> to schedule a repeating message, add `repeat=<frequency>` when creating the message
+> You may also add `repeat=<frequency>` when editing a message.  Type `~giggle help edit` or more info on editing messages
 > 
 > **<frequency>** may be `daily`, `weekly`, `monthly`, or `hours:NUM` or `minutes:NUM` where `NUM` is a positive integer
 > 
@@ -148,10 +154,15 @@ def show_help(command):
 > **<frequency>** may also optionally be followed by `;skip_if=<N>` where N is a non-negative integer
 > 
 > If **skip_if** is provided, the message delivery will be skipped if the last delivery is in the last N messages in the channel
+> For example: `repeat=daily;skip_if=5`
 > 
 > If **skip_if** is 0, the message will always be delivered and will not delete the previouse delivery as specified above
 > 
-> For example: `repeat=daily;skip_if=5`"""
+> You may also include a **duration** when scheduling a repeating message.  To include a duration add `duration=<duration>` when scheduling the message
+> 
+> **<duration>** may be `minutes:<N>`, `hours:<N>`, or `days:<N>` where <N> is a positive integer
+> 
+> For example: `duration=hours:2`"""
 
     if command == "proposals":
         return """> The `propose` command is used to propose messages.  To propose <message>:
