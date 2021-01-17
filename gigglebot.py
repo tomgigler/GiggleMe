@@ -905,7 +905,7 @@ async def on_message(msg):
             await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\n"
                     "Please include the server id ({msg.guild.id}) in your message", color=0xff0000))
 
-    elif giguser.guilds[msg.guild.id] and msg.channel.id == giguser.guilds[msg.guild.id].proposal_channel_id and giguser.guilds[msg.guild.id].delivery_channel_id and giguser.guilds[msg.guild.id].approval_channel_id:
+    elif msg.guild.id in giguser.guilds and msg.channel.id == giguser.guilds[msg.guild.id].proposal_channel_id and giguser.guilds[msg.guild.id].delivery_channel_id and giguser.guilds[msg.guild.id].approval_channel_id:
         await process_delay_message({'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': time(), 'author_id': msg.author.id, 'delay': 'proposal',
             'content': msg.content, 'channel': giguser.guilds[msg.guild.id].delivery_channel_id, 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': giguser.guilds[msg.guild.id].approval_channel_id})
 
