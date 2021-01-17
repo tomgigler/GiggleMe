@@ -34,6 +34,8 @@ def local_time_str_to_utc(time_str, tz_id):
     return dt.timestamp()
 
 def display_localized_time(time, tz_id, format_24):
+    if tz_id is None:
+        tz_id = 1
     tz = timezone(timezones[tz_id].name)
     if format_24:
         return datetime.fromtimestamp(time).astimezone(tz).strftime('%-H:%M:%S %a %b %d, %Y %Z')
