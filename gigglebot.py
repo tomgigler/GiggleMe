@@ -790,7 +790,7 @@ async def on_message(msg):
                     await send_delay_message(msg.channel, msg.author, match.group(2))
                     return
 
-                match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
+                match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
                     try:
                         await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
@@ -798,7 +798,7 @@ async def on_message(msg):
                     except GigParseException:
                         pass
 
-                match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+|template)( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
+                match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+|template)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
                     try:
                         await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
