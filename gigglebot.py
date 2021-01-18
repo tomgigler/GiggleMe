@@ -421,7 +421,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
                     except:
                         pass
                 if msg.repeat and msg.repeat_until:
-                    output += f"> **Repeat Until:**  {gigtz.display_localized_time(msg.repeat_until, giguser.users[msg.author_id].timezone, giguser.users[msg.author_id].format_24)}\n"
+                    output += f"> **Repeat Until:**  {gigtz.display_localized_time(msg.repeat_until, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
 
             output += f"> **Description:**  {msg.description}\n"
             if proposals:
