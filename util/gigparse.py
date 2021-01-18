@@ -7,7 +7,7 @@ class GigParseException(Exception):
 async def parse_args(func, params, param_str):
     while param_str:
         # first look for arg surrounded by quotes
-        match = re.match(r'(([^\s=]+)="([^"]+)" *)', param_str)
+        match = re.match(r'(([^\s=]+)=["”]([^"”]+)["”] *)', param_str)
         if not match:
             match = re.match(r'(([^\s=]+)=(\S+) *)', param_str)
         if not match:
