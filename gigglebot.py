@@ -473,10 +473,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
 
-async def send_delay_message(params):
-    channel = params['channel']
-    author = params['author']
-    msg_num = params['msg_num']
+async def send_delay_message(channel, author, msg_num):
 
     if msg_num == 'last':
         message_id = giguser.users[author.id].last_message_id
@@ -485,8 +482,8 @@ async def send_delay_message(params):
 
     if message_id in delayed_messages:
         if msg_num == 'last':
-            await confirm_request(channel, author, f"Send message {message_id} now?", 15, send_delay_message, {'channel': channel, 'author': author, 'msg_num': message_id}, client)
-            return
+            if not await confirm_request(channel, author.id, f"Send message {message_id} now?", 15, client):
+                return
 
         msg = delayed_messages[message_id]
         if msg.delivery_time is None:
@@ -592,9 +589,8 @@ async def edit_delay_message(params):
                 return
 
         if need_to_confirm:
-            await confirm_request(discord_message.channel, discord_message.author, f"Edit message {message_id}?", 10, edit_delay_message, {'discord_message': discord_message,
-                'message_id': message_id, 'delay': delay, 'channel': channel, 'repeat': repeat, 'desc': description, 'content': content, 'duration': duration}, client)
-            return
+            if not await confirm_request(discord_message.channel, discord_message.author.id, f"Edit message {message_id}?", 10, client):
+                return
 
         embed = discord.Embed(description=f"{type} edited", color=0x00ff00)
         if channel:
@@ -654,10 +650,9 @@ def add_duration(delivery_time, duration, user_id):
     elif match.group(1) == 'days':
         return gigtz.add_days(delivery_time, int(match.group(2)), giguser.users[user_id].timezone)
 
-async def cancel_all_delay_message(params):
-    member = params['member']
-    channel = params['channel']
-    
+async def cancel_all_delay_message(member, channel):
+    if not await confirm_request(channel, member.id, "Cancel all messages authored by you?", 10, client):
+        return
     message_count = 0
     messages_to_remove = []
     for msg_id in delayed_messages:
@@ -672,53 +667,39 @@ async def cancel_all_delay_message(params):
     else:
         await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
-async def cancel_delayed_message(params):
-    channel = params['channel']
-    author = params['author']
-    msg_num = params['msg_num']
-    confirmed = params['confirmed']
-
-    need_to_confirm = False
-    
+async def cancel_delayed_message(channel, author, msg_num):
     if msg_num == 'all':
-        await confirm_request(channel, author, "Cancel all messages authored by you?", 10, cancel_all_delay_message, {'member': author, 'channel': channel}, client)
+        await cancel_all_delay_message(author, channel)
         return
 
     if msg_num == 'last':
-        need_to_confirm = True
         msg_num = giguser.users[author.id].last_message_id
 
     if msg_num == 'next':
         messages = {}
         for msg_id in delayed_messages:
-            if delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].guild_id == channel.guild.id:
+            if delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].guild_id == channel.guild.id and delayed_messages[msg_id].delivery_time >= 0:
                 messages[msg_id] = delayed_messages[msg_id]
         if messages:
             msg_num = min(messages.values(), key=lambda x: x.delivery_time).id
-            need_to_confirm = True
 
     if msg_num in delayed_messages:
-        if need_to_confirm:
-            await confirm_request(channel, author, f"Cancel message {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num, 'confirmed': True}, client)
+        prompt = f"Cancel message {msg_num}"
+        response = f"Message canceled"
+        if delayed_messages[msg_num].delivery_time is None:
+            prompt = f"Delete template {msg_num}?"
+            response = "Template deleted"
+        elif delayed_messages[msg_num].delivery_time < 0:
+            prompt = f"Delete proposal {msg_num}?"
+            response = "Proposal deleted"
+
+        if not await confirm_request(channel, author.id, prompt, 15, client):
             return
 
-        if delayed_messages[msg_num].delivery_time is None:
-            if not confirmed:
-                await confirm_request(channel, author, f"Delete template {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num, 'confirmed': True}, client)
-                return
-            else:
-                await channel.send(embed=discord.Embed(description="Template deleted", color=0x00ff00))
-        elif delayed_messages[msg_num].delivery_time < 0:
-            if not confirmed:
-                await confirm_request(channel, author, f"Delete proposal {msg_num}?", 15, cancel_delayed_message, {'channel': channel, 'author': author, 'msg_num': msg_num, 'confirmed': True}, client)
-                return
-            else:
-                await channel.send(embed=discord.Embed(description="Proposal deleted", color=0x00ff00))
-                votes.remove_proposal(msg_num)
-        else:
-            await channel.send(embed=discord.Embed(description="Message canceled", color=0x00ff00))
-
+        if delayed_messages[msg_num].delivery_time < 0:
+            votes.remove_proposal(msg_num)
         delayed_messages.pop(msg_num).delete_from_db()
+        await channel.send(embed=discord.Embed(description=response, color=0x00ff00))
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
@@ -836,12 +817,12 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +(cancel|delete|remove|clear|rm) +(\S+) *$', msg.content)
                 if match:
-                    await cancel_delayed_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(3), 'confirmed': False})
+                    await cancel_delayed_message(msg.channel, msg.author, match.group(3))
                     return
 
                 match = re.match(r'~g(iggle)? +send +(\S+) *$', msg.content)
                 if match:
-                    await send_delay_message({'channel': msg.channel, 'author': msg.author, 'msg_num': match.group(2)})
+                    await send_delay_message(msg.channel, msg.author, match.group(2))
                     return
 
                 match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?(\n(.*))?$', msg.content, re.DOTALL)
@@ -968,13 +949,13 @@ async def on_ready():
 
 @client.event
 async def on_raw_reaction_add(payload):
+    process_reaction(payload)
     if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
             if payload.message_id == delayed_messages[msg_id].last_repeat_message:
                 await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, True)
                 return
 
-    await process_reaction(payload, client)
 
 @client.event
 async def on_raw_reaction_remove(payload):
