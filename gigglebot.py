@@ -384,11 +384,12 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
             if type(delayed_messages[msg_id]) is Proposal:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
         else:
-            if tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
-                if delayed_messages[msg_id].repeat is not None:
+            if type(delayed_messages[msg_id]) is DelayedMessage:
+                if tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
+                    if delayed_messages[msg_id].repeat is not None:
+                        sorted_messages[msg_id] = delayed_messages[msg_id]
+                else:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
-            else:
-                sorted_messages[msg_id] = delayed_messages[msg_id]
 
     if not templates or proposals:
         sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
