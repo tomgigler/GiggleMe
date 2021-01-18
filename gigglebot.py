@@ -68,24 +68,16 @@ async def process_delay_message(params):
     duration = params.pop('duration', None)
 
     if params:
-        if request_channel:
-            await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
-        return
+        raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
 
     if not content and not from_template:
-        if request_channel:
-            await request_channel.send(embed=discord.Embed(description=f"Message body required if not creating a message from a template\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
-        return
+        raise GigException(f"Message body required if not creating a message from a template\n\nTo see help type:\n\n`~giggle help`")
     elif content and from_template:
-        if request_channel:
-            await request_channel.send(embed=discord.Embed(description=f"Message body not allowed when creating a message from a template\n\nTo see help type:\n\n`~giggle help`", color=0xff0000))
-        return
+        raise GigException(f"Message body not allowed when creating a message from a template\n\nTo see help type:\n\n`~giggle help`")
 
     if from_template:
         if from_template not in delayed_messages:
-            if request_channel:
-                await request_channel.send(embed=discord.Embed(description=f"Cannot find template {from_template}", color=0xff0000))
-            return
+            raise GigException(f"Cannot find template {from_template}")
         content = delayed_messages[from_template].content
         if not channel:
             channel = delayed_messages[from_template].get_delivery_channel(client).name
@@ -95,9 +87,7 @@ async def process_delay_message(params):
     # validate repeat string
     if repeat:
         if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
-            if request_channel:
-                await request_channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
-            return
+            raise GigException(f"Invalid repeat string `{repeat}`")
 
         # Confirm channel exists
     # get channel
@@ -112,22 +102,17 @@ async def process_delay_message(params):
             delivery_time = -1
             propose_in_channel = get_channel_by_name_or_id(guild, propose_in_channel_name)
         else:
-            if request_channel:
-                await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
-            return
+            raise GigException(f"Invalid command.  Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
     elif delay == 'proposal':
-        await request_channel.send(embed=discord.Embed(description=f"Parameter **propose_in_channel** is required with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
-        return
+        raise GigException(f"Parameter **propose_in_channel** is required with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
 
     # get required_approvals
     if required_approvals:
         if delay == 'proposal':
             if not re.match(r'\d+$', required_approvals) or int(required_approvals) == 0:
-                await request_channel.send(embed=discord.Embed(description=f"Invalid value for **required_approvals**.  Must be a positive integer greater than 0\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
-                return
+                raise GigException(f"Invalid value for **required_approvals**.  Must be a positive integer greater than 0\n\nTo see help type:\n\n`~giggle help proposal`")
         else:
-            await request_channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **required_approvals** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`", color=0xff0000))
-            return
+            raise GigException(f"Invalid command.  Parameter **required_approvals** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
     else:
         required_approvals = '2'
 
@@ -137,9 +122,7 @@ async def process_delay_message(params):
     elif delay == 'template':
         delivery_time = None
         if repeat is not None:
-            if request_channel:
-                await request_channel.send(embed=discord.Embed(description="The repeat option may not be used when creating a template", color=0xff0000))
-            return
+            raise GigException("The repeat option may not be used when creating a template")
 
     elif re.match(r'\d+$', delay):
         if delay == '0':
@@ -154,9 +137,7 @@ async def process_delay_message(params):
             try:
                 delivery_time = gigtz.local_time_str_to_utc(f"{gigtz.get_current_year(giguser.users[author_id].timezone)}-{delay}", giguser.users[author_id].timezone)
             except:
-                if request_channel:
-                    await request_channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                return
+                raise GigException(f"{delay} is not a valid DateTime")
 
     # validate duration
     repeat_until = None
@@ -168,12 +149,7 @@ async def process_delay_message(params):
         repeat_until = add_duration(delivery_time, duration, author_id)
 
     #Make sure {roles} exist
-    try:
-        replace_mentions(content, guild.id)
-    except Exception as e:
-        if request_channel:
-            await request_channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
-        return
+    replace_mentions(content, guild.id)
 
     # create new DelayedMessage
     newMessage =  DelayedMessage(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
@@ -265,11 +241,8 @@ def replace_mentions(content, guild_id):
             elif mention.group(1) == 'here':
                 mention_replace = '@here'
             else:
-                try:
-                    mention_replace = discord.utils.get(guild.roles,name=mention.group(1)).mention
-                except:
-                    # TODO: try searching for user mention.group(1)
-                    raise Exception(f"Cannot find role {mention.group(1)}")
+                # TODO: try searching for user mention.group(1)
+                raise GigException(f"Cannot find role {mention.group(1)}")
 
             content = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, content)
 
@@ -363,8 +336,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
         else:
             max_count = None
     if max_count == 0:
-        await channel.send(embed=discord.Embed(description="Value for next must be greater than 0", color=0xff0000))
-        return
+        raise GigException("Value for next must be greater than 0")
 
     if tmps_repeats == 'templates' or tmps_repeats == 'template' or tmps_repeats == 'tmp':
         templates = True
@@ -372,8 +344,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
         proposals = True
     if templates or proposals:
         if max_count:
-            await channel.send(embed=discord.Embed(description="**next** not valid with Templates and Proposals", color=0xff0000))
-            return
+            raise GigException("**next** not valid with Templates and Proposals")
     if templates:
         output = "> \n> **=========================**\n>  **Templates**\n> **=========================**\n"
     elif proposals:
@@ -487,8 +458,7 @@ async def send_delay_message(channel, author, msg_num):
 
         msg = delayed_messages[message_id]
         if msg.delivery_time is None:
-            await channel.send(embed=discord.Embed(description=f"{message_id} is a template and cannot be sent", color=0xff0000))
-            return
+            raise GigException(f"{message_id} is a template and cannot be sent")
         else:
             msg.delivery_time = 0
  
@@ -509,14 +479,12 @@ async def edit_delay_message(params):
     duration = params.pop('duration', None)
 
     if params:
-        await discord_message.channel.send(embed=discord.Embed(description=f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`", color=0xff0000))
-        return
+        raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`")
     
     # validate repeat string
     if repeat:
         if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly|[Nn]one)(;skip_if=\d+)?$', repeat):
-            await discord_message.channel.send(embed=discord.Embed(description=f"Invalid repeat string `{repeat}`", color=0xff0000))
-            return
+            raise GigException(f"Invalid repeat string `{repeat}`")
 
     need_to_confirm = False
     type = "Message"
@@ -536,23 +504,19 @@ async def edit_delay_message(params):
             if msg.delivery_time == None:
                 type = "Template"
                 if repeat is not None:
-                    await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a template", color=0xff0000))
-                    return
+                    raise GigException("The repeat option may not be used when editing a template")
 
             else:
                 type = "Proposal"
                 if repeat is not None:
-                    await discord_message.channel.send(embed=discord.Embed(description="The repeat option may not be used when editing a proposal", color=0xff0000))
-                    return
+                    raise GigException("The repeat option may not be used when editing a proposal")
                 if delay:
-                    await discord_message.channel.send(embed=discord.Embed(description="A delivery time may not be specified when editing a proposal", color=0xff0000))
-                    return
+                    raise GigException("A delivery time may not be specified when editing a proposal")
 
         delivery_time = msg.delivery_time
         if delay:
             if msg.delivery_time == None:
-                await discord_message.channel.send(embed=discord.Embed(description="Cannot set a delivery time for a template", color=0xff0000))
-                return
+                raise GigException("Cannot set a delivery time for a template")
                 
             if re.match(r'\d+$', delay):
                 if delay == '0':
@@ -566,8 +530,7 @@ async def edit_delay_message(params):
                     try:
                         delivery_time = gigtz.local_time_str_to_utc(f"{gigtz.get_current_year(giguser.users[discord_message.author.id].timezone)}-{delay}", giguser.users[discord_message.author.id].timezone)
                     except:
-                        await discord_message.channel.send(embed=discord.Embed(description=f"{delay} is not a valid DateTime", color=0xff0000))
-                        return
+                        raise GigException(f"{delay} is not a valid DateTime")
 
         # validate duration
         if duration:
@@ -582,11 +545,7 @@ async def edit_delay_message(params):
 
         if content:
             #Make sure {roles} exist
-            try:
-                replace_mentions(content, discord_message.guild.id)
-            except Exception as e:
-                await discord_message.channel.send(embed=discord.Embed(description=f"{str(e)}", color=0xff0000))
-                return
+            replace_mentions(content, discord_message.guild.id)
 
         if need_to_confirm:
             if not await confirm_request(discord_message.channel, discord_message.author.id, f"Edit message {message_id}?", 10, client):
@@ -705,20 +664,17 @@ async def cancel_delayed_message(channel, author, msg_num):
 
 async def add_vip(msg, vip_id, template_id, grace_period):
     if not client.get_user(int(vip_id)):
-        await msg.channel.send(embed=discord.Embed(description=f"Cannot find user {vip_id}", color=0xff0000))
-        return
+        raise GigException(f"Cannot find user {vip_id}")
     if template_id not in delayed_messages.keys():
-        await msg.channel.send(embed=discord.Embed(description=f"Cannot find template {template_id}", color=0xff0000))
-        return
+        raise GigException(f"Cannot find template {template_id}")
     if delayed_messages[template_id].delivery_time:
-        await msg.channel.send(embed=discord.Embed(description=f"{template_id} is not a template", color=0xff0000))
-        return
+        raise GigException(f"{template_id} is not a template")
     giguser.save_vip(giguser.Vip(vip_id, msg.guild.id, template_id, grace_period))
     await msg.channel.send(embed=discord.Embed(description="Updated Vip", color=0x00ff00))
 
 async def remove_vip(msg, vip_id):
     if (int(vip_id), msg.guild.id) not in giguser.vips:
-        await msg.channel.send(embed=discord.Embed(description=f"{vip_id} not in vips list", color=0xff0000))
+        raise GigException(f"{vip_id} not in vips list")
     giguser.delete_vip(giguser.vips[int(vip_id), msg.guild.id])
     await msg.channel.send(embed=discord.Embed(description="Removed Vip", color=0x00ff00))
 
