@@ -5,20 +5,23 @@ import asyncio
 confirmation_requests = {}
 
 class ConfirmationRequest:
-    def __init__(self, confirmation_message, member, func, params):
-        self.confirmation_message = confirmation_message
-        self.member = member
-        self.func = func
-        self.params = params
+    def __init__(self, member_id):
+        self.member_id = member_id
+        self.response = None
 
-async def confirm_request(channel, member, prompt, timeout, func, params, client):
+async def confirm_request(channel, member_id, prompt, seconds, client):
     confirmation_message = await channel.send(embed=discord.Embed(description=f"{prompt}\n\n✅ Yes\n\n❌ No", color=0x0000ff))
     await confirmation_message.add_reaction('✅')
     await confirmation_message.add_reaction('❌')
 
-    confirmation_requests[confirmation_message.id] = ConfirmationRequest(confirmation_message, member, func, params)
+    confirmation_requests[confirmation_message.id] = ConfirmationRequest(member_id)
 
-    await asyncio.sleep(int(timeout))
+    for i in range(seconds):
+        await asyncio.sleep(1)
+        if confirmation_requests[confirmation_message.id].response is not None:
+            break
+
+    confirmation_request = confirmation_requests.pop(confirmation_message.id)
 
     try:
         await confirmation_message.remove_reaction('✅', client.user)
@@ -26,25 +29,11 @@ async def confirm_request(channel, member, prompt, timeout, func, params, client
     except:
         pass
 
-    confirmation_requests.pop(confirmation_message.id, None)
+    return confirmation_request.response
 
-async def process_reaction(payload, client):
-    found = False
-    if payload.message_id in confirmation_requests:
-        if(payload.user_id == confirmation_requests[payload.message_id].member.id):
-            found = True
+def process_reaction(payload):
+    if payload.message_id in confirmation_requests and payload.user_id == confirmation_requests[payload.message_id].member_id:
             if payload.emoji.name == '✅':
-                confirmation_request = confirmation_requests.pop(payload.message_id, None)
-                await confirmation_request.func(confirmation_request.params)
+                confirmation_requests[payload.message_id].response = True
             else:
-                confirmation_message = confirmation_requests.pop(payload.message_id, None)
-
-    if found:
-        try:
-            guild = client.get_guild(payload.guild_id)
-            channel = guild.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
-            await message.remove_reaction('✅', client.user)
-            await message.remove_reaction('❌', client.user)
-        except:
-            pass
+                confirmation_requests[payload.message_id].response = False
