@@ -85,9 +85,17 @@ async def process_delay_message(params):
             description = delayed_messages[from_template].description
 
     # validate repeat string
+    repeat_output = ""
     if repeat:
-        if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly)(;skip_if=\d+)?$', repeat):
+        match = re.match('((minutes:(\d+))|(hours:(\d+))|daily|weekly|monthly)(;skip_if=(\d+))?$', repeat)
+        if not match:
             raise GigException(f"Invalid repeat string `{repeat}`")
+        if not match.group(3) and not match.group(5):
+            repeat_output = f" and will repeat {match.group(1)}"
+        elif match.group(3):
+            repeat_output = f" and will repeat every {match.group(3)} minutes"
+        elif match.group(5):
+            repeat_output = f" and will repeat every {match.group(5)} hours"
 
         # Confirm channel exists
     # get channel
@@ -167,9 +175,9 @@ async def process_delay_message(params):
         return
     elif delivery_time == 0:
         if request_channel:
-            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to the **{delivery_channel.name}** channel now", color=0x00ff00))
+            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to the **{delivery_channel.name}** channel now" + repeat_output, color=0x00ff00))
     elif request_channel:
-        embed=discord.Embed(description=f"Your message will be delivered to the **{delivery_channel.name}** channel at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}", color=0x00ff00)
+        embed=discord.Embed(description=f"Your message will be delivered to the **{delivery_channel.name}** channel at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}" + repeat_output, color=0x00ff00)
         embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
         await request_channel.send(embed=embed)
 
@@ -656,7 +664,7 @@ async def cancel_delayed_message(channel, author, msg_num):
         if not await confirm_request(channel, author.id, prompt, 15, client):
             return
 
-        if delayed_messages[msg_num].delivery_time < 0:
+        if delayed_messages[msg_num].delivery_time and delayed_messages[msg_num].delivery_time < 0:
             votes.remove_proposal(msg_num)
         delayed_messages.pop(msg_num).delete_from_db()
         await channel.send(embed=discord.Embed(description=response, color=0x00ff00))
