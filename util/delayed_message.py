@@ -74,3 +74,11 @@ class DelayedMessage:
             return output + "```\n" + self.content + "\n```"
         else:
             return output + self.content
+
+class Template(DelayedMessage):
+    def __init__(self, id, guild_id, delivery_channel_id, author_id, content, description):
+        super().__init__(id, guild_id, delivery_channel_id, None, author_id, None, None, content, description, None)
+
+class Proposal(DelayedMessage):
+    def __init__(self, id, guild_id, delivery_channel_id, author_id, approval_message_id, content, description):
+        super().__init__(id, guild_id, delivery_channel_id, -1, author_id, None, approval_message_id, content, description, None)

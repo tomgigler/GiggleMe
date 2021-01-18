@@ -12,7 +12,7 @@ from confirm import confirm_request, process_reaction
 import gigtz
 import gigdb
 import giguser
-from delayed_message import DelayedMessage
+from delayed_message import DelayedMessage, Template, Proposal
 from gigparse import parse_args, GigParseException
 import gigvotes
 
@@ -30,13 +30,16 @@ def load_from_db(delayed_messages):
     for row in gigdb.get_all("messages"):
         message_id = row[0]
         delivery_time = row[3]
-        delayed_messages[message_id] = DelayedMessage(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
 
         if delivery_time and delivery_time >= 0:
+            delayed_messages[message_id] = DelayedMessage(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
-        if delivery_time and delivery_time < 0:
+        elif delivery_time and delivery_time < 0:
+            delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8])
             votes.load_proposal_votes(message_id)
+        else:
+            delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8])
 
     gigtz.load_timezones()
     giguser.load_users()
@@ -110,7 +113,11 @@ async def process_delay_message(params):
             delivery_time = -1
             propose_in_channel = get_channel_by_name_or_id(guild, propose_in_channel_name)
         else:
-            raise GigException(f"Invalid command.  Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
+            raise GigException(f"Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
+        if repeat is not None:
+            raise GigException(f"Parameter **repeat** may not be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
+        if duration is not None:
+            raise GigException(f"Parameter **duration** may not be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
     elif delay == 'proposal':
         raise GigException(f"Parameter **propose_in_channel** is required with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
 
@@ -160,11 +167,16 @@ async def process_delay_message(params):
     replace_mentions(content, guild.id)
 
     # create new DelayedMessage
-    newMessage =  DelayedMessage(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
+    if delivery_time and delivery_time >= 0:
+        newMessage =  DelayedMessage(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
+    elif delivery_time and delivery_time < 0:
+        newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description)
+    else:
+        newMessage =  Template(None, guild.id, delivery_channel.id, author_id, content, description)
 
     delayed_messages[newMessage.id] = newMessage
 
-    if delivery_time is None or delivery_time < 0:
+    if type(newMessage) is Template or type(newMessage) is Proposal:
         if request_channel:
             if delay == 'template':
                 embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
@@ -232,6 +244,7 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
         msg.last_repeat_message = None
         msg.delivery_time = 0
         msg.update_db()
+        votes.remove_proposal(msg_id)
         await schedule_delay_message(msg)
 
     output += msg.content
@@ -365,12 +378,12 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
     sorted_messages = {}
     for msg_id in delayed_messages:
         if templates:
-            if delayed_messages[msg_id].delivery_time is None:
+            if type(delayed_messages[msg_id]) is Template:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
         elif proposals:
-            if delayed_messages[msg_id].delivery_time and delayed_messages[msg_id].delivery_time < 0:
+            if type(delayed_messages[msg_id]) is Proposal:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
-        elif delayed_messages[msg_id].delivery_time and delayed_messages[msg_id].delivery_time >= 0:
+        else:
             if tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
                 if delayed_messages[msg_id].repeat is not None:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
@@ -386,7 +399,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
             output += f"> \n> **ID:**  {msg.id}\n"
             output += f"> **Author:**  {msg.get_author(client).name}\n"
             output += f"> **Channel:**  {msg.get_delivery_channel(client).name}\n"
-            if not templates and not  proposals:
+            if type(msg) is DelayedMessage:
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
@@ -466,7 +479,7 @@ async def send_delay_message(channel, author, msg_num):
                 return
 
         msg = delayed_messages[message_id]
-        if msg.delivery_time is None:
+        if type(msg) is Template:
             raise GigException(f"{message_id} is a template and cannot be sent")
         else:
             msg.delivery_time = 0
@@ -509,12 +522,13 @@ async def edit_delay_message(params):
     if message_id in delayed_messages:
 
         msg = delayed_messages[message_id]
-        if not msg.delivery_time or msg.delivery_time < 0:
+        if type(msg) is Template:
             if msg.delivery_time == None:
                 type = "Template"
                 if repeat is not None:
                     raise GigException("The repeat option may not be used when editing a template")
-
+                if delay:
+                    raise GigException("Cannot set a delivery time for a template")
             else:
                 type = "Proposal"
                 if repeat is not None:
@@ -524,9 +538,6 @@ async def edit_delay_message(params):
 
         delivery_time = msg.delivery_time
         if delay:
-            if msg.delivery_time == None:
-                raise GigException("Cannot set a delivery time for a template")
-                
             if re.match(r'\d+$', delay):
                 if delay == '0':
                     delivery_time = 0
@@ -654,17 +665,17 @@ async def cancel_delayed_message(channel, author, msg_num):
     if msg_num in delayed_messages:
         prompt = f"Cancel message {msg_num}"
         response = f"Message canceled"
-        if delayed_messages[msg_num].delivery_time is None:
+        if type(delayed_messages[msg_num]) is Template:
             prompt = f"Delete template {msg_num}?"
             response = "Template deleted"
-        elif delayed_messages[msg_num].delivery_time < 0:
+        elif type(delayed_messages[msg_num]) is Proposal:
             prompt = f"Delete proposal {msg_num}?"
             response = "Proposal deleted"
 
         if not await confirm_request(channel, author.id, prompt, 15, client):
             return
 
-        if delayed_messages[msg_num].delivery_time and delayed_messages[msg_num].delivery_time < 0:
+        if type(delayed_messages[msg_num]) is Proposal:
             votes.remove_proposal(msg_num)
         delayed_messages.pop(msg_num).delete_from_db()
         await channel.send(embed=discord.Embed(description=response, color=0x00ff00))
