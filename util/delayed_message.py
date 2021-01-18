@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import discord
+import asyncio
 from hashlib import md5
 from time import time
 import gigdb
@@ -37,7 +38,7 @@ class DelayedMessage:
     def delete_from_db(self):
         gigdb.delete_message(self.id)
 
-    def get_show_output(self, msg_num, client, raw=False, show_id=False, guild_id=None):
+    async def get_show_output(self, msg_num, client, raw=False, show_id=False, guild_id=None):
         output = ""
 
         if show_id:
@@ -61,10 +62,8 @@ class DelayedMessage:
         if self.delivery_time and self.delivery_time >= 0:
             output += f"> **Repeat:**  {self.repeat}\n"
         if self.repeat and self.last_repeat_message:
-            try:
-                output += f"> **Last Delivery:**  {self.get_delivery_channel(client).get_partial_message(self.last_repeat_message).jump_url}\n"
-            except:
-                pass
+            last_message = await self.get_delivery_channel(client).fetch_message(self.last_repeat_message)
+            output += f"> **Last Delivery:**  {last_message.jump_url}\n"
         if self.repeat and self.repeat_until:
             output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, giguser.users[self.author_id].timezone, giguser.users[self.author_id].format_24)}\n"
 
