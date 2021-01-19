@@ -373,9 +373,9 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
     if (message_type == 'templates' or message_type == 'proposals') and max_count:
         raise GigException("**next** not valid with Templates and Proposals")
     if message_type is None:
-        output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
+        output = "> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
     else:
-        output = f"> \n> **====================**\n>  **{message_type.capitalize()}**\n> **====================**\n"
+        output = f"> **====================**\n>  **{message_type.capitalize()}**\n> **====================**\n"
 
     sorted_messages = {}
     for msg_id in delayed_messages:
@@ -399,28 +399,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
     for msg_id in sorted_messages:
         msg = sorted_messages[msg_id]
         if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == 669370838478225448:
-            output += f"> \n> **ID:**  {msg.id}\n"
-            output += f"> **Author:**  {msg.get_author(client).name}\n"
-            output += f"> **Channel:**  {msg.get_delivery_channel(client).name}\n"
-            if type(msg) is Message:
-                if round((msg.delivery_time - time())/60, 1) < 0:
-                    output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
-                else:
-                    output += f"> **Deliver:**  {gigtz.display_localized_time(msg.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
-
-                output += f"> **Repeat:**  {msg.repeat}\n"
-                if msg.repeat and msg.last_repeat_message:
-                    try:
-                        old_message = await msg.get_delivery_channel(client).fetch_message(msg.last_repeat_message)
-                        output += f"> **Last Delivery:**  {old_message.jump_url}\n"
-                    except:
-                        pass
-                if msg.repeat and msg.repeat_until:
-                    output += f"> **Repeat Until:**  {gigtz.display_localized_time(msg.repeat_until, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
-
-            output += f"> **Description:**  {msg.description}\n"
-            if message_type == 'proposals':
-                output += "> **Current Votes:**  3\n"
+            output += await msg.get_show_output(client, show_id=True, guild_id=channel.guild.id) + "> \n"
             count += 1
             total += 1
             if count == 4:
@@ -430,7 +409,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
             if total == max_count:
                 break
     if total > 0:
-        await channel.send(output + "> \n> **====================**\n")
+        await channel.send(output + "> **====================**\n")
     else:
         if message_type is not None:
             await channel.send(embed=discord.Embed(description=f"No {message_type} found", color=0x00ff00))
@@ -462,7 +441,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
             show_id = True
 
     if msg_num in delayed_messages:
-        output = await delayed_messages[msg_num].get_show_output(msg_num, client, raw=raw, show_id=show_id, guild_id=channel.guild.id)
+        output = await delayed_messages[msg_num].get_show_output(client, raw=raw, show_id=show_id, guild_id=channel.guild.id, show_content=True)
         await channel.send(output)
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
@@ -510,7 +489,7 @@ async def edit_delay_message(params):
             raise GigException(f"Invalid repeat string `{repeat}`")
 
     need_to_confirm = False
-    type = "Message"
+    message_type = "Message"
 
     if not delay and not channel and not repeat and not description and not content and not duration:
         await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, content, or duration"))
@@ -525,13 +504,13 @@ async def edit_delay_message(params):
         msg = delayed_messages[message_id]
         if type(msg) is Template:
             if msg.delivery_time == None:
-                type = "Template"
+                message_type = "Template"
                 if repeat is not None:
                     raise GigException("The repeat option may not be used when editing a template")
                 if delay:
                     raise GigException("Cannot set a delivery time for a template")
             else:
-                type = "Proposal"
+                message_type = "Proposal"
                 if repeat is not None:
                     raise GigException("The repeat option may not be used when editing a proposal")
                 if delay:
@@ -572,7 +551,7 @@ async def edit_delay_message(params):
             if not await confirm_request(discord_message.channel, discord_message.author.id, f"Edit message {message_id}?", 10, client):
                 return
 
-        embed = discord.Embed(description=f"{type} edited", color=0x00ff00)
+        embed = discord.Embed(description=f"{type(msg).__name__} edited", color=0x00ff00)
         if channel:
             msg.delivery_channel_id = delivery_channel.id
             embed.add_field(name="Channel", value=f"{delivery_channel.name}", inline=False)
