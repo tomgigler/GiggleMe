@@ -212,9 +212,9 @@ async def propose_message(msg, propose_in_channel, request_channel, required_app
     output += "> **Current approvals:** 0\n"
     output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, client.user.id)}\n"
     output += msg.content
-    proposal_message = await propose_in_channel.send(output)
-    await proposal_message.add_reaction('☑️')
-    delayed_messages[msg.id].last_repeat_message = proposal_message.id
+    approval_message = await propose_in_channel.send(output)
+    await approval_message.add_reaction('☑️')
+    delayed_messages[msg.id].approval_message_id = approval_message.id
     delayed_messages[msg.id].update_db()
     embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.get_delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
@@ -247,7 +247,7 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
         output = "> **MESSAGE APPROVED AND SENT**\n" + output
         output += f"> **Sent:** {gigtz.display_localized_time(time(), timezone, format_24)}\n"
         output += f"> **Total approvals:** {required_approvals}\n"
-        msg.last_repeat_message = None
+        msg.approval_message_id = None
         msg.delivery_time = 0
         msg.update_db()
         votes.remove_proposal(msg_id)
@@ -588,7 +588,7 @@ async def edit_delay_message(params):
             proposal_message = None
             for channel in discord_message.guild.text_channels:
                 async for message in channel.history(limit=200):
-                    if message.id == msg.last_repeat_message:
+                    if message.id == msg.approval_message_id:
                         proposal_message = message
                         break
                 if proposal_message:
@@ -900,7 +900,7 @@ async def on_raw_reaction_add(payload):
     process_reaction(payload)
     if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
-            if payload.message_id == delayed_messages[msg_id].last_repeat_message:
+            if type(delayed_messages[msg_id]) is Proposal and payload.message_id == delayed_messages[msg_id].approval_message_id:
                 await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, True)
                 return
 
@@ -909,7 +909,7 @@ async def on_raw_reaction_add(payload):
 async def on_raw_reaction_remove(payload):
     if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
-            if payload.message_id == delayed_messages[msg_id].last_repeat_message:
+            if type(delayed_messages[msg_id]) is Proposal and payload.message_id == delayed_messages[msg_id].approval_message_id:
                 await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, False)
                 return
 
