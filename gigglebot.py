@@ -132,7 +132,7 @@ async def process_delay_message(params):
             raise GigException(f"Invalid command.  Parameter **required_approvals** may only be used with proposals"
                     "\n\nTo see help type:\n\n`~giggle help proposal`")
     else:
-        required_approvals = '2'
+        required_approvals = '1'
 
     if delay == 'proposal':
         pass
@@ -279,7 +279,7 @@ async def schedule_delay_message(msg):
 
     if msg.delivery_time == 0:
         delay = 0
-        if msg.repeat:
+        if type(msg) is Message and msg.repeat:
             msg.delivery_time = time()
     else:
         delay = msg.delivery_time - time()
@@ -302,7 +302,7 @@ async def schedule_delay_message(msg):
 
         # If this is a repeating message, check for the previous delivery
         skip_delivery = False
-        if msg.repeat is not None and msg.last_repeat_message is not None:
+        if type(msg) is Message and msg.repeat is not None and msg.last_repeat_message is not None:
             match = re.match(r'(minutes:\d+|hours:\d+|daily|weekly|monthly);skip_if=(\d+)', msg.repeat)
             if match:
                 skip_if = int(match.group(2))
@@ -323,7 +323,7 @@ async def schedule_delay_message(msg):
         sent_message = None
         if not skip_delivery:
             sent_message = await msg.get_delivery_channel(client).send(content)
-        if msg.repeat is not None:
+        if type(msg) is Message and msg.repeat is not None:
             match = re.match(r'(minutes:(\d+)|hours:(\d+)|daily|weekly|monthly)', msg.repeat)
             if match:
                 if match.group(2):
