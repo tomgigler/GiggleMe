@@ -399,7 +399,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
     for msg_id in sorted_messages:
         msg = sorted_messages[msg_id]
         if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == 669370838478225448:
-            output += await msg.get_show_output(client, show_id=True, guild_id=channel.guild.id) + "> \n"
+            output += "> \n" + await msg.get_show_output(client, show_id=True, guild_id=channel.guild.id)
             count += 1
             total += 1
             if count == 4:
