@@ -48,7 +48,7 @@ def get_channel_by_name_or_id(guild, channel_param):
     channel = discord.utils.get(guild.channels, name=channel_param)
     if not channel:
         try:
-            channel = discord.utils.get(guild.channels, id=int(channel_param))
+            channel = discord.utils.get(guild.channels, id=int(re.search(r'(\d+)', channel_param).group(1)))
         except:
             pass
     if not channel:
