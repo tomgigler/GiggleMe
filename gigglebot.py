@@ -347,11 +347,16 @@ async def schedule_delay_message(msg):
         else:
             delayed_messages.pop(msg.id).delete_from_db()
 
-async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None):
+async def list_delay_messages(channel, author_id, next_or_all, message_type=None):
     count = 0
     total = 0
-    templates = False
-    proposals = False
+    if message_type == 'templates' or message_type == 'template' or message_type == 'tmp':
+        message_type = 'templates'
+    elif message_type == 'proposals' or message_type == 'proposal' or message_type == 'p':
+        message_type = 'proposals'
+    elif message_type == 'repeats' or message_type == 'repeat':
+        message_type = 'repeats'
+
     max_count = None
     if next_or_all:
         match = re.match(r'next( +(\d+))?', next_or_all)
@@ -365,39 +370,30 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
     if max_count == 0:
         raise GigException("Value for next must be greater than 0")
 
-    if tmps_repeats == 'templates' or tmps_repeats == 'template' or tmps_repeats == 'tmp':
-        templates = True
-    if tmps_repeats == 'proposals' or tmps_repeats == 'proposal' or tmps_repeats == 'p':
-        proposals = True
-    if templates or proposals:
-        if max_count:
-            raise GigException("**next** not valid with Templates and Proposals")
-    if templates:
-        output = "> \n> **=========================**\n>  **Templates**\n> **=========================**\n"
-    elif proposals:
-        output = "> \n> **=========================**\n>  **Proposals**\n> **=========================**\n"
-    elif tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
-        output = "> \n> **====================**\n>  **Repeating Messages**\n> **====================**\n"
-    else:
+    if (message_type == 'templates' or message_type == 'proposals') and max_count:
+        raise GigException("**next** not valid with Templates and Proposals")
+    if message_type is None:
         output = "> \n> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
+    else:
+        output = f"> \n> **====================**\n>  **{message_type.capitalize()}**\n> **====================**\n"
 
     sorted_messages = {}
     for msg_id in delayed_messages:
-        if templates:
+        if message_type == 'templates':
             if type(delayed_messages[msg_id]) is Template:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
-        elif proposals:
+        elif message_type == 'proposals':
             if type(delayed_messages[msg_id]) is Proposal:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
         else:
             if type(delayed_messages[msg_id]) is Message:
-                if tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
+                if message_type == 'repeats' or message_type == 'repeat':
                     if delayed_messages[msg_id].repeat is not None:
                         sorted_messages[msg_id] = delayed_messages[msg_id]
                 else:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
 
-    if not templates or proposals:
+    if message_type != 'templates' and message_type != 'proposals':
         sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
@@ -423,7 +419,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
                     output += f"> **Repeat Until:**  {gigtz.display_localized_time(msg.repeat_until, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}\n"
 
             output += f"> **Description:**  {msg.description}\n"
-            if proposals:
+            if message_type == 'proposals':
                 output += "> **Current Votes:**  3\n"
             count += 1
             total += 1
@@ -436,10 +432,8 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
     if total > 0:
         await channel.send(output + "> \n> **====================**\n")
     else:
-        if templates:
-            await channel.send(embed=discord.Embed(description="No templates found", color=0x00ff00))
-        elif proposals:
-            await channel.send(embed=discord.Embed(description="No proposals found", color=0x00ff00))
+        if message_type is not None:
+            await channel.send(embed=discord.Embed(description=f"No {message_type} found", color=0x00ff00))
         else:
             await channel.send(embed=discord.Embed(description="No messages found", color=0x00ff00))
 
