@@ -12,7 +12,7 @@ from confirm import confirm_request, process_reaction
 import gigtz
 import gigdb
 import giguser
-from delayed_message import DelayedMessage, Template, Proposal
+from delayed_message import Message, Template, Proposal
 from gigparse import parse_args, GigParseException
 import gigvotes
 
@@ -32,7 +32,7 @@ def load_from_db(delayed_messages):
         delivery_time = row[3]
 
         if delivery_time and delivery_time >= 0:
-            delayed_messages[message_id] = DelayedMessage(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
+            delayed_messages[message_id] = Message(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
         elif delivery_time and delivery_time < 0:
@@ -81,26 +81,14 @@ async def process_delay_message(params):
     if from_template:
         if from_template not in delayed_messages:
             raise GigException(f"Cannot find template {from_template}")
+        if type(delayed_messages[from_template]) is not Template:
+            raise GigException(f"{from_template} is not a template")
         content = delayed_messages[from_template].content
         if not channel:
             channel = delayed_messages[from_template].get_delivery_channel(client).name
         if not description:
             description = delayed_messages[from_template].description
 
-    # validate repeat string
-    repeat_output = ""
-    if repeat:
-        match = re.match('((minutes:(\d+))|(hours:(\d+))|daily|weekly|monthly)(;skip_if=(\d+))?$', repeat)
-        if not match:
-            raise GigException(f"Invalid repeat string `{repeat}`")
-        if not match.group(3) and not match.group(5):
-            repeat_output = f" and will repeat {match.group(1)}"
-        elif match.group(3):
-            repeat_output = f" and will repeat every {match.group(3)} minutes"
-        elif match.group(5):
-            repeat_output = f" and will repeat every {match.group(5)} hours"
-
-        # Confirm channel exists
     # get channel
     if channel:
         delivery_channel = get_channel_by_name_or_id(guild, channel)
@@ -121,13 +109,28 @@ async def process_delay_message(params):
     elif delay == 'proposal':
         raise GigException(f"Parameter **propose_in_channel** is required with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
 
+    # validate repeat string
+    repeat_output = ""
+    if repeat:
+        match = re.match('((minutes:(\d+))|(hours:(\d+))|daily|weekly|monthly)(;skip_if=(\d+))?$', repeat)
+        if not match:
+            raise GigException(f"Invalid repeat string `{repeat}`")
+        if not match.group(3) and not match.group(5):
+            repeat_output = f" and will repeat {match.group(1)}"
+        elif match.group(3):
+            repeat_output = f" and will repeat every {match.group(3)} minutes"
+        elif match.group(5):
+            repeat_output = f" and will repeat every {match.group(5)} hours"
+
     # get required_approvals
     if required_approvals:
         if delay == 'proposal':
             if not re.match(r'\d+$', required_approvals) or int(required_approvals) == 0:
-                raise GigException(f"Invalid value for **required_approvals**.  Must be a positive integer greater than 0\n\nTo see help type:\n\n`~giggle help proposal`")
+                raise GigException(f"Invalid value for **required_approvals**.  Must be a positive integer greater than 0\n\n"
+                        "To see help type:\n\n`~giggle help proposal`")
         else:
-            raise GigException(f"Invalid command.  Parameter **required_approvals** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
+            raise GigException(f"Invalid command.  Parameter **required_approvals** may only be used with proposals"
+                    "\n\nTo see help type:\n\n`~giggle help proposal`")
     else:
         required_approvals = '2'
 
@@ -161,14 +164,17 @@ async def process_delay_message(params):
             raise GigException("Duration may only be used with repeating messages")
         if not re.match(r'(minutes:\d+|hours:\d+|days:\d+|[Nn]one)$', duration):
             raise GigException("Invalid value for duration")
-        repeat_until = add_duration(delivery_time, duration, author_id)
+        if delivery_time == 0:
+            repeat_until = add_duration(time(), duration, author_id)
+        else:
+            repeat_until = add_duration(delivery_time, duration, author_id)
 
     #Make sure {roles} exist
     replace_mentions(content, guild.id)
 
-    # create new DelayedMessage
-    if delivery_time and delivery_time >= 0:
-        newMessage =  DelayedMessage(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
+    # create new Message
+    if delivery_time is not None and delivery_time >= 0:
+        newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
     elif delivery_time and delivery_time < 0:
         newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description)
     else:
@@ -384,7 +390,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
             if type(delayed_messages[msg_id]) is Proposal:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
         else:
-            if type(delayed_messages[msg_id]) is DelayedMessage:
+            if type(delayed_messages[msg_id]) is Message:
                 if tmps_repeats == 'repeats' or tmps_repeats == 'repeat':
                     if delayed_messages[msg_id].repeat is not None:
                         sorted_messages[msg_id] = delayed_messages[msg_id]
@@ -400,7 +406,7 @@ async def list_delay_messages(channel, author_id, next_or_all, tmps_repeats=None
             output += f"> \n> **ID:**  {msg.id}\n"
             output += f"> **Author:**  {msg.get_author(client).name}\n"
             output += f"> **Channel:**  {msg.get_delivery_channel(client).name}\n"
-            if type(msg) is DelayedMessage:
+            if type(msg) is Message:
                 if round((msg.delivery_time - time())/60, 1) < 0:
                     output += f"> **Delivery failed:**  {str(round((msg.delivery_time - time())/60, 1) * -1)} minutes ago\n"
                 else:
@@ -594,7 +600,7 @@ async def edit_delay_message(params):
 
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage = DelayedMessage(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description, msg.repeat_until)
+            newMessage = Message(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description, msg.repeat_until)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
@@ -658,28 +664,20 @@ async def cancel_delayed_message(channel, author, msg_num):
     if msg_num == 'next':
         messages = {}
         for msg_id in delayed_messages:
-            if delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].guild_id == channel.guild.id and delayed_messages[msg_id].delivery_time >= 0:
+            if type(delayed_messages[msg_id]) is Message and delayed_messages[msg_id].guild_id == channel.guild.id:
                 messages[msg_id] = delayed_messages[msg_id]
         if messages:
             msg_num = min(messages.values(), key=lambda x: x.delivery_time).id
 
     if msg_num in delayed_messages:
-        prompt = f"Cancel message {msg_num}"
-        response = f"Message canceled"
-        if type(delayed_messages[msg_num]) is Template:
-            prompt = f"Delete template {msg_num}?"
-            response = "Template deleted"
-        elif type(delayed_messages[msg_num]) is Proposal:
-            prompt = f"Delete proposal {msg_num}?"
-            response = "Proposal deleted"
 
-        if not await confirm_request(channel, author.id, prompt, 15, client):
+        if not await confirm_request(channel, author.id, f"Delete {type(delayed_messages[msg_num]).__name__.lower()} {msg_num}", 15, client):
             return
 
         if type(delayed_messages[msg_num]) is Proposal:
             votes.remove_proposal(msg_num)
+        await channel.send(embed=discord.Embed(description=f"{type(delayed_messages[msg_num]).__name__} deleted", color=0x00ff00))
         delayed_messages.pop(msg_num).delete_from_db()
-        await channel.send(embed=discord.Embed(description=response, color=0x00ff00))
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
@@ -688,7 +686,7 @@ async def add_vip(msg, vip_id, template_id, grace_period):
         raise GigException(f"Cannot find user {vip_id}")
     if template_id not in delayed_messages.keys():
         raise GigException(f"Cannot find template {template_id}")
-    if delayed_messages[template_id].delivery_time:
+    if type(delayed_messages[template_id]) is not Template:
         raise GigException(f"{template_id} is not a template")
     giguser.save_vip(giguser.Vip(vip_id, msg.guild.id, template_id, grace_period))
     await msg.channel.send(embed=discord.Embed(description="Updated Vip", color=0x00ff00))

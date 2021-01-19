@@ -75,6 +75,10 @@ class DelayedMessage:
         else:
             return output + self.content
 
+class Message(DelayedMessage):
+    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until):
+        super().__init__(id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until)
+
 class Template(DelayedMessage):
     def __init__(self, id, guild_id, delivery_channel_id, author_id, content, description):
         super().__init__(id, guild_id, delivery_channel_id, None, author_id, None, None, content, description, None)
