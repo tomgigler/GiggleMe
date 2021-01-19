@@ -447,22 +447,22 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
 
 async def send_delay_message(channel, author, msg_num):
-
     if msg_num == 'last':
         message_id = giguser.users[author.id].last_message_id
     else:
         message_id = msg_num
 
     if message_id in delayed_messages:
-        if msg_num == 'last':
-            if not await confirm_request(channel, author.id, f"Send message {message_id} now?", 15, client):
-                return
-
         msg = delayed_messages[message_id]
         if type(msg) is Template:
             raise GigException(f"{message_id} is a template and cannot be sent")
-        else:
-            msg.delivery_time = 0
+        prompt = f"Send message {message_id} now?"
+        if type(msg) is Proposal:
+            prompt = f"Send proposed message {message_id} now?"
+        if not await confirm_request(channel, author.id, prompt, 15, client):
+            return
+
+        msg.delivery_time = 0
  
         await schedule_delay_message(msg)
 
