@@ -53,6 +53,11 @@ def get_channel_by_name_or_id(guild, channel_param):
             pass
     if not channel:
         raise GigException(f"Cannot find {channel_param} channel")
+
+    #check channel permissions
+    if not channel.permissions_for(channel.guild.get_member(client.user.id)).send_messages:
+        raise GigException(f"**{client.user.name}** does not have permission to send messages in {channel.mention}")
+
     return channel
 
 async def process_delay_message(params):
