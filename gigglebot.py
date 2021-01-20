@@ -2,7 +2,7 @@
 import discord
 import re
 import asyncio
-from settings import bot_token
+from settings import bot_token, bot_owner_id
 from datetime import datetime
 from time import time
 from operator import attrgetter
@@ -403,7 +403,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
 
     for msg_id in sorted_messages:
         msg = sorted_messages[msg_id]
-        if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == 669370838478225448:
+        if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == bot_owner_id:
             output += "> \n" + await msg.get_show_output(client, show_id=True, guild_id=channel.guild.id)
             count += 1
             total += 1
@@ -678,7 +678,7 @@ async def remove_vip(msg, vip_id):
 async def list_vips(msg, list_all):
     output = ""
     for vip in giguser.vips:
-        if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == 669370838478225448:
+        if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == bot_owner_id:
             output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
             output += " **-** "
             output += "**" + giguser.vips[vip].template_id + "**"
@@ -747,15 +747,15 @@ async def on_message(msg):
         return
 
     if isinstance(msg.channel, discord.channel.DMChannel):
-        user = client.get_user(669370838478225448)
+        user = client.get_user(bot_owner_id)
         await user.send(f"{msg.author.mention} said {msg.content}")
         return
 
     if re.match(r'~(giggle|g |g$)', msg.content):
         if msg.author.id in giguser.user_guilds.keys() and msg.guild.id in giguser.user_guilds[msg.author.id]:
             try:
-                if time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != 669370838478225448:
-                    await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
+                if time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != bot_owner_id:
+                    await client.get_user(bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
@@ -854,7 +854,7 @@ async def on_message(msg):
                     return
 
                 match = re.match(r'^~g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
-                if match and msg.author.id == 669370838478225448:
+                if match and msg.author.id == bot_owner_id:
                     if match.group(3):
                         guild_id = int(match.group(3))
                     else:
@@ -872,11 +872,11 @@ async def on_message(msg):
                 await msg.channel.send(embed=discord.Embed(description=str(e), color=0xff0000))
 
             except Exception as e:
-                if msg.author.id == 669370838478225448:
+                if msg.author.id == bot_owner_id:
                     await msg.channel.send(f"`{format_exc()}`")
                 else:
                     await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
-                    await client.get_user(669370838478225448).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
+                    await client.get_user(bot_owner_id).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
         else:
             await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\n"
                     "Please include the server id ({msg.guild.id}) in your message", color=0xff0000))
@@ -920,7 +920,7 @@ async def on_raw_reaction_remove(payload):
 
 @client.event
 async def on_guild_join(guild):
-    user = client.get_user(669370838478225448)
+    user = client.get_user(bot_owner_id)
     await user.send(f"{client.user.mention} joined {guild.name}")
 
 gigtz.load_timezones()
