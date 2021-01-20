@@ -56,7 +56,7 @@ def get_channel_by_name_or_id(guild, channel_param):
 
     #check channel permissions
     if not channel.permissions_for(channel.guild.get_member(client.user.id)).send_messages:
-        raise GigException(f"**{client.user.name}** does not have permission to send messages in {channel.mention}")
+        raise GigException(f"**{client.user.mention}** does not have permission to send messages in {channel.mention}")
 
     return channel
 
@@ -198,9 +198,9 @@ async def process_delay_message(params):
         return
     elif delivery_time == 0:
         if request_channel:
-            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to the **{delivery_channel.name}** channel now" + repeat_output, color=0x00ff00))
+            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to {delivery_channel.mention} channel now" + repeat_output, color=0x00ff00))
     elif request_channel:
-        embed=discord.Embed(description=f"Your message will be delivered to the **{delivery_channel.name}** channel at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}" + repeat_output, color=0x00ff00)
+        embed=discord.Embed(description=f"Your message will be delivered to {delivery_channel.mention} at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}" + repeat_output, color=0x00ff00)
         embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
         await request_channel.send(embed=embed)
 
@@ -213,7 +213,7 @@ async def propose_message(msg, propose_in_channel, request_channel, required_app
     votes.vote(msg.id, client.user.id, int(required_approvals))
     output = "> **A MESSAGE HAS BEEN PROPOSED**\n"
     output += f"> **Author:** {msg.get_author(client).name}\n"
-    output += f"> **Channel:** {msg.get_delivery_channel(client).name}\n"
+    output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
     output += "> **Current approvals:** 0\n"
     output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, client.user.id)}\n"
     output += msg.content
@@ -221,7 +221,7 @@ async def propose_message(msg, propose_in_channel, request_channel, required_app
     await approval_message.add_reaction('☑️')
     delayed_messages[msg.id].approval_message_id = approval_message.id
     delayed_messages[msg.id].update_db()
-    embed=discord.Embed(description=f"Your message has been proposed in the **{propose_in_channel}** channel\n\nIt will be delivered to the **{msg.get_delivery_channel(client).name}** channel when it is approved", color=0x00ff00)
+    embed=discord.Embed(description=f"Your message has been proposed in {propose_in_channel.mantion}\n\nIt will be delivered to {msg.get_delivery_channel(client).mention} when it is approved", color=0x00ff00)
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
     await request_channel.send(embed=embed)
 
@@ -237,7 +237,7 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
         votes.vote(msg_id, client.user.id, int(required_approvals))
     total_approvals = votes.vote_count(msg_id)
     output = f"> **Author:** {msg.get_author(client).name}\n"
-    output += f"> **Channel:** {msg.get_delivery_channel(client).name}\n"
+    output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
 
     if total_approvals < required_approvals:
         output = "> **A MESSAGE HAS BEEN PROPOSED**\n" + output
@@ -559,7 +559,7 @@ async def edit_delay_message(params):
         embed = discord.Embed(description=f"{type(msg).__name__} edited", color=0x00ff00)
         if channel:
             msg.delivery_channel_id = delivery_channel.id
-            embed.add_field(name="Channel", value=f"{delivery_channel.name}", inline=False)
+            embed.add_field(name="Channel", value=f"{delivery_channel.mention}", inline=False)
         if repeat:
             if repeat == 'none' or repeat == 'None':
                 repeat = None
@@ -701,17 +701,17 @@ async def show_guild_config(msg):
     output = f"**Config Settings**"
     output += "\n**proposal_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].proposal_channel_id).name
+        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].proposal_channel_id).mention
     except:
         output += str(giguser.guilds[msg.guild.id].proposal_channel_id)
     output += "\n**approval_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].approval_channel_id).name
+        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].approval_channel_id).mention
     except:
         output += str(giguser.guilds[msg.guild.id].approval_channel_id)
     output += "\n**delivery_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].delivery_channel_id).name
+        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].delivery_channel_id).mention
     except:
         output += str(giguser.guilds[msg.guild.id].delivery_channel_id)
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
@@ -729,15 +729,15 @@ async def set_guild_config(params):
     if proposal_channel_param:
         proposal_channel = get_channel_by_name_or_id(msg.guild, proposal_channel_param)
         giguser.guilds[msg.guild.id].set_proposal_channel_id(proposal_channel.id)
-        output += f"**proposal_channel** set to **{proposal_channel.name}**\n"
+        output += f"**proposal_channel** set to **{proposal_channel.mention}**\n"
     if approval_channel_param:
         approval_channel = get_channel_by_name_or_id(msg.guild, approval_channel_param)
         giguser.guilds[msg.guild.id].set_approval_channel_id(approval_channel.id)
-        output += f"**approval_channel** set to **{approval_channel.name}**\n"
+        output += f"**approval_channel** set to **{approval_channel.mention}**\n"
     if delivery_channel_param:
         delivery_channel = get_channel_by_name_or_id(msg.guild, delivery_channel_param)
         giguser.guilds[msg.guild.id].set_delivery_channel_id(delivery_channel.id)
-        output += f"**delivery_channel** set to **{delivery_channel.name}**\n"
+        output += f"**delivery_channel** set to **{delivery_channel.mention}**\n"
 
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
@@ -755,7 +755,7 @@ async def on_message(msg):
         if msg.author.id in giguser.user_guilds.keys() and msg.guild.id in giguser.user_guilds[msg.author.id]:
             try:
                 if time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != 669370838478225448:
-                    await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.name} bot in the {msg.guild.name} server")
+                    await client.get_user(669370838478225448).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
@@ -860,7 +860,7 @@ async def on_message(msg):
                     else:
                         guild_id = msg.guild.id
                     giguser.save_user(int(match.group(2)), client.get_user(int(match.group(2))).name, int(guild_id), client.get_guild(guild_id).name)
-                    await msg.channel.send(f"Permissions granted for {client.get_user(int(match.group(2))).name} in {client.get_guild(guild_id).name}")
+                    await msg.channel.send(f"Permissions granted for {client.get_user(int(match.group(2))).mention} in {client.get_guild(guild_id).name}")
                     return
 
                 await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
@@ -921,7 +921,7 @@ async def on_raw_reaction_remove(payload):
 @client.event
 async def on_guild_join(guild):
     user = client.get_user(669370838478225448)
-    await user.send(f"{client.user.name} bot joined {guild.name}")
+    await user.send(f"{client.user.mention} joined {guild.name}")
 
 gigtz.load_timezones()
 giguser.load_users()

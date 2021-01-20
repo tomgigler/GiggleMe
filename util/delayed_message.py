@@ -37,7 +37,7 @@ class DelayedMessage:
         if show_id:
             output += f"> **ID:**  {self.id}\n"
         output += f"> **Author:**  {self.get_author(client).name}\n"
-        output += f"> **Channel:**  {self.get_delivery_channel(client).name}\n"
+        output += f"> **Channel:**  {self.get_delivery_channel(client).mention}\n"
         if guild_id != self.guild_id:
             output += f"> **Guild:**  {self.get_guild(client).name}\n"
         return output
