@@ -221,7 +221,7 @@ async def propose_message(msg, propose_in_channel, request_channel, required_app
     await approval_message.add_reaction('☑️')
     delayed_messages[msg.id].approval_message_id = approval_message.id
     delayed_messages[msg.id].update_db()
-    embed=discord.Embed(description=f"Your message has been proposed in {propose_in_channel.mantion}\n\nIt will be delivered to {msg.get_delivery_channel(client).mention} when it is approved", color=0x00ff00)
+    embed=discord.Embed(description=f"Your message has been proposed in {propose_in_channel.mention}\n\nIt will be delivered to {msg.get_delivery_channel(client).mention} when it is approved", color=0x00ff00)
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
     await request_channel.send(embed=embed)
 
