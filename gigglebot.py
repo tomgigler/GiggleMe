@@ -500,13 +500,7 @@ async def edit_delay_message(params):
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`")
     
-    # validate repeat string
-    if repeat:
-        if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly|[Nn]one)(;skip_if=\d+)?$', repeat):
-            raise GigException(f"Invalid repeat string `{repeat}`")
-
     need_to_confirm = False
-    message_type = "Message"
 
     if not delay and not channel and not repeat and not description and not content and not duration:
         await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, content, or duration"))
@@ -519,21 +513,19 @@ async def edit_delay_message(params):
     if message_id in delayed_messages:
 
         msg = delayed_messages[message_id]
-        if type(msg) is Template:
-            if msg.delivery_time == None:
-                message_type = "Template"
-                if repeat is not None:
-                    raise GigException("The repeat option may not be used when editing a template")
-                if delay:
-                    raise GigException("Cannot set a delivery time for a template")
-            else:
-                message_type = "Proposal"
-                if repeat is not None:
-                    raise GigException("The repeat option may not be used when editing a proposal")
-                if delay:
-                    raise GigException("A delivery time may not be specified when editing a proposal")
+        if type(msg) is Message:
+            delivery_time = msg.delivery_time
+            # validate repeat string
+            if repeat:
+                if not re.match('(minutes:\d+|hours:\d+|daily|weekly|monthly|[Nn]one)(;skip_if=\d+)?$', repeat):
+                    raise GigException(f"Invalid repeat string `{repeat}`")
 
-        delivery_time = msg.delivery_time
+        else:
+            if repeat is not None:
+                raise GigException(f"The repeat option may not be used when editing a {type(msg).__name__.lower()}")
+            if delay:
+                raise GigException(f"A delivery time may not be specified when editing a {type(msg).__name__.lower()}")
+
         if delay:
             if re.match(r'\d+$', delay):
                 if delay == '0':
@@ -582,6 +574,7 @@ async def edit_delay_message(params):
             embed.add_field(name="Description", value=f"{description}", inline=False)
         if content:
             msg.content = content
+
         if duration:
             if duration == 'none' or duration == 'None':
                 msg.repeat_until = None
@@ -600,17 +593,9 @@ async def edit_delay_message(params):
         else:
             msg.update_db()
 
-        if type == "Proposal":
+        if type(msg) == Proposal:
             # We need to update the proposal
-            proposal_message = None
-            for channel in discord_message.guild.text_channels:
-                async for message in channel.history(limit=200):
-                    if message.id == msg.approval_message_id:
-                        proposal_message = message
-                        break
-                if proposal_message:
-                    break
-            await process_proposal_reaction(None, msg.guild_id, channel.id, proposal_message.id, msg.id)
+            await process_proposal_reaction(None, msg.guild_id, None, msg.approval_message_id, msg.id)
 
         await discord_message.channel.send(embed=embed)
 
