@@ -210,12 +210,12 @@ async def process_delay_message(params):
     await schedule_delay_message(newMessage)
 
 async def propose_message(msg, propose_in_channel, request_channel, required_approvals):
-    votes.vote(msg.id, client.user.id, int(required_approvals))
+    votes.vote(msg.id, -1, int(required_approvals))
     output = "> **A MESSAGE HAS BEEN PROPOSED**\n"
     output += f"> **Author:** {msg.get_author(client).name}\n"
     output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
     output += "> **Current approvals:** 0\n"
-    output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, client.user.id)}\n"
+    output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, -1)}\n"
     output += msg.content
     approval_message = await propose_in_channel.send(output)
     await approval_message.add_reaction('☑️')
@@ -229,12 +229,12 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
     if user_id == client.user.id:
         return
     msg = delayed_messages[msg_id]
-    required_approvals = votes.get_required_approvals(msg_id, client.user.id)
+    required_approvals = votes.get_required_approvals(msg_id, -1)
     if vote is not None:
         votes.vote(msg_id, user_id, vote)
     else:
         votes.remove_proposal(msg_id)
-        votes.vote(msg_id, client.user.id, int(required_approvals))
+        votes.vote(msg_id, -1, int(required_approvals))
     total_approvals = votes.vote_count(msg_id)
     output = f"> **Author:** {msg.get_author(client).name}\n"
     output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
