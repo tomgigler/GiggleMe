@@ -35,3 +35,5 @@ class GigVote:
 
     def get_required_approvals(self, proposal_id):
         return self.votes[proposal_id][-1]
+
+votes = GigVote()

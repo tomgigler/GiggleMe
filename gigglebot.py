@@ -14,14 +14,13 @@ import gigdb
 import giguser
 from delayed_message import Message, Template, Proposal
 from gigparse import parse_args, GigParseException
-import gigvotes
+from gigvotes import votes
 
 class GigException(Exception):
     pass
 
 client = discord.Client()
 delayed_messages = {}
-votes = gigvotes.GigVote()
 
 def load_from_db(delayed_messages):
 

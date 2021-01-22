@@ -6,6 +6,7 @@ from time import time
 import gigdb
 import giguser
 import gigtz
+from gigvotes import votes
 
 class DelayedMessage:
     def __init__(self, id, guild_id, delivery_channel_id, author_id, content, description):
@@ -107,6 +108,8 @@ class Proposal(DelayedMessage):
     async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False):
         output = self.get_show_header(client, show_id, guild_id, show_content)
         output += f"> **Description:**  {self.description}\n"
+        output += f"> **Required Approvals:**  {votes.get_required_approvals(self.id)}\n"
+        output += f"> **Current Approvals:**  {votes.vote_count(self.id)}\n"
         if show_content:
             output += self.get_show_content(raw)
         return output
