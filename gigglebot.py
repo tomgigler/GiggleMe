@@ -22,6 +22,19 @@ class GigException(Exception):
 client = discord.Client()
 delayed_messages = {}
 
+async def get_message_by_id(guild_id, channel_id, message_id):
+    guild = client.get_guild(guild_id)
+    if channel_id is not None:
+        channel = guild.get_channel(channel_id)
+    else:
+        for channel in guild.text_channels:
+            try:
+                message = await channel.fetch_message(message_id)
+            except:
+                continue
+            break
+    return await channel.fetch_message(message_id)
+
 def load_from_db(delayed_messages):
 
     loop = asyncio.get_event_loop()
@@ -180,7 +193,7 @@ async def process_delay_message(params):
     if delivery_time is not None and delivery_time >= 0:
         newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
     elif delivery_time and delivery_time < 0:
-        newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description, required_approvals)
+        newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description, int(required_approvals))
     else:
         newMessage =  Template(None, guild.id, delivery_channel.id, author_id, content, description)
 
@@ -224,7 +237,7 @@ async def propose_message(msg, propose_in_channel, request_channel):
     embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
     await request_channel.send(embed=embed)
 
-async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, msg_id, vote=None):
+async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, msg_id, vote=None, cancel=False):
     if user_id == client.user.id:
         return
     msg = delayed_messages[msg_id]
@@ -232,12 +245,15 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
         votes.vote(msg_id, user_id, vote)
     else:
         votes.remove_proposal(msg_id)
-        votes.vote(msg_id, -1, int(msg.required_approvals))
-    total_approvals = votes.vote_count(msg_id)
+    if not cancel:
+        votes.vote(msg_id, -1, msg.required_approvals)
+        total_approvals = votes.vote_count(msg_id)
     output = f"> **Author:** {msg.get_author(client).name}\n"
     output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
 
-    if total_approvals < msg.required_approvals:
+    if cancel:
+        output = "> **THIS PROPOSAL HAS BEEN CANCELED**\n" + output
+    elif total_approvals < msg.required_approvals:
         output = "> **A MESSAGE HAS BEEN PROPOSED**\n" + output
         output += f"> **Current approvals:** {total_approvals}\n"
         output += f"> **Required approvals:** {msg.required_approvals}\n"
@@ -257,9 +273,7 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
         await schedule_delay_message(msg)
 
     output += msg.content
-    guild = client.get_guild(guild_id)
-    channel = guild.get_channel(channel_id)
-    message = await channel.fetch_message(message_id)
+    message = await get_message_by_id(guild_id, channel_id, message_id)
     await message.edit(content=output)
 
 def replace_mentions(content, guild_id):
@@ -651,7 +665,7 @@ async def cancel_delayed_message(channel, author, msg_num):
             return
 
         if type(delayed_messages[msg_num]) is Proposal:
-            votes.remove_proposal(msg_num)
+            await process_proposal_reaction(None, channel.guild.id, None, delayed_messages[msg_num].approval_message_id, msg_num, None, True)
         await channel.send(embed=discord.Embed(description=f"{type(delayed_messages[msg_num]).__name__} deleted", color=0x00ff00))
         delayed_messages.pop(msg_num).delete_from_db()
     else:
