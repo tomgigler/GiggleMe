@@ -95,9 +95,10 @@ class Template(DelayedMessage):
         return output
 
 class Proposal(DelayedMessage):
-    def __init__(self, id, guild_id, delivery_channel_id, author_id, approval_message_id, content, description):
+    def __init__(self, id, guild_id, delivery_channel_id, author_id, approval_message_id, content, description, required_approvals):
         super().__init__(id, guild_id, delivery_channel_id, author_id, content, description)
         self.approval_message_id = approval_message_id
+        self.required_approvals = required_approvals
         self.update_db()
 
     def update_db(self):

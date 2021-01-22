@@ -36,8 +36,8 @@ def load_from_db(delayed_messages):
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
         elif delivery_time and delivery_time < 0:
-            delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8])
             votes.load_proposal_votes(message_id)
+            delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(message_id))
         else:
             delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8])
 
@@ -181,7 +181,7 @@ async def process_delay_message(params):
     if delivery_time is not None and delivery_time >= 0:
         newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
     elif delivery_time and delivery_time < 0:
-        newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description)
+        newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description, required_approvals)
     else:
         newMessage =  Template(None, guild.id, delivery_channel.id, author_id, content, description)
 
@@ -194,7 +194,7 @@ async def process_delay_message(params):
                 embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
                 await request_channel.send(embed=embed)
             else:
-                await propose_message(newMessage, propose_in_channel, request_channel, required_approvals)
+                await propose_message(newMessage, propose_in_channel, request_channel)
         return
     elif delivery_time == 0:
         if request_channel:
@@ -209,13 +209,13 @@ async def process_delay_message(params):
 
     await schedule_delay_message(newMessage)
 
-async def propose_message(msg, propose_in_channel, request_channel, required_approvals):
-    votes.vote(msg.id, -1, int(required_approvals))
+async def propose_message(msg, propose_in_channel, request_channel):
+    votes.vote(msg.id, -1, int(msg.required_approvals))
     output = "> **A MESSAGE HAS BEEN PROPOSED**\n"
     output += f"> **Author:** {msg.get_author(client).name}\n"
     output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
     output += "> **Current approvals:** 0\n"
-    output += f"> **Required approvals:** {votes.get_required_approvals(msg.id, -1)}\n"
+    output += f"> **Required approvals:** {msg.required_approvals}\n"
     output += msg.content
     approval_message = await propose_in_channel.send(output)
     await approval_message.add_reaction('☑️')
@@ -229,20 +229,19 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
     if user_id == client.user.id:
         return
     msg = delayed_messages[msg_id]
-    required_approvals = votes.get_required_approvals(msg_id, -1)
     if vote is not None:
         votes.vote(msg_id, user_id, vote)
     else:
         votes.remove_proposal(msg_id)
-        votes.vote(msg_id, -1, int(required_approvals))
+        votes.vote(msg_id, -1, int(msg.required_approvals))
     total_approvals = votes.vote_count(msg_id)
     output = f"> **Author:** {msg.get_author(client).name}\n"
     output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
 
-    if total_approvals < required_approvals:
+    if total_approvals < msg.required_approvals:
         output = "> **A MESSAGE HAS BEEN PROPOSED**\n" + output
         output += f"> **Current approvals:** {total_approvals}\n"
-        output += f"> **Required approvals:** {required_approvals}\n"
+        output += f"> **Required approvals:** {msg.required_approvals}\n"
     else:
         timezone = None
         format_24 = None
@@ -251,7 +250,7 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
             format_24 = giguser.users[msg.author_id].format_24
         output = "> **MESSAGE APPROVED AND SENT**\n" + output
         output += f"> **Sent:** {gigtz.display_localized_time(time(), timezone, format_24)}\n"
-        output += f"> **Total approvals:** {required_approvals}\n"
+        output += f"> **Total approvals:** {msg.required_approvals}\n"
         msg.approval_message_id = None
         msg.delivery_time = 0
         msg.update_db()
