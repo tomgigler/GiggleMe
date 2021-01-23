@@ -416,7 +416,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
     for msg_id in sorted_messages:
         msg = sorted_messages[msg_id]
         if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == bot_owner_id:
-            output += "> \n" + await msg.get_show_output(client, show_id=True, guild_id=channel.guild.id)
+            output += "> \n" + await msg.get_show_output(client, show_id=True, guild_id=channel.guild.id, timezone=giguser.users[author_id].timezone, format_24=giguser.users[author_id].format_24)
             count += 1
             total += 1
             if count == 4:
@@ -458,7 +458,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
             show_id = True
 
     if msg_num in delayed_messages:
-        output = await delayed_messages[msg_num].get_show_output(client, raw=raw, show_id=show_id, guild_id=channel.guild.id, show_content=True)
+        output = await delayed_messages[msg_num].get_show_output(client, raw=raw, show_id=show_id, guild_id=channel.guild.id, show_content=True, timezone=giguser.users[author_id].timezone, format_24=giguser.users[author_id].format_24)
         await channel.send(output)
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))

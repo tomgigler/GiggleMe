@@ -61,20 +61,20 @@ class Message(DelayedMessage):
     def update_db(self):
         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until)
 
-    async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False):
+    async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
         output = self.get_show_header(client, show_id, guild_id, show_content)
         if self.delivery_time and self.delivery_time >= 0:
             if round((self.delivery_time - time())/60, 1) < 0:
                 output += f"> **Delivery failed:**  {str(round((self.delivery_time - time())/60, 1) * -1)} minutes ago\n"
             else:
-                output += f"> **Deliver:**  {gigtz.display_localized_time(self.delivery_time, giguser.users[self.author_id].timezone, giguser.users[self.author_id].format_24)}\n"
+                output += f"> **Deliver:**  {gigtz.display_localized_time(self.delivery_time, timezone, format_24)}\n"
         if self.delivery_time and self.delivery_time >= 0:
             output += f"> **Repeat:**  {self.repeat}\n"
         if self.repeat and self.last_repeat_message:
             last_message = await self.get_delivery_channel(client).fetch_message(self.last_repeat_message)
             output += f"> **Last Delivery:**  {last_message.jump_url}\n"
         if self.repeat and self.repeat_until:
-            output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, giguser.users[self.author_id].timezone, giguser.users[self.author_id].format_24)}\n"
+            output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, timezone, format_24)}\n"
         output += f"> **Description:**  {self.description}\n"
         if show_content:
             output += self.get_show_content(raw)
