@@ -617,12 +617,11 @@ async def cancel_all_delay_message(member, channel):
     message_count = 0
     messages_to_remove = []
     for msg_id in delayed_messages:
-        if delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].delivery_time >= 0:
+        if type(delayed_messages[msg_id]) is Message and delayed_messages[msg_id].author_id == member.id:
             messages_to_remove.append(delayed_messages[msg_id])
     for msg in messages_to_remove:
-        if msg.author_id == member.id:
-            delayed_messages.pop(msg.id).delete_from_db()
-            message_count += 1
+        delayed_messages.pop(msg.id).delete_from_db()
+        message_count += 1
     if message_count > 0:
         await channel.send(embed=discord.Embed(description=f"Canceled {message_count} messages", color=0x00ff00))
     else:
