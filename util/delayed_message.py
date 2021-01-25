@@ -76,8 +76,6 @@ class Message(DelayedMessage):
         if self.repeat and self.repeat_until:
             output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, timezone, format_24)}\n"
         output += f"> **Description:**  {self.description}\n"
-        if show_content:
-            output += self.get_show_content(raw)
         return output
 
 class Template(DelayedMessage):
@@ -91,8 +89,6 @@ class Template(DelayedMessage):
     async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
         output = self.get_show_header(client, show_id, guild_id, show_content)
         output += f"> **Description:**  {self.description}\n"
-        if show_content:
-            output += self.get_show_content(raw)
         return output
 
 class Proposal(DelayedMessage):
@@ -110,6 +106,4 @@ class Proposal(DelayedMessage):
         output += f"> **Description:**  {self.description}\n"
         output += f"> **Required Approvals:**  {votes.get_required_approvals(self.id)}\n"
         output += f"> **Current Approvals:**  {votes.vote_count(self.id)}\n"
-        if show_content:
-            output += self.get_show_content(raw)
         return output

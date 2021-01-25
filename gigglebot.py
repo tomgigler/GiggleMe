@@ -442,7 +442,6 @@ async def set_user_timezone(channel, author, tz):
     await channel.send(embed=discord.Embed(description=output, color=color))
 
 async def show_delayed_message(channel, author_id, msg_num, raw):
-    content = ""
     show_id = False
     if msg_num == 'last':
         if author_id in giguser.users:
@@ -460,6 +459,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
     if msg_num in delayed_messages:
         output = await delayed_messages[msg_num].get_show_output(client, raw=raw, show_id=show_id, guild_id=channel.guild.id, show_content=True, timezone=giguser.users[author_id].timezone, format_24=giguser.users[author_id].format_24)
         await channel.send(output)
+        await channel.send(delayed_messages[msg_num].get_show_content(raw))
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
 
