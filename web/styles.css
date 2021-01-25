@@ -1,0 +1,79 @@
+/*
+table {
+  width: 700px;
+}
+tr {
+  height: 120px;
+}
+td {
+  text-align: center;
+  font-size: 16px;
+  font-family: Calibri;
+  width: 100px;
+  cursor: pointer;
+  background-color: #cccccc;
+}
+td:hover {
+  font-weight: bold;
+}
+td.center-spot {
+  background-color: #008CBA;
+  color: white;
+  cursor: default;
+  font-weight: bold;
+}
+td.center-spot:hover {
+  font-weight: bold;
+}
+td.selected {
+  background-color: #008CBA;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+body, html {
+  height: 100%;
+}
+.footer {
+  font-family: Calibri;
+  font-size: 20px;
+}
+*/
+
+/* The hero image */
+.hero-image {
+  background-image: url("axp-bingo-banner.jpg");
+
+  /* Set a specific height */
+  height: 200px;
+
+  /* Position and center the image to scale nicely on all screens */
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+/* Place text in the middle of the image */
+.hero-text {
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+
+button {
+  background-color: #005C8A;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+}
+button:disabled,
+button[disabled]{
+  background-color: #DDDDDD;
+  cursor: default;
+}
