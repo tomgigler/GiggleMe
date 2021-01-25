@@ -1,5 +1,7 @@
 <?php
 
+require_once "DBConnection.php";
+
 class Login {
 
    var $db;
@@ -13,7 +15,7 @@ class Login {
       $this->db = new DBConnection();
       $this->db->connect() or die('There was an error connecting to the database.');
 
-      $stmt = $this->db->connection->prepare("SELECT * FROM users WHERE name = ? AND password = ?");
+      $stmt = $this->db->connection->prepare("SELECT * FROM users WHERE name = ? AND password = PASSWORD(?)");
       $stmt->bind_param('ss', $user, $pass);
       $stmt->execute();
       $result = $stmt->get_result();

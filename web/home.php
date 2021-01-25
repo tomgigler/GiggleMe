@@ -2,6 +2,13 @@
 include "login_check.inc";
 include "header.inc";
 include "settings.inc";
+
+print "<center>\n";
+print "<button onclick=\"location.href='change_password.php'\" >Change Password</button>\n";
+print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
+print "</center>\n";
+print "<br><br>\n";
+
 date_default_timezone_set("US/Pacific");
 $connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
 $messages = $connection->query("SELECT m.id, g.guild_name, u.name, m.delivery_time, m.description FROM messages AS m, guilds AS g, users AS u WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time >= 0 ORDER BY delivery_time");
@@ -48,8 +55,6 @@ print "</table>\n";
 
 $connection->close();
 ?>
-<br><br>
-<button onclick="location.href='logout.php'" >Logout</button>
 <script>
 
 function convert_times(){
