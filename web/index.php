@@ -19,14 +19,7 @@ require_once "Login.php";
    
    if (!isset($_SESSION['USER'])) 
    {
-      print "<html>\n";
-      print "   <head>\n";
-      print "      <link rel=stylesheet type=text/css href=\"styles.css\"/>\n";
-      print "      <title>GiggleMe</title>\n";
-      print "   </head>\n";
-      print "   <body>\n";
-
-      // include "header.inc";
+      include "header.inc";
 
       if (isset($message))
       {

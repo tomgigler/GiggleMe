@@ -1,16 +1,12 @@
-<html>
-  <head>
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-<center>
-<?php
 
+<?php
+include "header.inc";
 include "settings.inc";
 date_default_timezone_set("US/Pacific");
 $connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
 $messages = $connection->query("SELECT m.id, g.guild_name, u.name, m.delivery_time, m.description FROM messages AS m, guilds AS g, users AS u WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time >= 0 ORDER BY delivery_time");
 
+print "<center>\n";
 if(mysqli_num_rows($messages)){
 print "<table border=1>\n";
 print "  <tr><th colspan=5><b>Messages</b></th></tr>\n";
