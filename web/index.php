@@ -4,12 +4,15 @@ require_once "Login.php";
 
    session_start();
    
+   include "settings.inc";
+
    if (isset($_POST['USER']) && isset($_POST['PASS']))
    {
       $log = new Login();
       if($log->verify($_POST['USER'], $_POST['PASS']))
       {
          $_SESSION['USER'] = $_POST['USER'];
+         $_SESSION['DATABASE'] = $db_name;
       } 
       else
       {
@@ -17,7 +20,7 @@ require_once "Login.php";
       }
    }
    
-   if (!isset($_SESSION['USER'])) 
+   if (!isset($_SESSION['USER']) || $_SESSION['DATABASE'] != $db_name) 
    {
       include "header.inc";
 

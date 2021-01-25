@@ -1,5 +1,5 @@
-
 <?php
+include "login_check.inc";
 include "header.inc";
 include "settings.inc";
 date_default_timezone_set("US/Pacific");
