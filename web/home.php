@@ -3,6 +3,7 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
+<center>
 <?php
 
 include "settings.inc";
@@ -67,3 +68,4 @@ function convert_times(){
 window.onload = function() {
   convert_times()
 }</script>
+</center>
