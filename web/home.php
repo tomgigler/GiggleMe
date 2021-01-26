@@ -9,7 +9,7 @@ print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 print "</center>\n";
 print "<br><br>\n";
 
-date_default_timezone_set("US/Pacific");
+date_default_timezone_set($_SESSION['timezone']);
 $connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
 $messages = $connection->query("SELECT m.id, g.guild_name, u.name, m.delivery_time, m.description FROM messages AS m, guilds AS g, users AS u WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time >= 0 ORDER BY delivery_time");
 
@@ -26,7 +26,8 @@ print "    <th>Description</th>\n";
 print "  </tr>\n";
 while($row = $messages->fetch_row()) {
   print "  <tr>\n";
-  print "<td class='message-id' onclick=\"location.href='message.php?id=$row[0]'\">$row[0]</td><td>$row[1]</td><td>$row[2]</td><td name=\"delivery_time\">$row[3]</td><td>$row[4]</td>\n";
+  // 7:00:00 PM Mon Jan 25, 2021 PST
+  print "<td class='message-id' onclick=\"location.href='message.php?id=$row[0]'\">$row[0]</td><td>$row[1]</td><td>$row[2]</td><td>".date("g:i:s A D M j, Y T",$row[3])."</td><td>$row[4]</td>\n";
   print "  </tr>\n";
 }
 print "</table>\n";

@@ -21,7 +21,7 @@ class Login {
       $result = $stmt->get_result();
       $ret = mysqli_num_rows($result);
       $row = $result->fetch_row();
-      date_default_timezone_set($row[1]);
+      $_SESSION['timezone'] = $row[1];
 
       $this->db->close();
 
