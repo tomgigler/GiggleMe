@@ -26,7 +26,7 @@ print "    <th>Description</th>\n";
 print "  </tr>\n";
 while($row = $messages->fetch_row()) {
   print "  <tr>\n";
-  print "<td>$row[0]</td><td>$row[1]</td><td>$row[2]</td><td name=\"delivery_time\">$row[3]</td><td>$row[4]</td>\n";
+  print "<td class='message-id' onclick=\"location.href='message.php?id=$row[0]'\">$row[0]</td><td>$row[1]</td><td>$row[2]</td><td name=\"delivery_time\">$row[3]</td><td>$row[4]</td>\n";
   print "  </tr>\n";
 }
 print "</table>\n";
@@ -47,7 +47,7 @@ print "  </tr>\n";
 while($row = $templates->fetch_row()) {
   print "  <tr>\n";
   # 12:30:00 PM Sun Jan 24, 2021 MST
-  print "<td>$row[0]</td><td>$row[1]</td><td>$row[2]</td><td>$row[3]</td>\n";
+  print "<td class='message-id' onclick=\"location.href='template.php?id=$row[0]'\">$row[0]</td><td>$row[1]</td><td>$row[2]</td><td>$row[3]</td>\n";
   print "  </tr>\n";
 }
 print "</table>\n";

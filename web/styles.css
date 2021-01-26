@@ -13,9 +13,14 @@ td {
   cursor: pointer;
   background-color: #cccccc;
 }
-td:hover {
+*/
+td.message-id:hover {
   font-weight: bold;
+  background-color: #005C8A;
+  cursor: pointer;
+  color: white;
 }
+/*
 td.center-spot {
   background-color: #008CBA;
   color: white;
