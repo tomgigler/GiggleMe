@@ -20,6 +20,10 @@ td.message-id:hover {
   cursor: pointer;
   color: white;
 }
+pre {
+  white-space: pre-wrap;
+  background-color: #CCCCCC;
+}
 /*
 td.center-spot {
   background-color: #008CBA;
