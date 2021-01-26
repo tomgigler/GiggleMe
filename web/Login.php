@@ -15,11 +15,14 @@ class Login {
       $this->db = new DBConnection();
       $this->db->connect() or die('There was an error connecting to the database.');
 
-      $stmt = $this->db->connection->prepare("SELECT * FROM users WHERE name = ? AND password = PASSWORD(?)");
+      $stmt = $this->db->connection->prepare("SELECT users.name, timezones.name FROM users, timezones WHERE users.name = ? AND users.timezone = timezones.id AND users.password = PASSWORD(?)");
       $stmt->bind_param('ss', $user, $pass);
       $stmt->execute();
       $result = $stmt->get_result();
       $ret = mysqli_num_rows($result);
+      $row = $result->fetch_row();
+      date_default_timezone_set($row[1]);
+
       $this->db->close();
 
       return $ret;
