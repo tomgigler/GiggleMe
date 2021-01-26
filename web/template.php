@@ -14,10 +14,12 @@ $connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
 $connection->set_charset("utf8mb4");
 $messages = $connection->query("SELECT content FROM messages WHERE id = '".$_GET['id']."'");
 
-print "</center>\n";
+print "</center><br>\n";
+print "<div class='content-div'>\n";
 while($row = $messages->fetch_row()) {
   print "<pre>".htmlspecialchars($row[0])."</pre>\n";
 }
+print "</div>\n";
 
 $connection->close();
 ?>

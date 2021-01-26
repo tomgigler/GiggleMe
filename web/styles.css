@@ -22,7 +22,7 @@ td.message-id:hover {
 }
 pre {
   white-space: pre-wrap;
-  background-color: #CCCCCC;
+  padding: 5px 15px;
 }
 /*
 td.center-spot {
@@ -48,7 +48,17 @@ body, html {
   font-size: 20px;
 }
 */
-
+.content-p {
+}
+.content-div {
+  width: 60%;
+  margin: 0;
+  position: absolute;
+  left: 50%;
+  -ms-transform: translateX(-50%);
+  transform: translateX(-50%);
+  background-color: #CCCCCC;
+}
 /* The hero image */
 .hero-image {
   background-image: url("images/giggleme-header.jpg");
@@ -72,7 +82,7 @@ body, html {
 
 button {
   background-color: #005C8A;
-  border: none;
+  border: 3px solid #005C8A;
   color: white;
   padding: 15px 32px;
   text-align: center;
@@ -80,6 +90,9 @@ button {
   display: inline-block;
   font-size: 16px;
   cursor: pointer;
+}
+button:hover {
+  border: 3px solid #002C4A;
 }
 button:disabled,
 button[disabled]{
