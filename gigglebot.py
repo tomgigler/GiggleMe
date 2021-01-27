@@ -12,6 +12,8 @@ from confirm import confirm_request, process_reaction
 import gigtz
 import gigdb
 import giguser
+import gigguild
+import gigchannel
 from delayed_message import Message, Template, Proposal
 from gigparse import parse_args, GigParseException
 from gigvotes import votes
@@ -70,6 +72,10 @@ def get_channel_by_name_or_id(guild, channel_param):
     if not channel.permissions_for(channel.guild.get_member(client.user.id)).send_messages:
         raise GigException(f"**{client.user.mention}** does not have permission to send messages in {channel.mention}")
 
+    #make sure channel is in gigchannel.channels
+    if not channel.id in gigchannel.channels:
+        gigchannel.channels[channel.id] = gigchannel.Channel(channel.id, channel.guild.id, channel.name)
+
     return channel
 
 async def process_delay_message(params):
@@ -107,10 +113,9 @@ async def process_delay_message(params):
             description = delayed_messages[from_template].description
 
     # get channel
-    if channel:
-        delivery_channel = get_channel_by_name_or_id(guild, channel)
-    else:
-        delivery_channel = request_channel
+    if not channel:
+        channel = request_channel.name
+    delivery_channel = get_channel_by_name_or_id(guild, channel)
 
     # get propose_in_channel
     if propose_in_channel_name:
@@ -697,19 +702,19 @@ async def show_guild_config(msg):
     output = f"**Config Settings**"
     output += "\n**proposal_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].proposal_channel_id).mention
+        output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].proposal_channel_id).mention
     except:
-        output += str(giguser.guilds[msg.guild.id].proposal_channel_id)
+        output += str(gigguild.guilds[msg.guild.id].proposal_channel_id)
     output += "\n**approval_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].approval_channel_id).mention
+        output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].approval_channel_id).mention
     except:
-        output += str(giguser.guilds[msg.guild.id].approval_channel_id)
+        output += str(gigguild.guilds[msg.guild.id].approval_channel_id)
     output += "\n**delivery_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, giguser.guilds[msg.guild.id].delivery_channel_id).mention
+        output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].delivery_channel_id).mention
     except:
-        output += str(giguser.guilds[msg.guild.id].delivery_channel_id)
+        output += str(gigguild.guilds[msg.guild.id].delivery_channel_id)
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_guild_config(params):
@@ -724,15 +729,15 @@ async def set_guild_config(params):
     output = ""
     if proposal_channel_param:
         proposal_channel = get_channel_by_name_or_id(msg.guild, proposal_channel_param)
-        giguser.guilds[msg.guild.id].set_proposal_channel_id(proposal_channel.id)
+        gigguild.guilds[msg.guild.id].set_proposal_channel_id(proposal_channel.id)
         output += f"**proposal_channel** set to **{proposal_channel.mention}**\n"
     if approval_channel_param:
         approval_channel = get_channel_by_name_or_id(msg.guild, approval_channel_param)
-        giguser.guilds[msg.guild.id].set_approval_channel_id(approval_channel.id)
+        gigguild.guilds[msg.guild.id].set_approval_channel_id(approval_channel.id)
         output += f"**approval_channel** set to **{approval_channel.mention}**\n"
     if delivery_channel_param:
         delivery_channel = get_channel_by_name_or_id(msg.guild, delivery_channel_param)
-        giguser.guilds[msg.guild.id].set_delivery_channel_id(delivery_channel.id)
+        gigguild.guilds[msg.guild.id].set_delivery_channel_id(delivery_channel.id)
         output += f"**delivery_channel** set to **{delivery_channel.mention}**\n"
 
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
@@ -877,9 +882,9 @@ async def on_message(msg):
             await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\n"
                     "Please include the server id ({msg.guild.id}) in your message", color=0xff0000))
 
-    elif msg.guild.id in giguser.guilds and msg.channel.id == giguser.guilds[msg.guild.id].proposal_channel_id and giguser.guilds[msg.guild.id].delivery_channel_id and giguser.guilds[msg.guild.id].approval_channel_id:
+    elif msg.guild.id in gigguild.guilds and msg.channel.id == gigguild.guilds[msg.guild.id].proposal_channel_id and gigguild.guilds[msg.guild.id].delivery_channel_id and gigguild.guilds[msg.guild.id].approval_channel_id:
         await process_delay_message({'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': time(), 'author_id': msg.author.id, 'delay': 'proposal',
-            'content': msg.content, 'channel': giguser.guilds[msg.guild.id].delivery_channel_id, 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': giguser.guilds[msg.guild.id].approval_channel_id})
+            'content': msg.content, 'channel': gigguild.guilds[msg.guild.id].delivery_channel_id, 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': gigguild.guilds[msg.guild.id].approval_channel_id})
 
 @client.event
 async def on_voice_state_update(member, before, after):
