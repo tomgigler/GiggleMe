@@ -14,7 +14,7 @@ td {
   background-color: #cccccc;
 }
 */
-td.message-id:hover {
+td.link-cell:hover {
   font-weight: bold;
   background-color: #005C8A;
   cursor: pointer;
