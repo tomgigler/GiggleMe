@@ -20,6 +20,7 @@ class User {
     $stmt = $db->connection->prepare("UPDATE users SET password=PASSWORD(?) WHERE name=?");
     $stmt->bind_param('ss', $password, $_SESSION['USER']);
     $stmt->execute();
+    $stmt->close();
 
     $db->close();
   }
