@@ -1,19 +1,6 @@
-/*
-table {
-  width: 700px;
+table, th, td {
+  border: 1px solid black;
 }
-tr {
-  height: 120px;
-}
-td {
-  text-align: center;
-  font-size: 16px;
-  font-family: Calibri;
-  width: 100px;
-  cursor: pointer;
-  background-color: #cccccc;
-}
-*/
 td.link-cell:hover {
   font-weight: bold;
   background-color: #005C8A;
@@ -23,32 +10,6 @@ td.link-cell:hover {
 pre {
   white-space: pre-wrap;
   padding: 5px 15px;
-}
-/*
-td.center-spot {
-  background-color: #008CBA;
-  color: white;
-  cursor: default;
-  font-weight: bold;
-}
-td.center-spot:hover {
-  font-weight: bold;
-}
-td.selected {
-  background-color: #008CBA;
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-}
-body, html {
-  height: 100%;
-}
-.footer {
-  font-family: Calibri;
-  font-size: 20px;
-}
-*/
-.content-p {
 }
 .content-div {
   width: 60%;
