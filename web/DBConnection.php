@@ -1,13 +1,7 @@
 <?php 
 
 class DBConnection {
-  var $user_name;
-  var $password;
-  var $database_name;
-  var $result;
   var $connection;
-  var $output;
-  var $db;
    
   function DBConnection(){
   } //DBConnection
@@ -22,52 +16,35 @@ class DBConnection {
     $this->connection->close();
   } //close
 
-   /*
-  function query($SQL) {
-    // print "<debug>$SQL</debug>\n";
-    $_SESSION['sql_count']++;
-    $result = $this->connection->query($SQL);
-    return $result;
-  } //query
+  function get_messages(){
+    $user_id = intval($_SESSION['user_id']);
+    $this->connect();
+    $sql = <<<SQL
+        SELECT m.id, g.guild_name, c.name, u.name, m.delivery_time, m.repeats, m.repeat_until, m.description
+        FROM messages AS m, guilds AS g, users AS u, channels AS c
+        WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time > 0 AND c.id = m.delivery_channel_id
+        AND g.id in ( SELECT guild_id FROM user_guilds WHERE user_id = $user_id )
+        ORDER BY delivery_time
+SQL;
+    $ret = $this->connection->query($sql)->fetch_all();
+    $this->close();
+    return $ret;
+  }
 
-   function set_query($SQL) {
-      $SQL = ereg_replace("table", "table if not exists", $SQL);
-      $result = @mysql_db_query($this->database_name, $SQL, $this->connection);
-      unset ($SQL);
-      return $result;
-   }//set_query
+  function get_templates(){
+    $user_id = intval($_SESSION['user_id']);
+    $this->connect();
+    $sql = <<<SQL
+        SELECT m.id, g.guild_name, c.name, u.name, m.description, g.id, c.id
+        FROM messages AS m, guilds AS g, users AS u, channels AS c
+        WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time is NULL AND c.id = m.delivery_channel_id
+        AND g.id in ( SELECT guild_id FROM user_guilds WHERE user_id = $user_id )
+        ORDER BY delivery_time
+SQL;
 
-   function insert_id() {
-      return mysql_insert_id();
-   }
-
-   function fetch_row($result){
-      $output = @mysql_fetch_row($result);
-      unset($result);
-      return $output;
-   }//fetch_row
-
-   function next_row($result){
-      $output = @mysql_fetch_row($result);
-      unset($result);
-      return $output;
-   }//next_row
-
-
-  function num_rows($result){
-    return mysqli_num_rows($result);
-  } //num_row
-
-
-   function error(){
-      $output = @mysql_error();
-      return $output;
-   }//error
-
-   function free_result($result){
-      @mysql_free_result($result);
-   }
-
- */
-}//class
+    $ret = $this->connection->query($sql)->fetch_all();
+    $this->close();
+    return $ret;
+  }
+}
 ?>
