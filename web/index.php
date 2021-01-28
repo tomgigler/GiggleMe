@@ -28,11 +28,12 @@ require_once "Login.php";
       {
          print $message;
          unset($message);
+      } else {
+         print "<br><br>\n";
       }
 
       print "      <form name='form' method='POST' enctype='multipart/form-data' autocomplete='off'>\n";
       print "         <center>\n";
-      print "         <br><br><br>\n";
       print "   <b>Username:</b>   <input type='text' name='USER'/><br>\n";
       print "         <br>\n";
       print "   <b>Password:</b>   <input type='password' name='PASS'/><br>\n";
