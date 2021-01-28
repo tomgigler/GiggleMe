@@ -14,7 +14,7 @@ date_default_timezone_set($_SESSION['timezone']);
 $db = new DBConnection();
 $messages = $db->get_messages();
 
-$templates = $db->get_messages();
+$templates = $db->get_templates();
 
 ?>
 <br>

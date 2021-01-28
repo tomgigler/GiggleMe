@@ -1,5 +1,6 @@
 table, th, td {
   border: 1px solid black;
+  font-family: Calibri;
 }
 td.link-cell:hover {
   font-weight: bold;
