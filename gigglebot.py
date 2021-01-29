@@ -24,6 +24,15 @@ class GigException(Exception):
 client = discord.Client()
 delayed_messages = {}
 
+async def poll_message_table():
+    while(True):
+        await asyncio.sleep(5)
+        msg_id, action = gigdb.pop_request_queue()
+        if action == 'delete':
+            msg = delayed_messages.pop(msg_id, None)
+            if msg:
+                msg.delete_from_db()
+
 async def get_message_by_id(guild_id, channel_id, message_id):
     guild = client.get_guild(guild_id)
     if channel_id is not None:
@@ -927,5 +936,7 @@ async def on_guild_join(guild):
 gigtz.load_timezones()
 giguser.load_users()
 load_from_db(delayed_messages)
+
+asyncio.get_event_loop().create_task(poll_message_table())
 
 client.run(bot_token)

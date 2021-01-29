@@ -93,3 +93,11 @@ def save_guild(id, guild_name, proposal_channel_id, approval_channel_id, deliver
 
 def save_channel(id, guild_id, name):
     db_execute_sql("INSERT INTO channels ( id, guild_id, name) values (%s, %s, %s) ON DUPLICATE KEY UPDATE name = %s", False, id=id, guild_id=guild_id, name=name, name_2=name)
+
+def pop_request_queue():
+    row = db_execute_sql("SELECT id, action FROM request_queue WHERE request_time = (SELECT MIN(request_time) FROM request_queue)", True)
+    if row:
+        db_execute_sql("DELETE FROM request_queue WHERE id = %s AND action = %s", False, id=row[0][0], action=row[0][1])
+        return ( row[0][0], row[0][1] )
+    else:
+        return ( None, None )
