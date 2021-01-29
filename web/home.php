@@ -5,7 +5,7 @@ include "settings.inc";
 require_once "DBConnection.php";
 
 print "<center>\n";
-print "<button onclick=\"alert('TODO: Implement New Message')\">New Message</button>\n";
+print "<button onclick=\"location.href='create_message.php'\">New Message</button>\n";
 print "<button onclick=\"location.href='change_password.php'\" >Change Password</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
