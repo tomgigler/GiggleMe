@@ -1,5 +1,5 @@
 function deleteMessage(msg_id, msg_type){
-  if(!confirm("Delete " + msg_type + " " + msg_id)) return
+  if(!confirm("Delete " + msg_type + " " + msg_id + "?")) return
   myRequest = new Request("delete_message.php");
   data = new FormData()
   data.append('msg_id', msg_id)
