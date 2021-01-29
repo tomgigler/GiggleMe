@@ -46,5 +46,14 @@ SQL;
     $this->close();
     return $ret;
   }
+
+  function delete_message($msg_id){
+    $this->connect();
+    $timestamp = time();
+    $this->connection->query("DELETE FROM messages WHERE id = '".$msg_id."'");
+    $this->connection->query("INSERT INTO request_queue values ('".$msg_id."', 'delete', ".time().") ON DUPLICATE KEY UPDATE request_time = ".time());
+    $this->close();
+  }
+
 }
 ?>

@@ -10,6 +10,15 @@ print "<button onclick=\"location.href='change_password.php'\" >Change Password<
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
 
+if(isset($_SESSION['message']))
+{
+  print $_SESSION['message'];
+  unset($_SESSION['message']);
+} else {
+  print "<br><br>\n";
+}
+
+
 date_default_timezone_set($_SESSION['timezone']);
 
 $db = new DBConnection();

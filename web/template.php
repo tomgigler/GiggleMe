@@ -7,8 +7,7 @@ print "<center>\n";
 print "<button onclick=\"location.href='home.php'\" >Home</button>\n";
 // print "<button onclick=\"confirm('Edit message ".$_GET['id']." ?')\" >Edit</button>\n";
 print "<button onclick=\"alert('TODO: Implement Edit')\" >Edit</button>\n";
-// print "<button onclick=\"confirm('Delete message ".$_GET['id']." ?')\" >Delete</button>\n";
-print "<button onclick=\"alert('TODO: Implement delete')\" >Delete</button>\n";
+print "<button onclick=\"deleteMessage('".$_GET['id']."', 'template')\" >Delete</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
 
