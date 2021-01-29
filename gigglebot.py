@@ -32,6 +32,20 @@ async def poll_message_table():
             msg = delayed_messages.pop(msg_id, None)
             if msg:
                 msg.delete_from_db()
+        elif action == 'create':
+            row = gigdb.get_message(msg_id)
+            delivery_time = row[3]
+
+            if delivery_time and delivery_time >= 0:
+                delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
+                asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
+
+            elif delivery_time and delivery_time < 0:
+                votes.load_proposal_votes(msg_id)
+                delayed_messages[msg_id] = Proposal(msg_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(msg_id))
+            else:
+                delayed_messages[msg_id] = Template(msg_id, row[1], row[2], row[4], row[7], row[8])
+
 
 async def get_message_by_id(guild_id, channel_id, message_id):
     guild = client.get_guild(guild_id)

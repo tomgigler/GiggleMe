@@ -31,6 +31,9 @@ def db_execute_sql(sql, fetch, **kwargs):
 def get_all(table):
     return db_execute_sql(f"SELECT * FROM {table}", True)
 
+def get_message(msg_id):
+    return db_execute_sql("SELECT * FROM messages WHERE id = %s", True, msg_id=msg_id)[0]
+
 def get_votes(proposal_id):
     return db_execute_sql("SELECT * FROM votes WHERE proposal_id = %s", True, proposal_id=proposal_id)
 
