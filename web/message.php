@@ -3,13 +3,6 @@ include "login_check.inc";
 include "header.inc";
 include "settings.inc";
 
-print "<center>\n";
-print "<button onclick=\"location.href='home.php'\" >Home</button>\n";
-print "<button onclick=\"location.href='edit_message.php?id=".$_GET['id']."'\" >Edit</button>\n";
-print "<button onclick=\"deleteMessage('".$_GET['id']."', 'message')\" >Delete</button>\n";
-print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
-print "<br><br>\n";
-
 date_default_timezone_set($_SESSION['timezone']);
 $connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
 $connection->set_charset("utf8mb4");
@@ -22,27 +15,45 @@ SQL;
 
 $message = $connection->query($sql)->fetch_all()[0];
 
+print "<center>\n";
+print "<button onclick=\"location.href='home.php'\" >Home</button>\n";
+print "<button onclick=\"location.href='edit_message.php?id=".$msg_id."'\" >Edit</button>\n";
+if($message[5]){
+  print "<button onclick=\"deleteMessage('".$msg_id."', 'message')\" >Delete</button>\n";
+} else {
+  print "<button onclick=\"deleteMessage('".$msg_id."', 'template')\" >Delete</button>\n";
+}
+print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
+print "<br><br>\n";
+
+
 print "<table>\n";
 print "  <tr>\n";
-print "    <th>Message ID</th>\n";
+if($message[5]){
+  print "    <th>Message ID</th>\n";
+} else {
+  print "    <th>Template ID</th>\n";
+}
 print "    <td>".$message[0]."</td>\n";
 print "  </tr>\n";
 print "  <tr>\n";
 print "    <th>Author</th>\n";
-print "    <td>".$message[1]."</td>\n";
+print "    <td>".htmlspecialchars($message[1])."</td>\n";
 print "  </tr>\n";
 print "  <tr>\n";
 print "    <th>Server</th>\n";
-print "    <td>".$message[2]."</td>\n";
+print "    <td>".htmlspecialchars($message[2])."</td>\n";
 print "  </tr>\n";
 print "  <tr>\n";
 print "    <th>Channel</th>\n";
-print "    <td>".$message[3]."</td>\n";
+print "    <td>".htmlspecialchars($message[3])."</td>\n";
 print "  </tr>\n";
-print "  <tr>\n";
-print "    <th>Delivery Time</th>\n";
-print "    <td>".date("g:i:s A D M j, Y T",$message[4])."</td>\n";
-print "  </tr>\n";
+if($message[4]){
+  print "  <tr>\n";
+  print "    <th>Delivery Time</th>\n";
+  print "    <td>".date("g:i:s A D M j, Y T",$message[4])."</td>\n";
+  print "  </tr>\n";
+}
 if($message[5]){
   print "  <tr>\n";
   print "    <th>Repeats</th>\n";
@@ -58,7 +69,7 @@ if($message[5]){
 if($message[7]){
   print "  <tr>\n";
   print "    <th>Description</th>\n";
-  print "    <td>".$message[7]."</td>\n";
+  print "    <td>".htmlspecialchars($message[7])."</td>\n";
   print "  </tr>\n";
 }
 print "</table>\n";

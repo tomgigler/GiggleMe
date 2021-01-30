@@ -48,13 +48,13 @@ if(count($messages)){
     $delivery_time = date("g:i:s A D M j, Y T",$row[4]);
     if($row[6]) { $repeat_until = date("g:i:s A D M j, Y T",$row[6]); } else { $repeat_until = $row[6]; }
     print "    <td class='link-cell' onclick=\"location.href='message.php?id=$row[0]'\">$row[0]</td>\n";
-    print "    <td>$row[1]</td>\n";
-    print "    <td>$row[2]</td>\n";
-    print "    <td>$row[3]</td>\n";
+    print "    <td>".htmlspecialchars($row[1])."</td>\n";
+    print "    <td>".htmlspecialchars($row[2])."</td>\n";
+    print "    <td>".htmlspecialchars($row[3])."</td>\n";
     print "    <td>$delivery_time</td>\n";
     print "    <td>$row[5]</td>\n";
     print "    <td>$repeat_until</td>\n";
-    print "    <td>$row[7]</td>\n";
+    print "    <td>".htmlspecialchars($row[7])."</td>\n";
     print "  </tr>\n";
   }
   print "</table>\n";
@@ -73,11 +73,11 @@ if(count($templates)){
   print "  </tr>\n";
   foreach($templates as $row) {
     print "  <tr>\n";
-    print "    <td class='link-cell' onclick=\"location.href='template.php?id=$row[0]'\">$row[0]</td>\n";
-    print "    <td>$row[1]</td>\n";
-    print "    <td>$row[2]</td>\n";
-    print "    <td>$row[3]</td>\n";
-    print "    <td>$row[4]</td>\n";
+    print "    <td class='link-cell' onclick=\"location.href='message.php?id=$row[0]'\">$row[0]</td>\n";
+    print "    <td>".htmlspecialchars($row[1])."</td>\n";
+    print "    <td>".htmlspecialchars($row[2])."</td>\n";
+    print "    <td>".htmlspecialchars($row[3])."</td>\n";
+    print "    <td>".htmlspecialchars($row[4])."</td>\n";
     print "  </tr>\n";
   }
   print "</table>\n";

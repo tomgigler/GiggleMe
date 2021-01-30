@@ -72,11 +72,7 @@ function edit_message(){
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    if(is_template){
-      location.href='template.php?id='+$('#msg_id').text()
-    } else {
-      location.href='message.php?id='+$('#msg_id').text()
-    }
+    location.href='message.php?id='+$('#msg_id').text()
   });
 }
 
@@ -139,11 +135,7 @@ function create_message(){
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    if($('#msg_type_select').find(":selected").val() == 'message'){
-      location.href='message.php?id='+$('#msg_id').text()
-    } else {
-      location.href='template.php?id='+$('#msg_id').text()
-    }
+    location.href='message.php?id='+$('#msg_id').text()
   });
 }
 
