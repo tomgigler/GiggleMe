@@ -4,6 +4,8 @@ require_once "DBConnection.php";
 
 session_start();
 
+if(!isset($_SESSION['USER'])){ exit; }
+
 $db = new DBConnection();
 $db->delete_message($_POST['msg_id']);
 

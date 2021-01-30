@@ -17,6 +17,14 @@ class DBConnection {
     $this->connection->close();
   } //close
 
+  function get_message_content($msg_id){
+    $this->connect();
+    $sql = "SELECT content FROM messages WHERE id = '$msg_id'";
+    $ret = $this->connection->query($sql)->fetch_all()[0][0];
+    $this->close();
+    return $ret;
+  }
+
   function get_messages(){
     $user_id = intval($_SESSION['user_id']);
     $this->connect();
@@ -44,12 +52,32 @@ class DBConnection {
     return $ret;
   }
 
-  function create_message($msg_id, $guild_id, $delivery_channel_id, $delivery_time, $description, $content){
+  function create_template($msg_id, $guild_id, $delivery_channel_id, $description, $content){
+    $this->connect();
+    $timestamp = time();
+    $stmt = $this->connection->prepare("INSERT INTO messages VALUES ( ?, ?, ?, NULL, ?, NULL, NULL, ?, ?, NULL )");
+    $stmt->bind_param('siiiss', $msg_id, $guild_id, $delivery_channel_id, $_SESSION['user_id'], $content, $description);
+    $stmt->execute();
+    $this->connection->query("INSERT INTO request_queue values ('".$msg_id."', 'create', ".time().") ON DUPLICATE KEY UPDATE request_time = ".time());
+    $this->close();
+  }
+
+  function create_message($msg_id, $guild_id, $delivery_channel_id, $delivery_time, $description, $content, $repeats, $repeat_until){
     $this->connect();
     $timestamp = time();
     $stmt = $this->connection->prepare("INSERT INTO messages VALUES ( ?, ?, ?, ?, ?, NULL, NULL, ?, ?, NULL )");
     $stmt->bind_param('siiiiss', $msg_id, $guild_id, $delivery_channel_id, $delivery_time, $_SESSION['user_id'], $content, $description);
     $stmt->execute();
+    if($repeats != ''){
+      $stmt = $this->connection->prepare("UPDATE messages SET repeats = ? WHERE id = ?");
+      $stmt->bind_param('ss', $repeats, $msg_id);
+      $stmt->execute();
+    }
+    if($repeat_until != ''){
+      $stmt = $this->connection->prepare("UPDATE messages SET repeat_until = ? WHERE id = ?");
+      $stmt->bind_param('is', $repeat_until, $msg_id);
+      $stmt->execute();
+    }
     $this->connection->query("INSERT INTO request_queue values ('".$msg_id."', 'create', ".time().") ON DUPLICATE KEY UPDATE request_time = ".time());
     $this->close();
   }
