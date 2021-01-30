@@ -10,6 +10,7 @@ $db = new DBConnection();
 date_default_timezone_set($_SESSION['timezone']);
 
 $msg_id = $_GET['id'];
+$message_delivery_time = $db->get_message_delivery_time($msg_id);
 $msg_guild_id = $db->get_message_guild_id($msg_id);
 $msg_delivery_channel_id = $db->get_message_delivery_channel_id($msg_id);
 $msg_repeats = $db->get_message_repeats($msg_id);
@@ -23,7 +24,7 @@ if(preg_match("/=/", $msg_repeats)){
 }
 $msg_repeat_until = $db->get_message_repeat_until($msg_id);
 if($msg_repeat_until != ""){
-  $msg_repeat_until = date("Y-m-d\TG:i", $msg_repeat_until);
+  $msg_repeat_until = date("Y-m-d\TH:i", $msg_repeat_until);
 }
 
 print "<center>\n";
@@ -88,61 +89,63 @@ foreach($channels[$msg_guild_id] as $channel){
 }
 print "    </td>\n";
 print "  </tr>\n";
-print "  <tr id='delivery_time_row'>\n";
-print "    <th>Delivery Time</th>\n";
-print "    <td><input id='delivery_time' type=datetime-local value='".date("Y-m-d\TG:i",$db->get_message_delivery_time($msg_id))."' /></td>\n";
-print "  </tr>\n";
-print "  <tr id='from_template_row'>\n";
-print "    <th>From Template</th>\n";
-print "    <td>\n";
-print "      <select id='from_template' style='display:table-cell; width:100%' onchange='update_content_from_template()'>\n";
-foreach($templates[$msg_guild_id] as $template){
-  print "        <option value='".$template."'>$template</option>\n";
+if($message_delivery_time != ""){
+  print "  <tr id='delivery_time_row'>\n";
+  print "    <th>Delivery Time</th>\n";
+  print "    <td><input id='delivery_time' type=datetime-local value='".date("Y-m-d\TH:i",$message_delivery_time)."' /></td>\n";
+  print "  </tr>\n";
+  print "  <tr id='from_template_row'>\n";
+  print "    <th>From Template</th>\n";
+  print "    <td>\n";
+  print "      <select id='from_template' style='display:table-cell; width:100%' onchange='update_content_from_template()'>\n";
+  foreach($templates[$msg_guild_id] as $template){
+    print "        <option value='".$template."'>$template</option>\n";
+  }
+  print "    </td>\n";
+  print "      </select>\n";
+  print "    </td>\n";
+  print "  </tr>\n";
+  print "  <tr id='repeats_row'>\n";
+  print "    <th>Repeats</th>\n";
+  print "    <td>\n";
+  print "      <select id='repeats_select' style='display:table-cell; width:50%' onchange='update_repeats_select()'>\n";
+  print "        <option value='None'";
+  if($repeat_frequency == ""){ print " selected"; }
+  print ">None</option>\n";
+  print "        <option value='minutes'";
+  if($repeat_frequency == "minutes"){ print " selected"; }
+  print ">minutes</option>\n";
+  print "        <option value='hours'";
+  if($repeat_frequency == "hours"){ print " selected"; }
+  print ">hours</option>\n";
+  print "        <option value='daily'";
+  if($repeat_frequency == "daily"){ print " selected"; }
+  print ">daily</option>\n";
+  print "        <option value='weekly'";
+  if($repeat_frequency == "weekly"){ print " selected"; }
+  print ">weekly</option>\n";
+  print "        <option value='monthly'";
+  if($repeat_frequency == "monthly"){ print " selected"; }
+  print ">monthly</option>\n";
+  print "      </select>\n";
+  print "      <input id='repeats_num' style='display:table-cell; width:20%;' value='$repeat_frequency_num' />\n";
+  print "    </td>\n";
+  print "  </tr>\n";
+  print "  <tr id='skip_if_row'>\n";
+  print "    <th>Skip if</th>\n";
+  print "    <td>\n";
+  print "      <input id='skip_if_checkbox' type='checkbox' onchange='toggle_skip_if_num()' />\n";
+  print "      <input id='skip_if_num' style='display:table-cell; width:20%' value='$repeat_skip_if_num' />\n";
+  print "    </td>\n";
+  print "  </tr>\n";
+  print "  <tr id='repeat_until_row'>\n";
+  print "    <th>Repeat Until</th>\n";
+  print "    <td>\n";
+  print "      <input id='repeat_until_checkbox' type='checkbox' onchange='toggle_repeat_until_datetime()' />\n";
+  print "      <input id='repeat_until_datetime' type=datetime-local value='$msg_repeat_until'/>\n";
+  print "    </td>\n";
+  print "  </tr>\n";
 }
-print "    </td>\n";
-print "      </select>\n";
-print "    </td>\n";
-print "  </tr>\n";
-print "  <tr id='repeats_row'>\n";
-print "    <th>Repeats</th>\n";
-print "    <td>\n";
-print "      <select id='repeats_select' style='display:table-cell; width:50%' onchange='update_repeats_select()'>\n";
-print "        <option value='None'";
-if($repeat_frequency == ""){ print " selected"; }
-print ">None</option>\n";
-print "        <option value='minutes'";
-if($repeat_frequency == "minutes"){ print " selected"; }
-print ">minutes</option>\n";
-print "        <option value='hours'";
-if($repeat_frequency == "hours"){ print " selected"; }
-print ">hours</option>\n";
-print "        <option value='daily'";
-if($repeat_frequency == "daily"){ print " selected"; }
-print ">daily</option>\n";
-print "        <option value='weekly'";
-if($repeat_frequency == "weekly"){ print " selected"; }
-print ">weekly</option>\n";
-print "        <option value='monthly'";
-if($repeat_frequency == "monthly"){ print " selected"; }
-print ">monthly</option>\n";
-print "      </select>\n";
-print "      <input id='repeats_num' style='display:table-cell; width:20%;' value='$repeat_frequency_num' />\n";
-print "    </td>\n";
-print "  </tr>\n";
-print "  <tr id='skip_if_row'>\n";
-print "    <th>Skip if</th>\n";
-print "    <td>\n";
-print "      <input id='skip_if_checkbox' type='checkbox' onchange='toggle_skip_if_num()' />\n";
-print "      <input id='skip_if_num' style='display:table-cell; width:20%' value='$repeat_skip_if_num' />\n";
-print "    </td>\n";
-print "  </tr>\n";
-print "  <tr id='repeat_until_row'>\n";
-print "    <th>Repeat Until</th>\n";
-print "    <td>\n";
-print "      <input id='repeat_until_checkbox' type='checkbox' onchange='toggle_repeat_until_datetime()' />\n";
-print "      <input id='repeat_until_datetime' type=datetime-local value='$msg_repeat_until'/>\n";
-print "    </td>\n";
-print "  </tr>\n";
 print "  <tr>\n";
 print "    <th>Description</th>\n";
 print "    <td><input id='description' style='display:table-cell; width:100%' value='".$db->get_message_description($msg_id)."' /></td>\n";
@@ -162,13 +165,18 @@ echo "var channels = ". $js_channels . ";\n";
 $js_templates = json_encode($templates);
 echo "var templates = ". $js_templates . ";\n";
 echo "var msg_id = '" . $msg_id . "';\n";
+echo "var is_template = true;\n";
+
+if($message_delivery_time){
+  print "is_template = false;\n";
+  print "setInputFilter(document.getElementById('repeats_num'), function(value) {\n";
+  print "  return /^\d?\d?\d?$/.test(value); // Allow digits and '.' only, using a RegExp\n";
+  print "});\n";
+  print "setInputFilter(document.getElementById('skip_if_num'), function(value) {\n";
+  print "  return /^\d?\d?\d?$/.test(value); // Allow digits and '.' only, using a RegExp\n";
+  print "});\n";
+}
 ?>
-setInputFilter(document.getElementById("repeats_num"), function(value) {
-  return /^\d?\d?\d?$/.test(value); // Allow digits and '.' only, using a RegExp
-});
-setInputFilter(document.getElementById("skip_if_num"), function(value) {
-  return /^\d?\d?\d?$/.test(value); // Allow digits and '.' only, using a RegExp
-});
 
 function server_select_updated(){
   update_channel_select();

@@ -28,7 +28,7 @@ function edit_message(){
   if($('#delivery_time').val()==''){ alert('Delivery Time is required!'); return; }
   repeats_str = '';
   repeat_until = '';
-  if($('#repeats_select').val()!='None'){
+  if(!is_template && $('#repeats_select').val()!='None'){
     repeats_str += $('#repeats_select').val();
     if($('#repeats_select').val()=='minutes' || $('#repeats_select').val()=='hours'){
       if($('#repeats_num').val()==''){
@@ -56,9 +56,11 @@ function edit_message(){
       repeat_until = $('#repeat_until_datetime').val();
     }
   }
-  data.append('delivery_time', $('#delivery_time').val())
-  data.append('repeats', repeats_str)
-  data.append('repeat_until', repeat_until)
+  if(!is_template){
+    data.append('delivery_time', $('#delivery_time').val())
+    data.append('repeats', repeats_str)
+    data.append('repeat_until', repeat_until)
+  }
 
   myRequest = new Request("edit_message_response.php");
 
@@ -70,7 +72,11 @@ function edit_message(){
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    location.href='message.php?id='+$('#msg_id').text()
+    if(is_template){
+      location.href='template.php?id='+$('#msg_id').text()
+    } else {
+      location.href='message.php?id='+$('#msg_id').text()
+    }
   });
 }
 
