@@ -792,8 +792,14 @@ async def on_message(msg):
         return
 
     if isinstance(msg.channel, discord.channel.DMChannel):
-        user = client.get_user(bot_owner_id)
-        await user.send(f"{msg.author.mention} said {msg.content}")
+        if msg.author.id == bot_owner_id:
+            match = re.match(r'(\d{18})\s+(.+)', msg.content)
+            if match:
+                user = client.get_user(int(match.group(1)))
+                await user.send(match.group(2))
+        else:
+            user = client.get_user(bot_owner_id)
+            await user.send(f"{msg.author.mention} ({msg.author.id}): {msg.content}")
         return
 
     if re.match(r'~(giggle|g |g$)', msg.content):
