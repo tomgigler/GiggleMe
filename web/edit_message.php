@@ -16,7 +16,11 @@ $msg_delivery_channel_id = $db->get_message_delivery_channel_id($msg_id);
 $msg_repeats = $db->get_message_repeats($msg_id);
 $repeat_frequency_full = preg_replace("/;.*/", "", $msg_repeats);
 $repeat_frequency = preg_replace("/:.*/", "", $repeat_frequency_full);
-$repeat_frequency_num = preg_replace("/.*:/", "", $repeat_frequency_full);
+if(preg_match("/:/", $repeat_frequency_full)){
+  $repeat_frequency_num = preg_replace("/.*:/", "", $repeat_frequency_full);
+} else {
+  $repeat_frequency_num = "";
+}
 if(preg_match("/=/", $msg_repeats)){
   $repeat_skip_if_num = preg_replace("/.*=/", "", $msg_repeats);
 } else {
