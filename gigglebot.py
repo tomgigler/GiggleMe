@@ -62,7 +62,7 @@ async def poll_message_table():
                     delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
                     asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
                 else:
-                    delayed_messages[msg_id].repeats = row[5]
+                    delayed_messages[msg_id].repeat = row[5]
                     delayed_messages[msg_id].repeat_until = row[9]
 
 async def get_message_by_id(guild_id, channel_id, message_id):
