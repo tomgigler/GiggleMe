@@ -47,6 +47,23 @@ async def poll_message_table():
             else:
                 delayed_messages[msg_id] = Template(msg_id, row[1], row[2], row[4], row[7], row[8])
 
+        elif action == 'edit':
+            row = gigdb.get_message(msg_id)
+            delivery_time = row[3]
+
+            delayed_messages[msg_id].guild_id = row[1]
+            delayed_messages[msg_id].delivery_channel_id = row[2]
+            delayed_messages[msg_id].author_id = row[4]
+            delayed_messages[msg_id].content = row[7]
+            delayed_messages[msg_id].description = row[8]
+
+            if delivery_time and delivery_time >= 0:
+                if row[3] != delayed_messages[msg_id].delivery_time:
+                    delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
+                    asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
+                else:
+                    delayed_messages[msg_id].repeats = row[5]
+                    delayed_messages[msg_id].repeat_until = row[9]
 
 async def get_message_by_id(guild_id, channel_id, message_id):
     guild = client.get_guild(guild_id)

@@ -15,6 +15,65 @@ function deleteMessage(msg_id, msg_type){
   })
 }
 
+function edit_message(){
+  if($('#content').val()==''){ alert('Message content is required!'); return; }
+
+  data = new FormData()
+  data.append('msg_id', $('#msg_id').text())
+  data.append('server_id', $('#server').val())
+  data.append('channel_id', $('#channel').val())
+  data.append('content', $('#content').val())
+  data.append('description', $('#description').val())
+
+  if($('#delivery_time').val()==''){ alert('Delivery Time is required!'); return; }
+  repeats_str = '';
+  repeat_until = '';
+  if($('#repeats_select').val()!='None'){
+    repeats_str += $('#repeats_select').val();
+    if($('#repeats_select').val()=='minutes' || $('#repeats_select').val()=='hours'){
+      if($('#repeats_num').val()==''){
+        alert('A number of ' + $('#repeats_select').val() + ' is required for Repeats!');
+        return;
+      }
+      if($('#repeats_num').val()==0){
+        alert('Number of ' + $('#repeats_select').val() + ' must be greater than 0!');
+        return;
+      }
+      repeats_str += ':' + $('#repeats_num').val();
+    }
+    if($('#skip_if_checkbox').prop('checked')){
+      if($('#skip_if_num').val() == ''){
+        alert('A value for Skip if is required!');
+        return;
+      }
+      repeats_str += ';skip_if=' + $('#skip_if_num').val();
+    }
+    if($('#repeat_until_checkbox').prop('checked')){
+      if($('#repeat_until_datetime').val() == ''){
+        alert('A date is required for Repeat Until!');
+        return;
+      }
+      repeat_until = $('#repeat_until_datetime').val();
+    }
+  }
+  data.append('delivery_time', $('#delivery_time').val())
+  data.append('repeats', repeats_str)
+  data.append('repeat_until', repeat_until)
+
+  myRequest = new Request("edit_message_response.php");
+
+  fetch(myRequest ,{
+    method: 'POST',
+    body: data,
+  })
+  .then(function(response) {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    location.href='message.php?id='+$('#msg_id').text()
+  });
+}
+
 function create_message(){
   if($('#content').val()==''){ alert('Message content is required!'); return; }
 
@@ -82,18 +141,22 @@ function create_message(){
   });
 }
 
+function update_content_by_message_id(msg_id){
+  $.ajax({
+    url: "get_message_content.php",
+    data: {
+      msg_id: msg_id
+    },
+    success: function( result ) {
+      $('#content').val(result);
+    }
+  });
+}
+
 function update_content_from_template(){
   var msg_id = $('#from_template').find(":selected").text();
   if(msg_id != 'None'){
-    $.ajax({
-      url: "get_message_content.php",
-      data: {
-        msg_id: msg_id
-      },
-      success: function( result ) {
-        $('#content').val(result);
-      }
-    });
+    update_content_by_message_id(msg_id);
   }
 }
 
@@ -118,7 +181,7 @@ function update_repeats_select(){
 }
 
 function update_channel_select(){
-  var server = $('#server').find(":selected").text();
+  var server = $('#server').find(":selected").val();
   var channel_select = $('#channel');
   channel_select.empty();
   for(var j = 0 ; j < channels[server].length ; j++){
@@ -127,7 +190,7 @@ function update_channel_select(){
 }
 
 function update_from_template_select(){
-  var server = $('#server').find(":selected").text();
+  var server = $('#server').find(":selected").val();
   var from_template_select = $('#from_template');
   from_template_select.empty();
   for(var j = 0 ; j < templates[server].length ; j++){

@@ -18,15 +18,15 @@ $connection->set_charset("utf8mb4");
 
 $channels = array();
 $templates = array();
-$servers = $connection->query("SELECT g.guild_name, g.id FROM user_guilds AS u, guilds AS g WHERE u.guild_id = g.id AND u.user_id = ".$_SESSION['user_id'])->fetch_all();
+$servers = $connection->query("SELECT g.id, g.guild_name FROM user_guilds AS u, guilds AS g WHERE u.guild_id = g.id AND u.user_id = ".$_SESSION['user_id'])->fetch_all();
 
 foreach($servers as $server){
-  $server_channels = $connection->query("SELECT id, name FROM channels WHERE guild_id = ".$server[1])->fetch_all();
+  $server_channels = $connection->query("SELECT id, name FROM channels WHERE guild_id = ".$server[0])->fetch_all();
   foreach($server_channels as $channel){
     $channels[$server[0]][] = array($channel[0], $channel[1]);
   }
   $templates[$server[0]][] = "None";
-  $server_templates = $connection->query("SELECT id FROM messages WHERE delivery_time is NULL AND guild_id = ".$server[1])->fetch_all();
+  $server_templates = $connection->query("SELECT id FROM messages WHERE delivery_time is NULL AND guild_id = ".$server[0])->fetch_all();
   foreach($server_templates as $template){
     $templates[$server[0]][] = $template[0];
   }
@@ -55,7 +55,7 @@ print "    <th>Server</th>\n";
 print "    <td>\n";
 print "      <select id='server' name='server' style='display:table-cell; width:100%' onchange='server_select_updated()'>\n";
 foreach($servers as $server){
-  print "        <option value='".$server[1]."'>$server[0]</option>\n";
+  print "        <option value='".$server[0]."'>$server[1]</option>\n";
 }
 print "      </select>\n";
 print "    </td>\n";
