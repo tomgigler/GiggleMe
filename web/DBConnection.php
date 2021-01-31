@@ -73,6 +73,60 @@ class DBConnection {
     return $ret;
   }
 
+  function get_user($user, $pass){
+    $this->connect();
+    $sql = "SELECT users.name, timezones.name, users.user FROM users, timezones WHERE users.name = ? AND users.timezone = timezones.id AND users.password = PASSWORD(?)";
+    $stmt = $this->connection->prepare($sql);
+    $stmt->bind_param('ss', $user, $pass);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all()[0];
+    $this->close();
+    return $ret;
+  }
+
+  function get_message($msg_id){
+    $this->connect();
+    $sql = "SELECT m.id, u.name, g.guild_name, c.name, m.delivery_time, m.repeats, m.repeat_until, m.description, m.content ";
+    $sql .= "FROM messages AS m, guilds AS g, users AS u, channels AS c ";
+    $sql .= "WHERE m.id = ? AND m.delivery_channel_id = c.id AND m.guild_id = g.id AND u.user = m.author_id";
+    $stmt = $this->connection->prepare($sql);
+    $stmt->bind_param('s', $msg_id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all()[0];
+    $this->close();
+    return $ret;
+  }
+
+  function get_user_guilds($user_id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT g.id, g.guild_name FROM user_guilds AS u, guilds AS g WHERE u.guild_id = g.id AND u.user_id = ?");
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret;
+  }
+
+  function get_guild_channels($guild_id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT id, name FROM channels WHERE guild_id = ?");
+    $stmt->bind_param('i', $guild_id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret;
+  }
+
+  function get_guild_templates($guild_id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT id FROM messages WHERE delivery_time is NULL AND guild_id = ?");
+    $stmt->bind_param('i', $guild_id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret;
+  }
+
   function get_messages(){
     $user_id = intval($_SESSION['user_id']);
     $this->connect();
