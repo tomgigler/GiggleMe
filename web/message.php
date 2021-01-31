@@ -1,19 +1,13 @@
 <?php
 include "login_check.inc";
 include "header.inc";
-include "settings.inc";
+require_once "DBConnection.php";
 
 date_default_timezone_set($_SESSION['timezone']);
-$connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
-$connection->set_charset("utf8mb4");
 $msg_id = $_GET['id'];
-$sql = <<<SQL
-SELECT m.id, u.name, g.guild_name, c.name, m.delivery_time, m.repeats, m.repeat_until, m.description, m.content
-FROM messages AS m, guilds AS g, users AS u, channels AS c
-WHERE m.id = '$msg_id' AND m.delivery_channel_id = c.id AND m.guild_id = g.id AND u.user = m.author_id
-SQL;
 
-$message = $connection->query($sql)->fetch_all()[0];
+$db = new DBConnection();
+$message = $db->get_message_display($msg_id);
 
 print "<center>\n";
 print "<button onclick=\"location.href='home.php'\" >Home</button>\n";

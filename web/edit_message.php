@@ -1,7 +1,6 @@
 <?php
 include "login_check.inc";
 include "header.inc";
-include "settings.inc";
 
 require_once "DBConnection.php";
 
@@ -10,10 +9,10 @@ $db = new DBConnection();
 date_default_timezone_set($_SESSION['timezone']);
 
 $msg_id = $_GET['id'];
-$message_delivery_time = $db->get_message_delivery_time($msg_id);
-$msg_guild_id = $db->get_message_guild_id($msg_id);
-$msg_delivery_channel_id = $db->get_message_delivery_channel_id($msg_id);
-$msg_repeats = $db->get_message_repeats($msg_id);
+$message_delivery_time = $db->get_message_col("delivery_time", $msg_id);
+$msg_guild_id = $db->get_message_col("guild_id", $msg_id);
+$msg_delivery_channel_id = $db->get_message_col("delivery_channel_id", $msg_id);
+$msg_repeats = $db->get_message_col("repeats", $msg_id);
 $repeat_frequency_full = preg_replace("/;.*/", "", $msg_repeats);
 $repeat_frequency = preg_replace("/:.*/", "", $repeat_frequency_full);
 if(preg_match("/:/", $repeat_frequency_full)){
@@ -26,7 +25,7 @@ if(preg_match("/=/", $msg_repeats)){
 } else {
   $repeat_skip_if_num = "";
 }
-$msg_repeat_until = $db->get_message_repeat_until($msg_id);
+$msg_repeat_until = $db->get_message_col("repeat_until", $msg_id);
 if($msg_repeat_until != ""){
   $msg_repeat_until = date("Y-m-d\TH:i", $msg_repeat_until);
 }
@@ -38,20 +37,17 @@ print "<button onclick=\"location.href='message.php?id=".$msg_id."'\" >Cancel</b
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
 
-$connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
-$connection->set_charset("utf8mb4");
-
 $channels = array();
 $templates = array();
-$servers = $connection->query("SELECT g.id, g.guild_name FROM user_guilds AS u, guilds AS g WHERE u.guild_id = g.id AND u.user_id = ".$_SESSION['user_id'])->fetch_all();
+$servers = $db->get_user_guilds($_SESSION['user_id']);
 
 foreach($servers as $server){
-  $server_channels = $connection->query("SELECT id, name FROM channels WHERE guild_id = ".$server[0])->fetch_all();
+  $server_channels = $db->get_guild_channels($server[0]);
   foreach($server_channels as $channel){
-    $channels[$server[0]][] = array($channel[0], $channel[1]);
+    $channels[$server[0]][] = array(strval($channel[0]), $channel[1]);
   }
   $templates[$server[0]][] = "None";
-  $server_templates = $connection->query("SELECT id FROM messages WHERE delivery_time is NULL AND guild_id = ".$server[0])->fetch_all();
+  $server_templates = $db->get_guild_templates($server[0]);
   foreach($server_templates as $template){
     $templates[$server[0]][] = $template[0];
   }
@@ -152,16 +148,14 @@ if($message_delivery_time != ""){
 }
 print "  <tr>\n";
 print "    <th>Description</th>\n";
-print "    <td><input id='description' style='display:table-cell; width:100%' value='".$db->get_message_description($msg_id)."' /></td>\n";
+print "    <td><input id='description' style='display:table-cell; width:100%' value='".$db->get_message_col("description", $msg_id)."' /></td>\n";
 print "  </tr>\n";
 print "</table>\n";
 print "<br><br>\n";
 print "<textarea id='content' cols='124' rows='24' maxlength='1992'>\n";
-print $db->get_message_content($msg_id);
+print $db->get_message_col("content", $msg_id);
 print "</textarea>\n";
 print "</center><br>\n";
-
-$connection->close();
 
 print "<script>\n";
 $js_channels = json_encode($channels);

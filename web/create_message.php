@@ -1,7 +1,7 @@
 <?php
 include "login_check.inc";
 include "header.inc";
-include "settings.inc";
+require_once "DBConnection.php";
 
 $msg_id = substr(md5(time()),0,8);
 
@@ -13,20 +13,20 @@ print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
 
 date_default_timezone_set($_SESSION['timezone']);
-$connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
-$connection->set_charset("utf8mb4");
+
+$db = new DBConnection();
 
 $channels = array();
 $templates = array();
-$servers = $connection->query("SELECT g.id, g.guild_name FROM user_guilds AS u, guilds AS g WHERE u.guild_id = g.id AND u.user_id = ".$_SESSION['user_id'])->fetch_all();
+$servers = $db->get_user_guilds($_SESSION['user_id']);
 
 foreach($servers as $server){
-  $server_channels = $connection->query("SELECT id, name FROM channels WHERE guild_id = ".$server[0])->fetch_all();
+  $server_channels = $db->get_guild_channels($server[0]);
   foreach($server_channels as $channel){
-    $channels[$server[0]][] = array($channel[0], $channel[1]);
+    $channels[$server[0]][] = array(strval($channel[0]), $channel[1]);
   }
   $templates[$server[0]][] = "None";
-  $server_templates = $connection->query("SELECT id FROM messages WHERE delivery_time is NULL AND guild_id = ".$server[0])->fetch_all();
+  $server_templates = $db->get_guild_templates($server[0]);
   foreach($server_templates as $template){
     $templates[$server[0]][] = $template[0];
   }
@@ -113,8 +113,6 @@ print "<br><br>\n";
 print "<textarea id='content' cols='124' rows='24' maxlength='1992'>\n";
 print "</textarea>\n";
 print "</center><br>\n";
-
-$connection->close();
 
 print "<script>\n";
 $js_channels = json_encode($channels);
