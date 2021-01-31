@@ -7,7 +7,7 @@ date_default_timezone_set($_SESSION['timezone']);
 $msg_id = $_GET['id'];
 
 $db = new DBConnection();
-$message = $db->get_message($msg_id);
+$message = $db->get_message_display($msg_id);
 
 print "<center>\n";
 print "<button onclick=\"location.href='home.php'\" >Home</button>\n";

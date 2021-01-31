@@ -9,10 +9,10 @@ $db = new DBConnection();
 date_default_timezone_set($_SESSION['timezone']);
 
 $msg_id = $_GET['id'];
-$message_delivery_time = $db->get_message_delivery_time($msg_id);
-$msg_guild_id = $db->get_message_guild_id($msg_id);
-$msg_delivery_channel_id = $db->get_message_delivery_channel_id($msg_id);
-$msg_repeats = $db->get_message_repeats($msg_id);
+$message_delivery_time = $db->get_message_col("delivery_time", $msg_id);
+$msg_guild_id = $db->get_message_col("guild_id", $msg_id);
+$msg_delivery_channel_id = $db->get_message_col("delivery_channel_id", $msg_id);
+$msg_repeats = $db->get_message_col("repeats", $msg_id);
 $repeat_frequency_full = preg_replace("/;.*/", "", $msg_repeats);
 $repeat_frequency = preg_replace("/:.*/", "", $repeat_frequency_full);
 if(preg_match("/:/", $repeat_frequency_full)){
@@ -25,7 +25,7 @@ if(preg_match("/=/", $msg_repeats)){
 } else {
   $repeat_skip_if_num = "";
 }
-$msg_repeat_until = $db->get_message_repeat_until($msg_id);
+$msg_repeat_until = $db->get_message_col("repeat_until", $msg_id);
 if($msg_repeat_until != ""){
   $msg_repeat_until = date("Y-m-d\TH:i", $msg_repeat_until);
 }
@@ -148,12 +148,12 @@ if($message_delivery_time != ""){
 }
 print "  <tr>\n";
 print "    <th>Description</th>\n";
-print "    <td><input id='description' style='display:table-cell; width:100%' value='".$db->get_message_description($msg_id)."' /></td>\n";
+print "    <td><input id='description' style='display:table-cell; width:100%' value='".$db->get_message_col("description", $msg_id)."' /></td>\n";
 print "  </tr>\n";
 print "</table>\n";
 print "<br><br>\n";
 print "<textarea id='content' cols='124' rows='24' maxlength='1992'>\n";
-print $db->get_message_content($msg_id);
+print $db->get_message_col("content", $msg_id);
 print "</textarea>\n";
 print "</center><br>\n";
 
