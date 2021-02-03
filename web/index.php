@@ -50,7 +50,7 @@ require_once "Login.php";
    {
       $host = $_SERVER['HTTP_HOST'];
       $uri = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
-      header("Location: http://$host$uri/home.php");
+      header("Location: home.php");
       exit;
    }
 ?> 
