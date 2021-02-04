@@ -1,8 +1,8 @@
 <?php
 
    session_start();
-   if (isset($_COOKIE['USER']))
-     setcookie('USER');
+   if (isset($_COOKIE[$_SESSION['DATABASE']]))
+     setcookie($_SESSION['DATABASE']);
    session_destroy();
 
   header("Location: index.php");
