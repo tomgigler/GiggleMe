@@ -38,6 +38,17 @@ class DBConnection {
     return $ret;
   }
 
+  function get_authenticated_user($user){
+    $this->connect();
+    $sql = "SELECT users.name, timezones.name, users.user FROM users, timezones WHERE users.name = ? AND users.timezone = timezones.id";
+    $stmt = $this->connection->prepare($sql);
+    $stmt->bind_param('s', $user);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all()[0];
+    $this->close();
+    return $ret;
+  }
+
   function get_message_display($msg_id){
     $this->connect();
     $sql = "SELECT m.id, u.name, g.guild_name, c.name, m.delivery_time, m.repeats, m.repeat_until, m.description, m.content ";
