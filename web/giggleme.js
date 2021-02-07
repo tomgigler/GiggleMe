@@ -123,8 +123,10 @@ function create_message(){
     data.append('repeat_until', repeat_until)
 
     myRequest = new Request("create_message_response.php");
-  } else {
+  } else if($('#msg_type_select').find(":selected").val() == 'template'){
     myRequest = new Request("create_template_response.php");
+  } else if($('#msg_type_select').find(":selected").val() == 'batch'){
+    alert("TODO: Implement batch processing");
   }
 
   fetch(myRequest ,{
@@ -198,13 +200,18 @@ function update_from_template_select(){
 
 function message_type_updated(){
   if($('#msg_type_select').find(":selected").val() == 'template'){
+    $('#new_id_row').toggle(true)
+    $('#channel_row').toggle(true)
     $('#id_table_header').text('Template ID');
     $('#delivery_time_row').toggle(false)
     $('#from_template_row').toggle(false)
     $('#repeats_row').toggle(false)
     $('#skip_if_row').toggle(false)
     $('#repeat_until_row').toggle(false)
-  } else {
+    $('#description_row').toggle(true)
+  } else if($('#msg_type_select').find(":selected").val() == 'message'){
+    $('#new_id_row').toggle(true)
+    $('#channel_row').toggle(true)
     $('#id_table_header').text('Message ID');
     $('#delivery_time_row').toggle(true)
     $('#from_template_row').toggle(true)
@@ -213,6 +220,16 @@ function message_type_updated(){
       $('#skip_if_row').toggle(true)
       $('#repeat_until_row').toggle(true)
     }
+    $('#description_row').toggle(true)
+  } else if($('#msg_type_select').find(":selected").val() == 'batch'){
+    $('#new_id_row').toggle(false)
+    $('#channel_row').toggle(false)
+    $('#delivery_time_row').toggle(false)
+    $('#from_template_row').toggle(false)
+    $('#repeats_row').toggle(false)
+    $('#skip_if_row').toggle(false)
+    $('#repeat_until_row').toggle(false)
+    $('#description_row').toggle(false)
   }
 }
 
