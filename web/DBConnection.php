@@ -7,7 +7,7 @@ class DBConnection {
   } //DBConnection
 
   function connect(){
-    include "settings.inc";
+    include "settings.php";
     $this->connection = new mysqli("localhost", $db_user, $db_pass, $db_name);
     $this->connection->set_charset("utf8mb4");
     return $this->connection;

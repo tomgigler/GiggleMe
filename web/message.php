@@ -1,6 +1,6 @@
 <?php
-include "login_check.inc";
-include "header.inc";
+include "login_check.php";
+include "header.php";
 require_once "DBConnection.php";
 
 date_default_timezone_set($_SESSION['timezone']);

@@ -1,6 +1,6 @@
 <?php
-include "login_check.inc";
-include "header.inc";
+include "login_check.php";
+include "header.php";
 require_once "DBConnection.php";
 
 $msg_id = substr(md5(time()),0,8);
@@ -48,7 +48,7 @@ print "    <td id='msg_id'>".$msg_id."</td>\n";
 print "  </tr>\n";
 print "  <tr>\n";
 print "    <th>Author</th>\n";
-print "    <td>".$_SESSION['USER']."</td>\n";
+print "    <td>".$_SESSION['username']."</td>\n";
 print "  </tr>\n";
 print "  <tr>\n";
 print "    <th>Server</th>\n";
