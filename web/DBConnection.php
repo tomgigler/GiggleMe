@@ -27,24 +27,13 @@ class DBConnection {
     return $ret;
   }
 
-  function get_user($user, $pass){
+  function get_user_timezone($user_id){
     $this->connect();
-    $sql = "SELECT users.name, timezones.name, users.user FROM users, timezones WHERE users.name = ? AND users.timezone = timezones.id AND users.password = PASSWORD(?)";
+    $sql = "SELECT timezones.name FROM users, timezones WHERE users.user = ? AND users.timezone = timezones.id";
     $stmt = $this->connection->prepare($sql);
-    $stmt->bind_param('ss', $user, $pass);
+    $stmt->bind_param('i', $user_id);
     $stmt->execute();
-    $ret = $stmt->get_result()->fetch_all()[0];
-    $this->close();
-    return $ret;
-  }
-
-  function get_authenticated_user($user){
-    $this->connect();
-    $sql = "SELECT users.name, timezones.name, users.user FROM users, timezones WHERE users.name = ? AND users.timezone = timezones.id";
-    $stmt = $this->connection->prepare($sql);
-    $stmt->bind_param('s', $user);
-    $stmt->execute();
-    $ret = $stmt->get_result()->fetch_all()[0];
+    $ret = $stmt->get_result()->fetch_all()[0][0];
     $this->close();
     return $ret;
   }

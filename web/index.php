@@ -4,6 +4,8 @@ session_start();
 
 include "settings.php";
 
+require_once "DBConnection.php";
+
 if (isset($_SESSION['user_id']) && isset($_SESSION['username']))
 {
     header("Location: home.php");
@@ -11,8 +13,10 @@ if (isset($_SESSION['user_id']) && isset($_SESSION['username']))
 }
 elseif (isset($_COOKIE['user_id']) && isset($_COOKIE['username']))
 {
+    $db = new DBConnection();
     $_SESSION['user_id'] = $_COOKIE['user_id'];
     $_SESSION['username'] = $_COOKIE['username'];
+    $_SESSION['timezone'] = $db->get_user_timezone($_SESSION['user_id']);
     header("Location: home.php");
     exit();
 }
