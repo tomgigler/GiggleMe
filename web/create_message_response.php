@@ -4,7 +4,7 @@ require_once "DBConnection.php";
 
 session_start();
 
-if(!isset($_SESSION['USER'])){ exit; }
+if(!isset($_SESSION['username'])){ exit; }
 
 date_default_timezone_set($_SESSION['timezone']);
 

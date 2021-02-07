@@ -1,11 +1,12 @@
 <?php
-
    session_start();
-   if (isset($_COOKIE[$_SESSION['DATABASE']]))
-     setcookie($_SESSION['DATABASE']);
+   session_unset();
    session_destroy();
 
-  header("Location: index.php");
-  exit;
+   setcookie("user_id", "", time() - 60 * 60);
+   setcookie("username", "", time() - 60 * 60);
+   setcookie("avatar", "", time() - 60 * 60);
 
+   header("Location: index.php");
+   exit();
 ?>

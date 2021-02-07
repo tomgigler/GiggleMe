@@ -1,12 +1,11 @@
 <?php
-include "login_check.inc";
-include "header.inc";
-include "settings.inc";
+include "login_check.php";
+include "header.php";
+include "settings.php";
 require_once "DBConnection.php";
 
 print "<center>\n";
 print "<button onclick=\"location.href='create_message.php'\">New Message</button>\n";
-print "<button onclick=\"location.href='change_password.php'\" >Change Password</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
 
