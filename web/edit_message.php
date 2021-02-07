@@ -7,7 +7,6 @@ require_once "DBConnection.php";
 $db = new DBConnection();
 
 date_default_timezone_set($_SESSION['timezone']);
-
 $msg_id = $_GET['id'];
 $message_delivery_time = $db->get_message_col("delivery_time", $msg_id);
 $msg_guild_id = $db->get_message_col("guild_id", $msg_id);
@@ -39,7 +38,7 @@ print "<br><br>\n";
 
 $channels = array();
 $templates = array();
-$servers = $db->get_user_guilds($_SESSION['user_id']);
+$servers = $db->get_user_guilds();
 
 foreach($servers as $server){
   $server_channels = $db->get_guild_channels($server[0]);

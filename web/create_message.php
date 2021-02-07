@@ -18,7 +18,7 @@ $db = new DBConnection();
 
 $channels = array();
 $templates = array();
-$servers = $db->get_user_guilds($_SESSION['user_id']);
+$servers = $db->get_user_guilds();
 
 foreach($servers as $server){
   $server_channels = $db->get_guild_channels($server[0]);
