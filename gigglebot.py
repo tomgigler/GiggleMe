@@ -936,8 +936,7 @@ async def on_message(msg):
                     await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
                     await client.get_user(bot_owner_id).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
         else:
-            await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission\n\n"
-                    "Please include the server id ({msg.guild.id}) in your message", color=0xff0000))
+            await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission", color=0xff0000))
 
     elif msg.guild.id in gigguild.guilds and msg.channel.id == gigguild.guilds[msg.guild.id].proposal_channel_id and gigguild.guilds[msg.guild.id].delivery_channel_id and gigguild.guilds[msg.guild.id].approval_channel_id:
         await process_delay_message({'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': time(), 'author_id': msg.author.id, 'delay': 'proposal',
