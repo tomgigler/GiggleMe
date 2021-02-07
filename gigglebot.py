@@ -38,15 +38,15 @@ async def poll_message_table():
                 delivery_time = row[3]
 
                 if delivery_time and delivery_time >= 0:
-                    delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
+                    delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], False)
                     giguser.users[delayed_messages[msg_id].author_id].set_last_message(msg_id)
                     asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
 
                 elif delivery_time and delivery_time < 0:
                     votes.load_proposal_votes(msg_id)
-                    delayed_messages[msg_id] = Proposal(msg_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(msg_id))
+                    delayed_messages[msg_id] = Proposal(msg_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(msg_id), False)
                 else:
-                    delayed_messages[msg_id] = Template(msg_id, row[1], row[2], row[4], row[7], row[8])
+                    delayed_messages[msg_id] = Template(msg_id, row[1], row[2], row[4], row[7], row[8], False)
 
             elif action == 'edit':
                 row = gigdb.get_message(msg_id)
@@ -60,7 +60,7 @@ async def poll_message_table():
 
                 if delivery_time and delivery_time >= 0:
                     if row[3] != delayed_messages[msg_id].delivery_time:
-                        delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
+                        delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], False)
                         asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
                     else:
                         delayed_messages[msg_id].repeat = row[5]
@@ -90,14 +90,14 @@ def load_from_db(delayed_messages):
         delivery_time = row[3]
 
         if delivery_time and delivery_time >= 0:
-            delayed_messages[message_id] = Message(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
+            delayed_messages[message_id] = Message(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], False)
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
         elif delivery_time and delivery_time < 0:
             votes.load_proposal_votes(message_id)
-            delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(message_id))
+            delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(message_id), False)
         else:
-            delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8])
+            delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8], False)
 
     gigtz.load_timezones()
     giguser.load_users()

@@ -50,13 +50,14 @@ class DelayedMessage:
             return self.content
 
 class Message(DelayedMessage):
-    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until):
+    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until, update_db=True):
         super().__init__(id, guild_id, delivery_channel_id, author_id, content, description)
         self.delivery_time = delivery_time
         self.repeat = repeat
         self.last_repeat_message = last_repeat_message
         self.repeat_until = repeat_until
-        self.update_db()
+        if update_db:
+            self.update_db()
 
     def update_db(self):
         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until)
@@ -79,9 +80,10 @@ class Message(DelayedMessage):
         return output
 
 class Template(DelayedMessage):
-    def __init__(self, id, guild_id, delivery_channel_id, author_id, content, description):
+    def __init__(self, id, guild_id, delivery_channel_id, author_id, content, description, update_db=True):
         super().__init__(id, guild_id, delivery_channel_id, author_id, content, description)
-        self.update_db()
+        if update_db:
+            self.update_db()
 
     def update_db(self):
         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, None, self.author_id, None, None, self.content, self.description, None)
@@ -92,11 +94,12 @@ class Template(DelayedMessage):
         return output
 
 class Proposal(DelayedMessage):
-    def __init__(self, id, guild_id, delivery_channel_id, author_id, approval_message_id, content, description, required_approvals):
+    def __init__(self, id, guild_id, delivery_channel_id, author_id, approval_message_id, content, description, required_approvals, update_db=True):
         super().__init__(id, guild_id, delivery_channel_id, author_id, content, description)
         self.approval_message_id = approval_message_id
         self.required_approvals = required_approvals
-        self.update_db()
+        if update_db:
+            self.update_db()
 
     def update_db(self):
         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, -1, self.author_id, None, self.approval_message_id, self.content, self.description, None)
