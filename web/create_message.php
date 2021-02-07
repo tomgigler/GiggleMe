@@ -114,6 +114,8 @@ print "<textarea id='content' cols='124' rows='24' maxlength='1992'>\n";
 print "</textarea>\n";
 print "</center><br>\n";
 
+include "footer.php";
+
 print "<script>\n";
 $js_channels = json_encode($channels);
 echo "var channels = ". $js_channels . ";\n";

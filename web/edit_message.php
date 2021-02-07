@@ -156,6 +156,8 @@ print $db->get_message_col("content", $msg_id);
 print "</textarea>\n";
 print "</center><br>\n";
 
+include "footer.php";
+
 print "<script>\n";
 $js_channels = json_encode($channels);
 echo "var channels = ". $js_channels . ";\n";
@@ -173,6 +175,7 @@ if($message_delivery_time){
   print "  return /^\d?\d?\d?$/.test(value); // Allow digits and '.' only, using a RegExp\n";
   print "});\n";
 }
+
 ?>
 
 function server_select_updated(){

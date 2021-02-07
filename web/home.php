@@ -5,9 +5,8 @@ include "settings.php";
 require_once "DBConnection.php";
 
 print "<center>\n";
-print "<button onclick=\"location.href='create_message.php'\">New Message</button>\n";
+print "<button id='new_message_button' onclick=\"location.href='create_message.php'\">New Message</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
-print "<br><br>\n";
 
 if(isset($_SESSION['message']))
 {
@@ -82,7 +81,20 @@ if(count($templates)){
   print "</table>\n";
 }
 
+if(!$db->get_user_guilds()){
+  print "<br><br><br>\n";
+  print "<div class='footer'>\n";
+  print "<center>\n";
+  print "Hi " . $_SESSION['username'] . "!<br><br>\n";
+  print "It looks like you don't have access to anything here<br><br>If you've already invited the " .
+      "<a href='https://discord.com/api/oauth2/authorize?client_id=".$CLIENT_ID."&permissions=477248&scope=bot'>".$CLIENT_NAME."</a> bot to your server, DM the bot to request access\n";
+  print "</center>\n";
+  print "</div>\n";
+  print "<script>\n";
+  print "$('#new_message_button').toggle(false)\n";
+  print "</script>\n";
+}
+
+include "footer.php";
+
 ?>
-</center>
-</body>
-</html>

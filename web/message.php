@@ -71,5 +71,7 @@ print "</center><br>\n";
 print "<div class='content-div'>\n";
 print "  <pre>".htmlspecialchars($message[8])."</pre>\n";
 print "</div>\n";
-$connection->close();
+
+include "footer.php";
+
 ?>

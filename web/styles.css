@@ -64,3 +64,7 @@ button[disabled]{
   background-color: #DDDDDD;
   cursor: default;
 }
+.footer {
+  font-family: Calibri;
+  font-size: 20px;
+}
