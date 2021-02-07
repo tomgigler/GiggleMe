@@ -53,7 +53,7 @@ class DBConnection {
     $this->connect();
     $sql = "SELECT m.id, u.name, g.guild_name, c.name, m.delivery_time, m.repeats, m.repeat_until, m.description, m.content ";
     $sql .= "FROM messages AS m, guilds AS g, users AS u, channels AS c, user_guilds AS ug ";
-    $sql .= "WHERE m.id = ? AND m.delivery_channel_id = c.id AND m.guild_id = g.id AND u.user = m.author_id AND u.user = ug.user_id AND u.user = ?";
+    $sql .= "WHERE m.id = ? AND m.delivery_channel_id = c.id AND m.guild_id = g.id AND u.user = m.author_id AND ug.user_id = ?";
     $stmt = $this->connection->prepare($sql);
     $stmt->bind_param('si', $msg_id, $_SESSION['user_id']);
     $stmt->execute();
