@@ -9,6 +9,11 @@ if(isset($_GET['error'])){
     header("Location: index.php");
     exit();
 }
+
+////////////////////////////////////////////////////////
+// Now we need to get the access token using _GET['code']
+////////////////////////////////////////////////////////
+
 // The url you wish to send the POST request to
 $url = "https://discord.com/api/v6/oauth2/token";
 $REDIRECT_URI = "https://" . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER['PHP_SELF']), '/\\') . "/get_token.php";
@@ -37,6 +42,10 @@ $json = json_decode($result, true);
 
 $_SESSION['access_token'] =  $json['access_token'];
 $_SESSION['refresh_token'] = $json['refresh_token'];
+
+////////////////////////////////////////////////////////
+// Next, we'll use the access_token to get some user info
+////////////////////////////////////////////////////////
 
 $opts = array(
     'http'=>array(
