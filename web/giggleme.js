@@ -79,12 +79,13 @@ function edit_message(){
 function create_message(){
   if($('#content').val()==''){ alert('Message content is required!'); return; }
 
-  data = new FormData()
-  data.append('msg_id', $('#msg_id').text())
-  data.append('server_id', $('#server').val())
-  data.append('channel_id', $('#channel').val())
-  data.append('content', $('#content').val())
-  data.append('description', $('#description').val())
+  var requestURL;
+  var data = {};
+  data['msg_id'] = $('#msg_id').text()
+  data['server_id'] = $('#server').val()
+  data['channel_id'] = $('#channel').val()
+  data['content'] = $('#content').val()
+  data['description'] = $('#description').val()
 
   if($('#msg_type_select').find(":selected").val() == 'message'){
     if($('#delivery_time').val()==''){ alert('Delivery Time is required!'); return; }
@@ -118,27 +119,26 @@ function create_message(){
         repeat_until = $('#repeat_until_datetime').val();
       }
     }
-    data.append('delivery_time', $('#delivery_time').val())
-    data.append('repeats', repeats_str)
-    data.append('repeat_until', repeat_until)
+    data['delivery_time'] = $('#delivery_time').val()
+    data['repeats'] = repeats_str
+    data['repeat_until'] = repeat_until
 
-    myRequest = new Request("create_message_response.php");
+    requestURL = "create_message_response.php";
   } else if($('#msg_type_select').find(":selected").val() == 'template'){
-    myRequest = new Request("create_template_response.php");
+    requestURL = "create_template_response.php";
   } else if($('#msg_type_select').find(":selected").val() == 'batch'){
-    alert("TODO: Implement batch processing");
+    requestURL = "process_batch_response.php";
   }
 
-  fetch(myRequest ,{
-    method: 'POST',
-    body: data,
+  $.ajax({
+    type: "POST",
+    url: requestURL,
+    data: data,
+    async: false,
+    dataType: "json"
   })
-  .then(function(response) {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    location.href='message.php?id='+$('#msg_id').text()
-  });
+
+  location.href='message.php?id='+$('#msg_id').text()
 }
 
 function update_content_by_message_id(msg_id){
