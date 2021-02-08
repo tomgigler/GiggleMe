@@ -5,7 +5,7 @@ include "settings.php";
 require_once "DBConnection.php";
 
 print "<center>\n";
-print "<button id='new_message_button' onclick=\"location.href='create_message.php'\">New Message</button>\n";
+print "<button id='new_message_button' onclick=\"location.href='message.php?action=create'\">New Message</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 
 if(isset($_SESSION['message']))

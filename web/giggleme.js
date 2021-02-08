@@ -1,29 +1,65 @@
+function load_message_page(action, repeat_until){
+  update_channel_select();
+  update_from_template_select();
+  $('#repeats_num').hide();
+  $('#skip_if_num').hide();
+  $('#repeat_until_datetime').hide();
+  if(action=='' && $('#display_repeats_cell').text()==''){
+    $('#display_repeats_row').hide();
+    $('#display_repeat_until_row').hide();
+  }
+  if(repeat_until==''){
+    $('#display_repeat_until_row').hide();
+  }
+  if(action=='create'){
+    $('#edit_skip_if_row').hide()
+  }
+}
+
+function server_select_updated(){
+  update_channel_select();
+  update_from_template_select();
+}
+
+function edit_button_click(){
+  $('.display_element').toggle(false);
+  $('.edit_element').toggle(true);
+}
+
+function cancel_button_click(){
+  if(creating_new_message) location.href='home.php';
+  else {
+    $('.display_element').toggle(true);
+    $('.edit_element').toggle(false);
+  }
+}
+
 function deleteMessage(msg_id, msg_type){
-  if(!confirm("Delete " + msg_type + " " + msg_id + "?")) return
+  if(!confirm("Delete " + msg_type + " " + msg_id + "?")) return;
   myRequest = new Request("delete_message.php");
-  data = new FormData()
-  data.append('msg_id', msg_id)
+  data = new FormData();
+  data.append('msg_id', msg_id);
   fetch(myRequest ,{
     method: 'POST',
-    body: data,
+    body: data
   })
   .then(function(response) {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    location.href='home.php'
-  })
+    location.href='home.php';
+  });
 }
 
 function edit_message(){
   if($('#content').val()==''){ alert('Message content is required!'); return; }
 
-  data = new FormData()
-  data.append('msg_id', $('#msg_id').text())
-  data.append('server_id', $('#server').val())
-  data.append('channel_id', $('#channel').val())
-  data.append('content', $('#content').val())
-  data.append('description', $('#description').val())
+  data = new FormData();
+  data.append('msg_id', $('#msg_id').text());
+  data.append('server_id', $('#server').val());
+  data.append('channel_id', $('#channel').val());
+  data.append('content', $('#content').val());
+  data.append('description', $('#description').val());
 
   if($('#delivery_time').val()==''){ alert('Delivery Time is required!'); return; }
   repeats_str = '';
@@ -57,9 +93,9 @@ function edit_message(){
     }
   }
   if(!is_template){
-    data.append('delivery_time', $('#delivery_time').val())
-    data.append('repeats', repeats_str)
-    data.append('repeat_until', repeat_until)
+    data.append('delivery_time', $('#delivery_time').val());
+    data.append('repeats', repeats_str);
+    data.append('repeat_until', repeat_until);
   }
 
   myRequest = new Request("edit_message_response.php");
@@ -72,7 +108,7 @@ function edit_message(){
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    location.href='message.php?id='+$('#msg_id').text()
+    location.href='message.php?id='+$('#msg_id').text();
   });
 }
 
@@ -81,11 +117,11 @@ function create_message(){
 
   var requestURL;
   var data = {};
-  data['msg_id'] = $('#msg_id').text()
-  data['server_id'] = $('#server').val()
-  data['channel_id'] = $('#channel').val()
-  data['content'] = $('#content').val()
-  data['description'] = $('#description').val()
+  data['msg_id'] = $('#msg_id').text();
+  data['server_id'] = $('#server').val();
+  data['channel_id'] = $('#channel').val();
+  data['content'] = $('#content').val();
+  data['description'] = $('#description').val();
 
   if($('#msg_type_select').find(":selected").val() == 'message'){
     if($('#delivery_time').val()==''){ alert('Delivery Time is required!'); return; }
@@ -119,9 +155,9 @@ function create_message(){
         repeat_until = $('#repeat_until_datetime').val();
       }
     }
-    data['delivery_time'] = $('#delivery_time').val()
-    data['repeats'] = repeats_str
-    data['repeat_until'] = repeat_until
+    data['delivery_time'] = $('#delivery_time').val();
+    data['repeats'] = repeats_str;
+    data['repeat_until'] = repeat_until;
 
     requestURL = "create_message_response.php";
   } else if($('#msg_type_select').find(":selected").val() == 'template'){
@@ -136,9 +172,9 @@ function create_message(){
     data: data,
     async: false,
     dataType: "json"
-  })
+  });
 
-  location.href='message.php?id='+$('#msg_id').text()
+  location.href='message.php?id='+$('#msg_id').text();
 }
 
 function update_content_by_message_id(msg_id){
@@ -185,7 +221,7 @@ function update_channel_select(){
   var channel_select = $('#channel');
   channel_select.empty();
   for(var j = 0 ; j < channels[server].length ; j++){
-      $('#channel').append("<option value='"+channels[server][j][0]+"'>"+channels[server][j][1]+"</option>")
+      $('#channel').append("<option value='"+channels[server][j][0]+"'>"+channels[server][j][1]+"</option>");
   }
 }
 
@@ -194,42 +230,42 @@ function update_from_template_select(){
   var from_template_select = $('#from_template');
   from_template_select.empty();
   for(var j = 0 ; j < templates[server].length ; j++){
-      $('#from_template').append("<option value='"+templates[server][j]+"'>"+templates[server][j]+"</option>")
+      $('#from_template').append("<option value='"+templates[server][j]+"'>"+templates[server][j]+"</option>");
   }
 }
 
 function message_type_updated(){
   if($('#msg_type_select').find(":selected").val() == 'template'){
-    $('#new_id_row').toggle(true)
-    $('#channel_row').toggle(true)
+    $('#new_id_row').toggle(true);
+    $('#channel_row').toggle(true);
     $('#id_table_header').text('Template ID');
-    $('#delivery_time_row').toggle(false)
-    $('#from_template_row').toggle(false)
-    $('#repeats_row').toggle(false)
-    $('#skip_if_row').toggle(false)
-    $('#repeat_until_row').toggle(false)
-    $('#description_row').toggle(true)
+    $('#delivery_time_row').toggle(false);
+    $('#from_template_row').toggle(false);
+    $('#repeats_row').toggle(false);
+    $('#skip_if_row').toggle(false);
+    $('#repeat_until_row').toggle(false);
+    $('#description_row').toggle(true);
   } else if($('#msg_type_select').find(":selected").val() == 'message'){
-    $('#new_id_row').toggle(true)
-    $('#channel_row').toggle(true)
+    $('#new_id_row').toggle(true);
+    $('#channel_row').toggle(true);
     $('#id_table_header').text('Message ID');
-    $('#delivery_time_row').toggle(true)
-    $('#from_template_row').toggle(true)
-    $('#repeats_row').toggle(true)
+    $('#delivery_time_row').toggle(true);
+    $('#from_template_row').toggle(true);
+    $('#repeats_row').toggle(true);
     if($('#repeats_select').val()!='None'){
-      $('#skip_if_row').toggle(true)
-      $('#repeat_until_row').toggle(true)
+      $('#skip_if_row').toggle(true);
+      $('#repeat_until_row').toggle(true);
     }
-    $('#description_row').toggle(true)
+    $('#description_row').toggle(true);
   } else if($('#msg_type_select').find(":selected").val() == 'batch'){
-    $('#new_id_row').toggle(false)
-    $('#channel_row').toggle(false)
-    $('#delivery_time_row').toggle(false)
-    $('#from_template_row').toggle(false)
-    $('#repeats_row').toggle(false)
-    $('#skip_if_row').toggle(false)
-    $('#repeat_until_row').toggle(false)
-    $('#description_row').toggle(false)
+    $('#new_id_row').toggle(false);
+    $('#channel_row').toggle(false);
+    $('#delivery_time_row').toggle(false);
+    $('#from_template_row').toggle(false);
+    $('#repeats_row').toggle(false);
+    $('#skip_if_row').toggle(false);
+    $('#repeat_until_row').toggle(false);
+    $('#description_row').toggle(false);
   }
 }
 
