@@ -105,7 +105,7 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
     $time = strtotime(preg_replace("/~giggle +(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}).*/", "$1", $command));
     $channel = preg_replace("/.*channel=([^ ]+).*/", "$1", $command);
     $desc = preg_replace("/.*desc=\"(.+)\".*/", "$1", $command);
-    $msg_id = substr(md5($content.time()),0,8);
+    $msg_id = substr(md5(rand().time()),0,8);
     $db->create_message($msg_id, $_POST['server_id'], '793114902377005076', $time, $desc, $content, '', '');
     array_push($messages, $msg_id);
   }
