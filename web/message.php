@@ -30,7 +30,7 @@ print "<center>\n";
 print "<button onclick=\"location.href='home.php'\" >Home</button>\n";
 print "<button class='display_element' onclick=\"edit_button_click()\" >Edit</button>\n";
 print "<button class='display_element' onclick=\"deleteMessage('".$msg_id."', 'message')\" >Delete</button>\n";
-print "<button class='edit_element' onclick=\"save_button_click('".$_GET['action']."')\" >Save</button>\n";
+print "<button class='edit_element' onclick=\"save_message()\" >Save</button>\n";
 print "<button class='edit_element' onclick=\"cancel_button_click()\" >Cancel</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
