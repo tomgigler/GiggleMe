@@ -95,6 +95,4 @@ if(!$db->get_user_guilds()){
   print "</script>\n";
 }
 
-include "footer.php";
-
 ?>

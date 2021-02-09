@@ -124,19 +124,32 @@ class DBConnection {
   function create_message($msg_id, $guild_id, $delivery_channel_id, $delivery_time, $description, $content, $repeats, $repeat_until){
     $this->connect();
     $timestamp = time();
-    $stmt = $this->connection->prepare("INSERT INTO messages VALUES ( ?, ?, ?, ?, ?, NULL, NULL, ?, ?, NULL )");
-    $stmt->bind_param('siiiiss', $msg_id, $guild_id, $delivery_channel_id, $delivery_time, $_SESSION['user_id'], $content, $description);
+    $sql = "INSERT INTO messages VALUES ( ?, ?, ?, NULL, ?, NULL, NULL, ?, ?, NULL ) ";
+    $sql .= "ON DUPLICATE KEY UPDATE guild_id = ?, delivery_channel_id = ?, author_id = ?, content = ?, description = ?";
+    $sql = $stmt = $this->connection->prepare($sql);
+    $stmt->bind_param('siiissiiiss', $msg_id, $guild_id, $delivery_channel_id, $_SESSION['user_id'], $content, $description, $guild_id, $delivery_channel_id, $_SESSION['user_id'], $content, $description);
     $stmt->execute();
+    if($delivery_time != ''){
+      $stmt = $this->connection->prepare("UPDATE messages SET delivery_time = ? WHERE id = ?");
+      $stmt->bind_param('is', $delivery_time, $msg_id);
+      $stmt->execute();
+    }
     if($repeats != ''){
       $stmt = $this->connection->prepare("UPDATE messages SET repeats = ? WHERE id = ?");
       $stmt->bind_param('ss', $repeats, $msg_id);
-      $stmt->execute();
+    } else {
+      $stmt = $this->connection->prepare("UPDATE messages SET repeats = NULL WHERE id = ?");
+      $stmt->bind_param('s', $msg_id);
     }
+    $stmt->execute();
     if($repeat_until != ''){
       $stmt = $this->connection->prepare("UPDATE messages SET repeat_until = ? WHERE id = ?");
       $stmt->bind_param('is', $repeat_until, $msg_id);
-      $stmt->execute();
+    } else {
+      $stmt = $this->connection->prepare("UPDATE messages SET repeat_until = NULL WHERE id = ?");
+      $stmt->bind_param('s', $msg_id);
     }
+    $stmt->execute();
     $this->connection->query("INSERT INTO request_queue values ('".$msg_id."', 'create', ".time().") ON DUPLICATE KEY UPDATE request_time = ".time());
     $this->close();
   }

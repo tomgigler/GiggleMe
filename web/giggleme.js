@@ -3,16 +3,14 @@ function load_message_page(action, repeat_until){
   update_from_template_select();
   $('#repeats_num').hide();
   $('#skip_if_num').hide();
+  $('#skip_if_row').hide()
   $('#repeat_until_datetime').hide();
   if(action=='' && $('#display_repeats_cell').text()==''){
-    $('#display_repeats_row').hide();
-    $('#display_repeat_until_row').hide();
+    $('#repeats_row').hide();
+    $('#repeat_until_row').hide();
   }
   if(repeat_until==''){
-    $('#display_repeat_until_row').hide();
-  }
-  if(action=='create'){
-    $('#edit_skip_if_row').hide()
+    $('#repeat_until_row').hide();
   }
 }
 
@@ -22,8 +20,54 @@ function server_select_updated(){
 }
 
 function edit_button_click(){
+  $('#server_select').val(guild_id);
+  server_select_updated();
   $('.display_element').toggle(false);
   $('.edit_element').toggle(true);
+  $('#repeats_row').toggle(true);
+  $('#channel_select').val(channel_id);
+  $('#delivery_time').val(delivery_time_java_format);
+  $('#description').val($('#display_description_cell').text());
+  $('#edit_content').val($('#display_content_pre').text());
+  if($('#message_type_select').val() == 'template'){
+    $('#repeats_row').toggle(false);
+  } else {
+    if(repeat_frequency){
+      $('#repeats_select').val(repeat_frequency);
+      if(repeat_frequency_num){
+        $('#repeats_num').val(repeat_frequency_num);
+        $('#repeats_num').toggle(true);
+      }
+      $('#skip_if_row').toggle(true);
+      $('#skip_if_num').val(repeat_skip_if);
+      if(repeat_skip_if){
+        $('#skip_if_checkbox').prop('checked', true)
+        $('#skip_if_num').toggle(true);
+      } else {
+        $('#skip_if_checkbox').prop('checked', false)
+        $('#skip_if_num').toggle(false);
+      }
+      $('#repeat_until_row').toggle(true);
+      $('#repeat_until_datetime').val(repeat_until_java_format);
+      if(repeat_until_java_format){
+        $('#repeat_until_checkbox').prop('checked', true);
+        $('#repeat_until_datetime').toggle(true);
+      } else {
+        $('#repeat_until_checkbox').prop('checked', false);
+        $('#repeat_until_datetime').toggle(false);
+      }
+    } else {
+      $('#repeats_select').val('None');
+      $('#repeats_num').val('');
+      $('#repeats_num').toggle(false);
+      $('#skip_if_num').val(repeat_skip_if);
+      $('#skip_if_checkbox').prop('checked', false)
+      $('#skip_if_num').toggle(false);
+      $('#repeat_until_datetime').val(repeat_until_java_format);
+      $('#repeat_until_checkbox').prop('checked', false);
+      $('#repeat_until_datetime').toggle(false);
+    }
+  }
 }
 
 function cancel_button_click(){
@@ -31,6 +75,14 @@ function cancel_button_click(){
   else {
     $('.display_element').toggle(true);
     $('.edit_element').toggle(false);
+    $('#skip_if_row').hide()
+    if(!$('#display_repeats_cell').text()){
+      $('#repeats_row').toggle(false);
+      $('#repeat_until_row').toggle(false);
+    }
+    if(!$('#display_repeat_until_cell').text()){
+      $('#repeat_until_row').toggle(false);
+    }
   }
 }
 
@@ -56,8 +108,8 @@ function edit_message(){
 
   data = new FormData();
   data.append('msg_id', $('#msg_id').text());
-  data.append('server_id', $('#server').val());
-  data.append('channel_id', $('#channel').val());
+  data.append('server_id', $('#server_select').val());
+  data.append('channel_id', $('#channel_select').val());
   data.append('content', $('#content').val());
   data.append('description', $('#description').val());
 
@@ -112,18 +164,26 @@ function edit_message(){
   });
 }
 
-function create_message(){
-  if($('#content').val()==''){ alert('Message content is required!'); return; }
+function save_button_click(action){
+  save_message();
+}
 
-  var requestURL;
+function save_message(){
+  if($('#edit_content').val()==''){ alert('Message content is required!'); return; }
+
+  var requestURL = "save_message_response.php";
   var data = {};
-  data['msg_id'] = $('#msg_id').text();
-  data['server_id'] = $('#server').val();
-  data['channel_id'] = $('#channel').val();
-  data['content'] = $('#content').val();
-  data['description'] = $('#description').val();
+  data['message_type'] = $('#message_type_select').find(":selected").val();
+  data['server_id'] = $('#server_select').val();
+  data['content'] = $('#edit_content').val();
 
-  if($('#msg_type_select').find(":selected").val() == 'message'){
+  if($('#message_type_select').find(":selected").val() !== 'batch'){
+    data['message_id'] = $('#message_id_cell').text();
+    data['channel_id'] = $('#channel_select').val();
+    data['description'] = $('#description').val();
+  }
+
+  if($('#message_type_select').find(":selected").val() == 'message'){
     if($('#delivery_time').val()==''){ alert('Delivery Time is required!'); return; }
     repeats_str = '';
     repeat_until = '';
@@ -159,22 +219,48 @@ function create_message(){
     data['repeats'] = repeats_str;
     data['repeat_until'] = repeat_until;
 
-    requestURL = "create_message_response.php";
-  } else if($('#msg_type_select').find(":selected").val() == 'template'){
-    requestURL = "create_template_response.php";
-  } else if($('#msg_type_select').find(":selected").val() == 'batch'){
-    requestURL = "process_batch_response.php";
   }
 
   $.ajax({
     type: "POST",
     url: requestURL,
     data: data,
-    async: false,
-    dataType: "json"
+    success: function(response){
+      creating_new_message = false;
+      var message = JSON.parse(response);
+      $('#message_type_row').toggle(false);
+      $('#display_server_cell').text(message.server);
+      $('#display_channel_cell').text(message.channel);
+      $('#display_delivery_time_cell').text(message.delivery_time);
+      if(message.repeats==''){
+        $('#repeats_row').toggle(false)
+        $('#repeat_until_row').toggle(false)
+      } else {
+        $('#repeats_row').toggle(true)
+        $('#display_repeats_cell').text(message.repeats)
+        if(message.repeat_until==''){
+          $('#repeat_until_row').toggle(false)
+	} else {
+          $('#repeat_until_row').toggle(true)
+          $('#display_repeat_until_cell').text(message.repeat_until)
+	}
+      }
+      $('#display_description_cell').text(message.description);
+      $('#display_content_pre').html(message.content)
+      $('.display_element').toggle(true);
+      $('.edit_element').toggle(false);
+      $('#skip_if_row').toggle(false)
+      $('#from_template_row').toggle(false)
+      guild_id = message.guild_id;
+      channel_id = message.channel_id;
+      delivery_time_java_format = message.delivery_time_java_format;
+      repeat_until_java_format = message.repeat_until_java_format;
+      repeat_frequency = message.repeat_frequency;
+      repeat_frequency_num = message.repeat_frequency_num;
+      repeat_skip_if = message.repeat_skip_if;
+    },
+    error: function(error){ alert(error.responseText) },
   });
-
-  location.href='message.php?id='+$('#msg_id').text();
 }
 
 function update_content_by_message_id(msg_id){
@@ -184,7 +270,7 @@ function update_content_by_message_id(msg_id){
       msg_id: msg_id
     },
     success: function( result ) {
-      $('#content').val(result);
+      $('#edit_content').val(result);
     }
   });
 }
@@ -217,16 +303,16 @@ function update_repeats_select(){
 }
 
 function update_channel_select(){
-  var server = $('#server').find(":selected").val();
-  var channel_select = $('#channel');
+  var server = $('#server_select').val();
+  var channel_select = $('#channel_select');
   channel_select.empty();
   for(var j = 0 ; j < channels[server].length ; j++){
-      $('#channel').append("<option value='"+channels[server][j][0]+"'>"+channels[server][j][1]+"</option>");
+      $('#channel_select').append("<option value='"+channels[server][j][0]+"'>"+channels[server][j][1]+"</option>");
   }
 }
 
 function update_from_template_select(){
-  var server = $('#server').find(":selected").val();
+  var server = $('#server_select').val();
   var from_template_select = $('#from_template');
   from_template_select.empty();
   for(var j = 0 ; j < templates[server].length ; j++){
@@ -235,8 +321,8 @@ function update_from_template_select(){
 }
 
 function message_type_updated(){
-  if($('#msg_type_select').find(":selected").val() == 'template'){
-    $('#new_id_row').toggle(true);
+  if($('#message_type_select').find(":selected").val() == 'template'){
+    $('#message_id_row').toggle(true);
     $('#channel_row').toggle(true);
     $('#id_table_header').text('Template ID');
     $('#delivery_time_row').toggle(false);
@@ -245,7 +331,9 @@ function message_type_updated(){
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
     $('#description_row').toggle(true);
-  } else if($('#msg_type_select').find(":selected").val() == 'message'){
+    $('#edit_content').prop('maxlength','1992');
+    $('#edit_content').val('')
+  } else if($('#message_type_select').find(":selected").val() == 'message'){
     $('#new_id_row').toggle(true);
     $('#channel_row').toggle(true);
     $('#id_table_header').text('Message ID');
@@ -257,8 +345,10 @@ function message_type_updated(){
       $('#repeat_until_row').toggle(true);
     }
     $('#description_row').toggle(true);
-  } else if($('#msg_type_select').find(":selected").val() == 'batch'){
-    $('#new_id_row').toggle(false);
+    $('#edit_content').prop('maxlength','1992');
+    $('#edit_content').val('')
+  } else if($('#message_type_select').find(":selected").val() == 'batch'){
+    $('#message_id_row').toggle(false);
     $('#channel_row').toggle(false);
     $('#delivery_time_row').toggle(false);
     $('#from_template_row').toggle(false);
@@ -266,6 +356,7 @@ function message_type_updated(){
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
     $('#description_row').toggle(false);
+    $('#edit_content').prop('maxlength','50000');
   }
 }
 
