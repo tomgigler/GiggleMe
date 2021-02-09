@@ -80,7 +80,9 @@ function cancel_button_click(){
       $('#repeats_row').toggle(false);
       $('#repeat_until_row').toggle(false);
     }
-    if(!$('#display_repeat_until_cell').text()){
+    if($('#display_repeat_until_cell').text()){
+      $('#repeat_until_row').toggle(true);
+    } else {
       $('#repeat_until_row').toggle(false);
     }
   }
