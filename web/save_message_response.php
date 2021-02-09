@@ -24,7 +24,10 @@ require_once "DBConnection.php";
 
 session_start();
 
-if(!isset($_SESSION['username'])){ exit; }
+if(!isset($_SESSION['username'])){
+  http_response_code(401);
+  exit;
+}
 
 date_default_timezone_set($_SESSION['timezone']);
 
@@ -87,7 +90,6 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
   $myJSON = json_encode($messageObj);
   print $myJSON;
 
-} elseif($_POST['message_type']=='template'){
 } elseif($_POST['message_type']=='batch'){
   http_response_code(501);
   print "TODO: Implement batch processing";
