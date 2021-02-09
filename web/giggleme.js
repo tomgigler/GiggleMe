@@ -163,38 +163,43 @@ function save_message(){
     url: requestURL,
     data: data,
     success: function(response){
-      creating_new_message = false;
-      var message = JSON.parse(response);
-      $('#message_type_row').toggle(false);
-      $('#display_server_cell').text(message.server);
-      $('#display_channel_cell').text(message.channel);
-      $('#display_delivery_time_cell').text(message.delivery_time);
-      if(message.repeats==''){
-        $('#repeats_row').toggle(false)
-        $('#repeat_until_row').toggle(false)
+      if($('#message_type_select').find(":selected").val() == 'batch'){
+        alert(response);
+        $('#edit_content').val("");
       } else {
-        $('#repeats_row').toggle(true)
-        $('#display_repeats_cell').text(message.repeats)
-        if(message.repeat_until==''){
+        creating_new_message = false;
+        var message = JSON.parse(response);
+        $('#message_type_row').toggle(false);
+        $('#display_server_cell').text(message.server);
+        $('#display_channel_cell').text(message.channel);
+        $('#display_delivery_time_cell').text(message.delivery_time);
+        if(message.repeats==''){
+          $('#repeats_row').toggle(false)
           $('#repeat_until_row').toggle(false)
-	} else {
-          $('#repeat_until_row').toggle(true)
-          $('#display_repeat_until_cell').text(message.repeat_until)
-	}
+        } else {
+          $('#repeats_row').toggle(true)
+          $('#display_repeats_cell').text(message.repeats)
+          if(message.repeat_until==''){
+            $('#repeat_until_row').toggle(false)
+          } else {
+            $('#repeat_until_row').toggle(true)
+            $('#display_repeat_until_cell').text(message.repeat_until)
+	  }
+        }
+        $('#display_description_cell').text(message.description);
+        $('#display_content_pre').html(message.content)
+        $('.display_element').toggle(true);
+        $('.edit_element').toggle(false);
+        $('#skip_if_row').toggle(false)
+        $('#from_template_row').toggle(false)
+        guild_id = message.guild_id;
+        channel_id = message.channel_id;
+        delivery_time_java_format = message.delivery_time_java_format;
+        repeat_until_java_format = message.repeat_until_java_format;
+        repeat_frequency = message.repeat_frequency;
+        repeat_frequency_num = message.repeat_frequency_num;
+        repeat_skip_if = message.repeat_skip_if;
       }
-      $('#display_description_cell').text(message.description);
-      $('#display_content_pre').html(message.content)
-      $('.display_element').toggle(true);
-      $('.edit_element').toggle(false);
-      $('#skip_if_row').toggle(false)
-      $('#from_template_row').toggle(false)
-      guild_id = message.guild_id;
-      channel_id = message.channel_id;
-      delivery_time_java_format = message.delivery_time_java_format;
-      repeat_until_java_format = message.repeat_until_java_format;
-      repeat_frequency = message.repeat_frequency;
-      repeat_frequency_num = message.repeat_frequency_num;
-      repeat_skip_if = message.repeat_skip_if;
     },
     error: function(error){ alert(error.responseText) },
   });

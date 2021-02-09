@@ -91,7 +91,24 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
   print $myJSON;
 
 } elseif($_POST['message_type']=='batch'){
-  http_response_code(501);
-  print "TODO: Implement batch processing";
+  // http_response_code(501);
+  // print "TODO: Implement batch processing";
+  $delim = substr(md5(time()),0,18);
+  $input = preg_replace("/\n\n\+{20}\++\n\n/", $delim, $_POST['content']);
+  $obj = explode($delim, $input);
+
+  $db = new DBConnection();
+  $messages = array();
+  foreach($obj as $msg){
+    [ $command, $content ] = explode("\n", $msg, 2);
+    // ~giggle 2021-02-05 18:00 channel=truth-wanted desc=\"TW NOW - Show Channel\"
+    $time = strtotime(preg_replace("/~giggle +(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}).*/", "$1", $command));
+    $channel = preg_replace("/.*channel=([^ ]+).*/", "$1", $command);
+    $desc = preg_replace("/.*desc=\"(.+)\".*/", "$1", $command);
+    $msg_id = substr(md5($content.time()),0,8);
+    $db->create_message($msg_id, $_POST['server_id'], '793114902377005076', $time, $desc, $content, '', '');
+    array_push($messages, $msg_id);
+  }
+  print "Created ".count($messages)." messages\n".json_encode($messages);
 }
 ?>
