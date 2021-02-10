@@ -45,17 +45,6 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
   $message = Message::get_message_by_id($_POST['message_id']);
   http_response_code(201);
 
-  $message->author = $message->author_name();
-  $message->server = $message->guild_name();
-  $message->channel = $message->delivery_channel_name();
-  $message->delivery_time_format = $message->delivery_time_format();
-  $message->delivery_time_java_format = $message->delivery_time_java_format();
-  $message->repeat_until_format = $message->repeat_until_format();
-  $message->repeat_until_java_format = $message->repeat_until_java_format();
-  $message->repeat_frequency = $message->repeat_frequency();
-  $message->repeat_frequency_num = $message->repeat_frequency_num();
-  $message->repeat_skip_if = $message->repeat_skip_if();
-
   $myJSON = json_encode($message);
   print $myJSON;
 

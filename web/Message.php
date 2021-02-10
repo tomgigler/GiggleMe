@@ -3,15 +3,6 @@
 require_once "DBConnection.php";
 
 class Message {
-  var $id;
-  var $guild_id;
-  var $delivery_channel_id;
-  var $delivery_time;
-  var $author_id;
-  var $repeats;
-  var $content;
-  var $description;
-  var $repeat_until;
 
   function Message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until){
     $this->id = $id;
@@ -28,7 +19,9 @@ class Message {
   static function get_message_by_id($id){
     $db = new DBConnection();
     $msg = $db->get_message_by_id($id);
-    return new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
+    $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
+    $message->set_all();
+    return $message;
   }
 
   function guild_name(){
@@ -91,6 +84,18 @@ class Message {
     return "";
   }
 
+  function set_all(){
+    $this->author = $this->author_name();
+    $this->server = $this->guild_name();
+    $this->channel = $this->delivery_channel_name();
+    $this->delivery_time_format = $this->delivery_time_format();
+    $this->delivery_time_java_format = $this->delivery_time_java_format();
+    $this->repeat_until_format = $this->repeat_until_format();
+    $this->repeat_until_java_format = $this->repeat_until_java_format();
+    $this->repeat_frequency = $this->repeat_frequency();
+    $this->repeat_frequency_num = $this->repeat_frequency_num();
+    $this->repeat_skip_if = $this->repeat_skip_if();
+  }
 }
 
 ?>
