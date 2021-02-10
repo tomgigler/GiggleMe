@@ -114,7 +114,7 @@ class Message {
       throw new BadRequestException("Cannot find channel ".$matches[2] ." in ".$db->get_guild_name($guild_id)." server");
     }
     $msg_id = substr(md5(rand().time()),0,8);
-    $db->create_message($msg_id, $guild_id, $channel_id, $time, $matches[3], $content, '', '');
+    $db->create_or_update_message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $matches[3], null);
     $msg = $db->get_message_by_id($msg_id);
     $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
     $message->set_all();

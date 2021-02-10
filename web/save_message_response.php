@@ -35,13 +35,9 @@ date_default_timezone_set($_SESSION['timezone']);
 
 if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
   $db = new DBConnection();
-  $repeat_until == '';
-  if($_POST['repeat_until'] != ''){ $repeat_until = strtotime($_POST['repeat_until']); }
-  if($_POST['message_type']=='message'){
-    $db->create_message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], strtotime($_POST['delivery_time']), $_POST['description'], $_POST['content'], $_POST['repeats'], $repeat_until);
-  } else {
-    $db->create_message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], '', $_POST['description'], $_POST['content'], '', '');
-  }
+  $repeat_until = $_POST['repeat_until'] == '' ? null : strtotime($_POST['repeat_until']);
+  $delivery_time = $_POST['delivery_time'] == '' ? null : strtotime($_POST['delivery_time']);
+  $db->create_or_update_message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], $delivery_time, $_SESSION['user_id'], $_POST['repeats'], $_POST['content'], $_POST['description'], $repeat_until);
 
   $message = Message::get_message_by_id($_POST['message_id']);
   http_response_code(201);
