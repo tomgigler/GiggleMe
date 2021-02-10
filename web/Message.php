@@ -102,20 +102,28 @@ class Message {
   static function create_message_from_command($cmd, $guild_id){
     $db = new DBConnection();
     [ $command, $content ] = explode("\n", $cmd, 2);
-    // ~giggle 2021-02-05 18:00 channel=truth-wanted desc=\"TW NOW - Show Channel\"
-    $time = strtotime(preg_replace("/~giggle +(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}).*/", "$1", $command));
-    $channel_name = preg_replace("/.*channel=([^ ]+).*/", "$1", $command);
-    $channel_id = $db->get_channel_by_name($channel_name, $guild_id);
-    if(is_null($channel_id)){
-      throw new BadRequestException("Cannot find channel ".$channel_name ." in ".$db->get_guild_name($guild_id)." server");
+    if(!preg_match("/^~giggle +(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}) +channel=([^ ]+) +desc=\"(.+)\" *$/", $command, $matches)){
+      throw new BadRequestException("Invalid command:\n".$command);
     }
-    $desc = preg_replace("/.*desc=\"(.+)\".*/", "$1", $command);
+    // ~giggle 2021-02-05 18:00 channel=truth-wanted desc=\"TW NOW - Show Channel\"
+    if(!$time = strtotime($matches[1])){
+      throw new BadRequestException("Invalid time format:\n".$matches[1]);
+    }
+    $channel_id = $db->get_channel_by_name($matches[2], $guild_id);
+    if(is_null($channel_id)){
+      throw new BadRequestException("Cannot find channel ".$matches[2] ." in ".$db->get_guild_name($guild_id)." server");
+    }
     $msg_id = substr(md5(rand().time()),0,8);
-    $db->create_message($msg_id, $guild_id, $channel_id, $time, $desc, $content, '', '');
+    $db->create_message($msg_id, $guild_id, $channel_id, $time, $matches[3], $content, '', '');
     $msg = $db->get_message_by_id($msg_id);
     $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
     $message->set_all();
     return $message;
+  }
+
+  static function delete_message_by_id($id){
+    $db = new DBConnection();
+    $db->delete_message($id);
   }
 }
 ?>

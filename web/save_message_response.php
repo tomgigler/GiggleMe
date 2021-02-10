@@ -54,13 +54,15 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
   $input = preg_replace("/\n\n\+{20}\++\n\n/", $delim, $_POST['content']);
   $obj = explode($delim, $input);
 
-  $db = new DBConnection();
   $messages = array();
   foreach($obj as $msg){
     try {
       $message = Message::create_message_from_command($msg, $_POST['server_id']);
     }
     catch(BadRequestException $e) {
+      foreach($messages as $msg_id){
+        Message::delete_message_by_id($msg_id);
+      }
       http_response_code(400);
       print $e->getMessage();
       exit();
