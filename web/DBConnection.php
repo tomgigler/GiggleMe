@@ -67,16 +67,6 @@ class DBConnection {
     return $ret[0];
   }
 
-  function get_message_col($col, $msg_id){
-    $this->connect();
-    $stmt = $this->connection->prepare("SELECT m.$col FROM messages AS m, user_guilds AS g WHERE m.id = ? AND m.guild_id = g.guild_id AND g.user_id = ?");
-    $stmt->bind_param('si', $msg_id, $_SESSION['user_id']);
-    $stmt->execute();
-    $ret = $stmt->get_result()->fetch_all()[0][0];
-    $this->close();
-    return $ret;
-  }
-
   function get_user_timezone($user_id){
     $this->connect();
     $sql = "SELECT timezones.name FROM users, timezones WHERE users.user = ? AND users.timezone = timezones.id";
