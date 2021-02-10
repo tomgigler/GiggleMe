@@ -20,7 +20,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-require_once "DBConnection.php";
 require_once "Message.php";
 
 session_start();
@@ -34,12 +33,11 @@ if(!isset($_SESSION['username'])){
 date_default_timezone_set($_SESSION['timezone']);
 
 if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
-  $db = new DBConnection();
-  $repeat_until = $_POST['repeat_until'] == '' ? null : strtotime($_POST['repeat_until']);
+  $repeats = $_POST['repeats'] == '' ? null : $_POST['repeats'];
   $delivery_time = $_POST['delivery_time'] == '' ? null : strtotime($_POST['delivery_time']);
-  $db->create_or_update_message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], $delivery_time, $_SESSION['user_id'], $_POST['repeats'], $_POST['content'], $_POST['description'], $repeat_until);
+  $repeat_until = $_POST['repeat_until'] == '' ? null : strtotime($_POST['repeat_until']);
+  $message = new Message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], $delivery_time, $_SESSION['user_id'], $repeats, $_POST['content'], $_POST['description'], $repeat_until, true);
 
-  $message = Message::get_message_by_id($_POST['message_id']);
   http_response_code(201);
 
   $myJSON = json_encode($message);

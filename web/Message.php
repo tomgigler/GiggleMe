@@ -6,7 +6,7 @@ class BadRequestException extends Exception {}
 
 class Message {
 
-  function Message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until){
+  function Message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $save=false){
     $this->id = $id;
     $this->guild_id = strval($guild_id);
     $this->delivery_channel_id = strval($delivery_channel_id);
@@ -16,6 +16,11 @@ class Message {
     $this->content = $content;
     $this->description = $description;
     $this->repeat_until = $repeat_until;
+    if($save){
+      $db = new DBConnection();
+      $db->create_or_update_message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until);
+    }
+    $this->set_all();
   }
 
   function guild_name(){
@@ -95,7 +100,6 @@ class Message {
     $db = new DBConnection();
     $msg = $db->get_message_by_id($id);
     $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
-    $message->set_all();
     return $message;
   }
 
@@ -114,10 +118,7 @@ class Message {
       throw new BadRequestException("Cannot find channel ".$matches[2] ." in ".$db->get_guild_name($guild_id)." server");
     }
     $msg_id = substr(md5(rand().time()),0,8);
-    $db->create_or_update_message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $matches[3], null);
-    $msg = $db->get_message_by_id($msg_id);
-    $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
-    $message->set_all();
+    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $matches[3], null, true);
     return $message;
   }
 
