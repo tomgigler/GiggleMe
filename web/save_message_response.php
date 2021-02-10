@@ -61,10 +61,16 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
     [ $command, $content ] = explode("\n", $msg, 2);
     // ~giggle 2021-02-05 18:00 channel=truth-wanted desc=\"TW NOW - Show Channel\"
     $time = strtotime(preg_replace("/~giggle +(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}).*/", "$1", $command));
-    $channel = preg_replace("/.*channel=([^ ]+).*/", "$1", $command);
+    $channel_name = preg_replace("/.*channel=([^ ]+).*/", "$1", $command);
+    $channel_id = $db->get_channel_by_name($channel_name, $_POST['server_id']);
+    if(is_null($channel_id)){
+      http_response_code(400);
+      print "Cannot find channel ".$channel_name;
+      exit();
+    }
     $desc = preg_replace("/.*desc=\"(.+)\".*/", "$1", $command);
     $msg_id = substr(md5(rand().time()),0,8);
-    $db->create_message($msg_id, $_POST['server_id'], '793114902377005076', $time, $desc, $content, '', '');
+    $db->create_message($msg_id, $_POST['server_id'], $channel_id, $time, $desc, $content, '', '');
     array_push($messages, $msg_id);
   }
   print "Created ".count($messages)." messages\n".json_encode($messages);
