@@ -164,10 +164,10 @@ class DBConnection {
   function create_or_update_message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until){
     $this->connect();
     $sql = "INSERT INTO messages VALUES ( ?, ?, ?, ?, ?, ?, NULL, ?, ?, ? ) ";
-    $sql .= "ON DUPLICATE KEY UPDATE guild_id = ?, delivery_channel_id = ?, delivery_time = ?, author_id = ?, repeats = ?, content = ?, description = ?, repeat_until = ?";
+    $sql .= "ON DUPLICATE KEY UPDATE guild_id = ?, delivery_channel_id = ?, delivery_time = ?, repeats = ?, content = ?, description = ?, repeat_until = ?";
     $sql = $stmt = $this->connection->prepare($sql);
-    $stmt->bind_param('siiiisssiiiiisssi', $id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until,
-    $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until);
+    $stmt->bind_param('siiiisssiiiisssi', $id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until,
+    $guild_id, $delivery_channel_id, $delivery_time, $repeats, $content, $description, $repeat_until);
     $stmt->execute();
     $this->connection->query("INSERT INTO request_queue values ('".$id."', 'create', NOW()) ON DUPLICATE KEY UPDATE request_time = NOW()");
     $this->close();
