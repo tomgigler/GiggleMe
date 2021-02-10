@@ -172,18 +172,18 @@ function save_message(){
         $('#message_type_row').toggle(false);
         $('#display_server_cell').text(message.server);
         $('#display_channel_cell').text(message.channel);
-        $('#display_delivery_time_cell').text(message.delivery_time);
-        if(message.repeats==''){
+        $('#display_delivery_time_cell').text(message.delivery_time_format);
+        if(!message.repeats){
           $('#repeats_row').toggle(false)
           $('#repeat_until_row').toggle(false)
         } else {
           $('#repeats_row').toggle(true)
           $('#display_repeats_cell').text(message.repeats)
-          if(message.repeat_until==''){
+          if(!message.repeat_until){
             $('#repeat_until_row').toggle(false)
           } else {
             $('#repeat_until_row').toggle(true)
-            $('#display_repeat_until_cell').text(message.repeat_until)
+            $('#display_repeat_until_cell').text(message.repeat_until_format)
 	  }
         }
         $('#display_description_cell').text(message.description);
@@ -193,7 +193,7 @@ function save_message(){
         $('#skip_if_row').toggle(false)
         $('#from_template_row').toggle(false)
         guild_id = message.guild_id;
-        channel_id = message.channel_id;
+        channel_id = message.delivery_channel_id;
         delivery_time_java_format = message.delivery_time_java_format;
         repeat_until_java_format = message.repeat_until_java_format;
         repeat_frequency = message.repeat_frequency;

@@ -5,7 +5,7 @@ include "settings.php";
 require_once "DBConnection.php";
 
 print "<center>\n";
-print "<button id='new_message_button' onclick=\"location.href='message.php?action=create'\">New Message</button>\n";
+print "<button id='new_message_button' onclick=\"location.href='message_page.php?action=create'\">New Message</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 
 if(isset($_SESSION['message']))
@@ -41,7 +41,7 @@ if(count($messages)){
   print "    <th>Description</th>\n";
   print "  </tr>\n";
   foreach($messages as $row) {
-    print "  <tr class='link-row' onclick=\"location.href='message.php?id=$row[0]'\">\n";
+    print "  <tr class='link-row' onclick=\"location.href='message_page.php?id=$row[0]'\">\n";
     // 7:00:00 PM Mon Jan 25, 2021 PST
     $delivery_time = date("g:i:s A D M j, Y T",$row[4]);
     if($row[6]) { $repeat_until = date("g:i:s A D M j, Y T",$row[6]); } else { $repeat_until = $row[6]; }
@@ -70,7 +70,7 @@ if(count($templates)){
   print "    <th>Description</th>\n";
   print "  </tr>\n";
   foreach($templates as $row) {
-    print "  <tr class='link-row' onclick=\"location.href='message.php?id=$row[0]'\">\n";
+    print "  <tr class='link-row' onclick=\"location.href='message_page.php?id=$row[0]'\">\n";
     print "    <td>$row[0]</td>\n";
     print "    <td>".htmlspecialchars($row[1])."</td>\n";
     print "    <td>".htmlspecialchars($row[2])."</td>\n";

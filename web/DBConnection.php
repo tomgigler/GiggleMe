@@ -17,6 +17,46 @@ class DBConnection {
     $this->connection->close();
   } //close
 
+  function get_guild_name($id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT guild_name FROM guilds WHERE id = ?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret[0][0];
+  }
+
+  function get_channel_name($id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT name FROM channels WHERE id = ?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret[0][0];
+  }
+
+  function get_user_name($id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT name FROM users WHERE user = ?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret[0][0];
+  }
+
+  function get_message_by_id($id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT m.* FROM messages AS m, user_guilds AS g WHERE m.id = ? AND m.guild_id = g.guild_id AND g.user_id = ?");
+    $stmt->bind_param('si', $id, $_SESSION['user_id']);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret[0];
+  }
+
   function get_message_col($col, $msg_id){
     $this->connect();
     $stmt = $this->connection->prepare("SELECT m.$col FROM messages AS m, user_guilds AS g WHERE m.id = ? AND m.guild_id = g.guild_id AND g.user_id = ?");
@@ -109,6 +149,18 @@ class DBConnection {
     $ret = $stmt->get_result()->fetch_all();
     $this->close();
     return $ret;
+  }
+
+  function save_message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until){
+    $this->connect();
+    $sql = "INSERT INTO messages VALUES ( ?, ?, ?, ?, ?, ?, NULL, ?, ?, ? ) ";
+    $sql .= "ON DUPLICATE KEY UPDATE guild_id = ?, delivery_channel_id = ?, delivery_time = ?, author_id = ?, repeats = ?, content = ?, description = ?, repeat_until = ?";
+    $sql = $stmt = $this->connection->prepare($sql);
+    $stmt->bind_param('siiiisssiiiiisssi', $id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until,
+    $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until);
+    $stmt->execute();
+    // $this->connection->query("INSERT INTO request_queue values ('".$id."', 'create', NOW()) ON DUPLICATE KEY UPDATE request_time = NOW()";
+    $this->close();
   }
 
   function create_message($msg_id, $guild_id, $delivery_channel_id, $delivery_time, $description, $content, $repeats, $repeat_until){
