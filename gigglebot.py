@@ -328,22 +328,46 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
 def replace_mentions(content, guild_id):
         guild = discord.utils.get(client.guilds, id=int(guild_id))
 
-        for mention in re.finditer(r'{([^}]+)}', content):
-            if mention.group(1) == 'everyone':
-                mention_replace = '@everyone'
-            elif mention.group(1) == 'here':
-                mention_replace = '@here'
+        for match in re.finditer(r'{(([^:}]+)(:([^:}]+))?(:([^}]+))?)}', content):
+            mention_replace = ""
+            str_to_replace = match.group(1)
+            mention = match.group(2)
+            modifier = match.group(4)
+            roles_to_exclude = match.group(6)
+            if mention == 'everyone' or mention == 'here':
+                if modifier:
+                    raise GigException(f"`{modifier}` not allowed with `{mention}`")
+                mention_replace = f"@{mention}"
+            elif modifier:
+                if modifier != "expand":
+                    raise GigException(f"Unrecognized modifier {modifier}")
+                role_to_expand = discord.utils.get(guild.roles,name=mention)
+                if not role_to_expand:
+                    raise GigException(f"Cannot find role {mention}")
+                mentions = set()
+                for member in role_to_expand.members:
+                    mentions.add(member.mention)
+                if roles_to_exclude:
+                    for role in roles_to_exclude.split(","):
+                        role_to_exclude = discord.utils.get(guild.roles,name=role)
+                        if not role_to_exclude:
+                            raise GigException(f"Cannot find role {role}")
+                        exclusions = set()
+                        for member in role_to_exclude.members:
+                            exclusions.add(member.mention)
+                        mentions = mentions.difference(exclusions)
+                mention_replace = " ".join(mentions)
             else:
                 try:
-                    mention_replace = discord.utils.get(guild.roles,name=mention.group(1)).mention
+                    mention_replace = discord.utils.get(guild.roles,name=mention).mention
                 except:
                     # See if the "role" was a user
                     try:
-                        mention_replace = discord.utils.get(guild.members,name=mention.group(1)).mention
+                        mention_replace = discord.utils.get(guild.members,name=mention).mention
                     except:
-                        raise GigException(f"Cannot find role or user {mention.group(1)}")
+                        raise GigException(f"Cannot find role or user {mention}")
 
-            content = re.sub(f"{{{re.escape(mention.group(1))}}}", mention_replace, content)
+            content = re.sub(f"{{{re.escape(str_to_replace)}}}", mention_replace, content)
 
         return content
 
