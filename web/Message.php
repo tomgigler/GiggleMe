@@ -39,8 +39,8 @@ class Message {
   }
 
   function message_type(){
-    if(is_null($delivery_time)) return "template";
-    elseif($delivery_time < 0) return "proposal";
+    if(is_null($this->delivery_time)) return "template";
+    elseif($this->delivery_time < 0) return "proposal";
     else return "message";
   }
 
@@ -94,6 +94,7 @@ class Message {
     $this->repeat_frequency = $this->repeat_frequency();
     $this->repeat_frequency_num = $this->repeat_frequency_num();
     $this->repeat_skip_if = $this->repeat_skip_if();
+    $this->message_type = $this->message_type();
   }
 
   static function get_message_by_id($id){
@@ -101,6 +102,17 @@ class Message {
     $msg = $db->get_message_by_id($id);
     $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
     return $message;
+  }
+
+  static function get_messages(){
+    $db = new DBConnection();
+    $msgs = $db->get_messages();
+    $messages = array();
+    foreach($msgs as $msg){
+      $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
+      array_push($messages, $message);
+    }
+    return $messages;
   }
 
   static function create_message_from_command($cmd, $guild_id){

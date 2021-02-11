@@ -110,24 +110,8 @@ class DBConnection {
 
   function get_messages(){
     $this->connect();
-    $sql = "SELECT m.id, g.guild_name, c.name, u.name, m.delivery_time, m.repeats, m.repeat_until, m.description ";
-    $sql .= "FROM messages AS m, guilds AS g, users AS u, channels AS c ";
-    $sql .= "WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time > 0 AND c.id = m.delivery_channel_id ";
-    $sql .= "AND g.id in ( SELECT guild_id FROM user_guilds WHERE user_id = ? ) ";
-    $sql .= "ORDER BY delivery_time";
-    $stmt = $this->connection->prepare($sql);
-    $stmt->bind_param('i', $_SESSION['user_id']);
-    $stmt->execute();
-    $ret = $stmt->get_result()->fetch_all();
-    $this->close();
-    return $ret;
-  }
-
-  function get_templates(){
-    $this->connect();
-    $sql = "SELECT m.id, g.guild_name, c.name, u.name, m.description, g.id, c.id ";
-    $sql .= "FROM messages AS m, guilds AS g, users AS u, channels AS c ";
-    $sql .= "WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time is NULL AND c.id = m.delivery_channel_id ";
+    $sql = "SELECT m.* FROM messages AS m, guilds AS g, users AS u, channels AS c ";
+    $sql .= "WHERE m.guild_id = g.id AND m.author_id = u.user AND c.id = m.delivery_channel_id ";
     $sql .= "AND g.id in ( SELECT guild_id FROM user_guilds WHERE user_id = ? ) ";
     $sql .= "ORDER BY delivery_time";
     $stmt = $this->connection->prepare($sql);
