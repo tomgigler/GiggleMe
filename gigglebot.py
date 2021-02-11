@@ -349,14 +349,20 @@ def replace_mentions(content, guild_id):
                     mentions.add(member.mention)
                 if roles_to_exclude:
                     for role in roles_to_exclude.split(","):
+                        exclusions = set()
                         role_to_exclude = discord.utils.get(guild.roles,name=role)
                         if not role_to_exclude:
-                            raise GigException(f"Cannot find role {role}")
-                        exclusions = set()
-                        for member in role_to_exclude.members:
-                            exclusions.add(member.mention)
+                            role_to_exclude = discord.utils.get(guild.members,name=role)
+                            exclusions.add(role_to_exclude.mention)
+                            if not role_to_exclude:
+                                raise GigException(f"Cannot find role or user {role}")
+                        else:
+                            for member in role_to_exclude.members:
+                                exclusions.add(member.mention)
                         mentions = mentions.difference(exclusions)
                 mention_replace = " ".join(mentions)
+                if mention_replace == "":
+                    raise GigException(f"`{str_to_replace}` results in an empty set")
             else:
                 try:
                     mention_replace = discord.utils.get(guild.roles,name=mention).mention
@@ -559,7 +565,7 @@ async def send_delay_message(channel, author, msg_num):
             return
 
         msg.delivery_time = 0
- 
+
         await schedule_delay_message(msg)
 
         await channel.send(embed=discord.Embed(description="Message sent", color=0x00ff00))
@@ -578,7 +584,7 @@ async def edit_delay_message(params):
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`")
-    
+
     need_to_confirm = False
 
     if not delay and not channel and not repeat and not description and not content and not duration:
