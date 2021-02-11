@@ -2,7 +2,6 @@
 include "login_check.php";
 include "header.php";
 include "settings.php";
-require_once "DBConnection.php";
 require_once "Message.php";
 
 print "<center>\n";
