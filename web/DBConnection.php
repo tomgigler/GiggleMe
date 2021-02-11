@@ -78,19 +78,6 @@ class DBConnection {
     return $ret;
   }
 
-  function get_message($msg_id){
-    $this->connect();
-    $sql = "SELECT m.id, u.name, g.guild_name, c.name, m.delivery_time, m.repeats, m.repeat_until, m.description, m.content, g.id, c.id ";
-    $sql .= "FROM messages AS m, guilds AS g, users AS u, channels AS c, user_guilds AS ug ";
-    $sql .= "WHERE m.id = ? AND m.delivery_channel_id = c.id AND m.guild_id = g.id AND u.user = m.author_id AND ug.user_id = ?";
-    $stmt = $this->connection->prepare($sql);
-    $stmt->bind_param('si', $msg_id, $_SESSION['user_id']);
-    $stmt->execute();
-    $ret = $stmt->get_result()->fetch_all()[0];
-    $this->close();
-    return $ret;
-  }
-
   function get_user_guilds(){
     $this->connect();
     $stmt = $this->connection->prepare("SELECT g.id, g.guild_name FROM user_guilds AS u, guilds AS g WHERE u.guild_id = g.id AND u.user_id = ?");
