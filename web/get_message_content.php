@@ -1,8 +1,7 @@
 <?php
 
-require_once "DBConnection.php";
+require_once "Message.php";
 
 session_start();
 
-$db = new DBConnection();
-print $db->get_message_col("content", $_GET['msg_id']);
+print Message::get_message_by_id($_GET['msg_id'])->content;

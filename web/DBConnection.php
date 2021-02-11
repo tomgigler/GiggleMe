@@ -67,16 +67,6 @@ class DBConnection {
     return $ret[0];
   }
 
-  function get_message_col($col, $msg_id){
-    $this->connect();
-    $stmt = $this->connection->prepare("SELECT m.$col FROM messages AS m, user_guilds AS g WHERE m.id = ? AND m.guild_id = g.guild_id AND g.user_id = ?");
-    $stmt->bind_param('si', $msg_id, $_SESSION['user_id']);
-    $stmt->execute();
-    $ret = $stmt->get_result()->fetch_all()[0][0];
-    $this->close();
-    return $ret;
-  }
-
   function get_user_timezone($user_id){
     $this->connect();
     $sql = "SELECT timezones.name FROM users, timezones WHERE users.user = ? AND users.timezone = timezones.id";
@@ -84,19 +74,6 @@ class DBConnection {
     $stmt->bind_param('i', $user_id);
     $stmt->execute();
     $ret = $stmt->get_result()->fetch_all()[0][0];
-    $this->close();
-    return $ret;
-  }
-
-  function get_message($msg_id){
-    $this->connect();
-    $sql = "SELECT m.id, u.name, g.guild_name, c.name, m.delivery_time, m.repeats, m.repeat_until, m.description, m.content, g.id, c.id ";
-    $sql .= "FROM messages AS m, guilds AS g, users AS u, channels AS c, user_guilds AS ug ";
-    $sql .= "WHERE m.id = ? AND m.delivery_channel_id = c.id AND m.guild_id = g.id AND u.user = m.author_id AND ug.user_id = ?";
-    $stmt = $this->connection->prepare($sql);
-    $stmt->bind_param('si', $msg_id, $_SESSION['user_id']);
-    $stmt->execute();
-    $ret = $stmt->get_result()->fetch_all()[0];
     $this->close();
     return $ret;
   }
@@ -133,24 +110,8 @@ class DBConnection {
 
   function get_messages(){
     $this->connect();
-    $sql = "SELECT m.id, g.guild_name, c.name, u.name, m.delivery_time, m.repeats, m.repeat_until, m.description ";
-    $sql .= "FROM messages AS m, guilds AS g, users AS u, channels AS c ";
-    $sql .= "WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time > 0 AND c.id = m.delivery_channel_id ";
-    $sql .= "AND g.id in ( SELECT guild_id FROM user_guilds WHERE user_id = ? ) ";
-    $sql .= "ORDER BY delivery_time";
-    $stmt = $this->connection->prepare($sql);
-    $stmt->bind_param('i', $_SESSION['user_id']);
-    $stmt->execute();
-    $ret = $stmt->get_result()->fetch_all();
-    $this->close();
-    return $ret;
-  }
-
-  function get_templates(){
-    $this->connect();
-    $sql = "SELECT m.id, g.guild_name, c.name, u.name, m.description, g.id, c.id ";
-    $sql .= "FROM messages AS m, guilds AS g, users AS u, channels AS c ";
-    $sql .= "WHERE m.guild_id = g.id AND m.author_id = u.user AND m.delivery_time is NULL AND c.id = m.delivery_channel_id ";
+    $sql = "SELECT m.* FROM messages AS m, guilds AS g, users AS u, channels AS c ";
+    $sql .= "WHERE m.guild_id = g.id AND m.author_id = u.user AND c.id = m.delivery_channel_id ";
     $sql .= "AND g.id in ( SELECT guild_id FROM user_guilds WHERE user_id = ? ) ";
     $sql .= "ORDER BY delivery_time";
     $stmt = $this->connection->prepare($sql);
