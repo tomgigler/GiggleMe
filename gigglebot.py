@@ -360,7 +360,7 @@ def replace_mentions(content, guild_id):
                             for member in role_to_exclude.members:
                                 exclusions.add(member.mention)
                         mentions = mentions.difference(exclusions)
-                mention_replace = " ".join(mentions)
+                mention_replace = ", ".join(mentions)
                 if mention_replace == "":
                     raise GigException(f"`{str_to_replace}` results in an empty set")
             else:
