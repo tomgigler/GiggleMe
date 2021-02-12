@@ -344,22 +344,25 @@ def replace_mentions(content, guild_id):
                 role_to_expand = discord.utils.get(guild.roles,name=mention)
                 if not role_to_expand:
                     raise GigException(f"Cannot find role {mention}")
-                mentions = set()
+                members = set()
                 for member in role_to_expand.members:
-                    mentions.add(member.mention)
+                    members.add(member)
                 if roles_to_exclude:
                     for role in roles_to_exclude.split(","):
                         exclusions = set()
                         role_to_exclude = discord.utils.get(guild.roles,name=role)
                         if not role_to_exclude:
                             role_to_exclude = discord.utils.get(guild.members,name=role)
-                            exclusions.add(role_to_exclude.mention)
+                            exclusions.add(role_to_exclude)
                             if not role_to_exclude:
                                 raise GigException(f"Cannot find role or user {role}")
                         else:
                             for member in role_to_exclude.members:
-                                exclusions.add(member.mention)
-                        mentions = mentions.difference(exclusions)
+                                exclusions.add(member)
+                        members = members.difference(exclusions)
+                mentions = list()
+                for member in sorted(members, key=lambda x: x.name.lower()):
+                    mentions.append(member.mention)
                 mention_replace = ", ".join(mentions)
                 if mention_replace == "":
                     raise GigException(f"`{str_to_replace}` results in an empty set")
