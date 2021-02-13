@@ -20,20 +20,20 @@ foreach($servers as $server){
   foreach($server_channels as $channel){
     $channels[$server[0]][] = array(strval($channel[0]), $channel[1]);
   }
-  $templates[$server[0]][] = "None";
+  $templates[$server[0]][] = ["None", ""];
   $server_templates = $db->get_guild_templates($server[0]);
   foreach($server_templates as $template){
-    $templates[$server[0]][] = $template[0];
+    $templates[$server[0]][] = [$template[0],": $template[1]"];
   }
 }
 
 print "<center>\n";
-print "<button onclick=\"location.href='home.php'\" >Home</button>\n";
+print "<button onclick=\"window.location.href='home.php'\" >Home</button>\n";
 print "<button class='display_element' onclick=\"edit_button_click()\" >Edit</button>\n";
 print "<button class='display_element' onclick=\"deleteMessage('".$msg_id."', 'message')\" >Delete</button>\n";
 print "<button class='edit_element' onclick=\"save_message()\" >Save</button>\n";
 print "<button class='edit_element' onclick=\"cancel_button_click()\" >Cancel</button>\n";
-print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
+print "<button onclick=\"window.location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
 
 

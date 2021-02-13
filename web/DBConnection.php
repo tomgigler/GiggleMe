@@ -100,7 +100,7 @@ class DBConnection {
 
   function get_guild_templates($guild_id){
     $this->connect();
-    $stmt = $this->connection->prepare("SELECT id FROM messages WHERE delivery_time is NULL AND guild_id = ?");
+    $stmt = $this->connection->prepare("SELECT id, description FROM messages WHERE delivery_time is NULL AND guild_id = ?");
     $stmt->bind_param('i', $guild_id);
     $stmt->execute();
     $ret = $stmt->get_result()->fetch_all();

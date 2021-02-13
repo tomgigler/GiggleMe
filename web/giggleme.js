@@ -71,7 +71,7 @@ function edit_button_click(){
 }
 
 function cancel_button_click(){
-  if(creating_new_message) location.href='home.php';
+  if(creating_new_message) window.location.href='home.php';
   else {
     $('.display_element').toggle(true);
     $('.edit_element').toggle(false);
@@ -218,7 +218,7 @@ function update_content_by_message_id(msg_id){
 }
 
 function update_content_from_template(){
-  var msg_id = $('#from_template').find(":selected").text();
+  var msg_id = $('#from_template').find(":selected").val();
   if(msg_id != 'None'){
     update_content_by_message_id(msg_id);
   }
@@ -258,7 +258,7 @@ function update_from_template_select(){
   var from_template_select = $('#from_template');
   from_template_select.empty();
   for(var j = 0 ; j < templates[server].length ; j++){
-      $('#from_template').append("<option value='"+templates[server][j]+"'>"+templates[server][j]+"</option>");
+      $('#from_template').append("<option value='"+templates[server][j][0]+"'>"+templates[server][j][0]+templates[server][j][1]+"</option>");
   }
 }
 
