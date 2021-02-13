@@ -3,6 +3,7 @@ include "login_check.php";
 include "header.php";
 include "settings.php";
 require_once "Message.php";
+require_once "DBConnection.php";
 
 print "<center>\n";
 print "<button id='new_message_button' onclick=\"location.href='message_page.php?action=create'\">New Message</button>\n";
@@ -76,6 +77,7 @@ if(count($messages)){
   print "</table>\n";
 }
 
+$db = new DBConnection();
 if(!$db->get_user_guilds()){
   print "<br><br><br>\n";
   print "<div class='footer'>\n";
