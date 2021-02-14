@@ -28,6 +28,12 @@ def db_execute_sql(sql, fetch, **kwargs):
 
     return rows
 
+def add_mute_member(guild_id, member_id, member_name):
+    db_execute_sql("INSERT INTO mute_members VALUES ( %s, %s, %s ) ON DUPLICATE KEY UPDATE member_name = %s", False, guild_id=guild_id, member_id=member_id, member_name=member_name, member_name2=member_name )
+
+def delete_mute_member(guild_id, member_id):
+    db_execute_sql("DELETE FROM mute_members WHERE guild_id = %s AND member_id = %s", False, guild_id=guild_id, member_id=member_id)
+
 def get_all(table):
     return db_execute_sql(f"SELECT * FROM {table}", True)
 
