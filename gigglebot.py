@@ -21,7 +21,7 @@ from gigvotes import votes
 class GigException(Exception):
     pass
 
-client = discord.Client()
+client = discord.Client(intents=discord.Intents.all())
 delayed_messages = {}
 
 async def poll_message_table():
