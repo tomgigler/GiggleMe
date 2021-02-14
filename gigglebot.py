@@ -1019,6 +1019,7 @@ async def on_guild_join(guild):
 
 gigtz.load_timezones()
 giguser.load_users()
+gigguild.load_guilds()
 load_from_db(delayed_messages)
 
 asyncio.get_event_loop().create_task(poll_message_table())
