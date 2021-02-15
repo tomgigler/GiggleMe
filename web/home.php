@@ -46,7 +46,7 @@ if(count($messages)){
     print "    <td>".htmlspecialchars($message->author)."</td>\n";
     print "    <td>$message->delivery_time_format</td>\n";
     print "    <td>$message->repeats</td>\n";
-    print "    <td>$message->repeat_until</td>\n";
+    print "    <td>$message->repeat_until_format</td>\n";
     print "    <td>".htmlspecialchars($message->description)."</td>\n";
     print "  </tr>\n";
   }
