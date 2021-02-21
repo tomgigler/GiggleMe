@@ -217,10 +217,23 @@ function update_content_by_message_id(msg_id){
   });
 }
 
+function update_channel_by_message_id(msg_id){
+  $.ajax({
+    url: "get_message_channel_id.php",
+    data: {
+      msg_id: msg_id
+    },
+    success: function( result ) {
+      $('#channel_select').val(result);
+    }
+  });
+}
+
 function update_content_from_template(){
   var msg_id = $('#from_template').find(":selected").val();
   if(msg_id != 'None'){
     update_content_by_message_id(msg_id);
+    update_channel_by_message_id(msg_id);
   }
 }
 
