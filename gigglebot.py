@@ -987,7 +987,7 @@ async def on_voice_state_update(member, before, after):
             await process_delay_message({'guild': member.guild, 'request_message_id': time(), 'delay': '0', 'from_template': giguser.vips[(member.id, member.guild.id)].template_id })
     if before.mute and not after.mute:
         gigdb.delete_mute_member(member.guild.id, member.id)
-    if after.mute:
+    if not before.mute and after.mute:
         gigdb.add_mute_member(member.guild.id, member.id, member.name)
 
 @client.event
