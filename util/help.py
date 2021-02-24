@@ -4,7 +4,7 @@ def show_help(command):
     if not command:
         return """> To schedule **<message>** to be delivered to **<channel>** at **<time>**:
 > 
-> `~giggle <time> channel=<channel> repeat=<frequency> desc="<brief description>" from_template=<template_id>`
+> `~giggle <time> channel=<channel> repeat=<frequency> desc="<brief description>" from_template=<template_id> pin=<True|False>`
 > `<message>`
 > 
 > **<time>** may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
@@ -12,6 +12,8 @@ def show_help(command):
 > **repeat** is optional.  For more information on repeating messages type `~giggle help repeat`
 > 
 > **desc** is an optional description of the message
+> 
+> **pin** is optional.  If True, the new message will be pinned
 > 
 > **from_template** creates the message body from the <template_id> template
 > Do not include a message body when using from_template
@@ -66,7 +68,7 @@ def show_help(command):
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message"""
 
     if command == "edit":
-        return """> `~giggle edit <message-id> <time> channel=<channel> repeat=<frequency> duration=<duration> desc="<desc>"`
+        return """> `~giggle edit <message-id> <time> channel=<channel> repeat=<frequency> duration=<duration> desc="<desc> pin=<True|False>"`
 > `<message>`
 > 
 > Edit message identified by **<message-id>**
@@ -88,6 +90,8 @@ def show_help(command):
 > You may also use `duration=none` to remove the current duration when editing a message.  This will result in the message repeating until you cancel it or edit again
 > 
 > **<desc>** is an optional description of the message
+> 
+> **pin** is optional.  If True, the new message will be pinned
 > 
 > **<message>** is optional.  If specified, it will replace the body of the current message
 > 
