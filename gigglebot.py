@@ -136,6 +136,7 @@ async def process_delay_message(params):
     propose_in_channel_name = params.pop('propose_in_channel', None)
     required_approvals = params.pop('required_approvals', None)
     duration = params.pop('duration', None)
+    pin_message = params.pop('pin', None)
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
@@ -201,12 +202,16 @@ async def process_delay_message(params):
         required_approvals = '1'
 
     if delay == 'proposal':
+        if pin_message is not None:
+            raise GigException("The pin option may not be used when creating a proposal")
         pass
 
     elif delay == 'template':
         delivery_time = None
         if repeat is not None:
             raise GigException("The repeat option may not be used when creating a template")
+        if pin_message is not None:
+            raise GigException("The pin option may not be used when creating a template")
 
     elif re.match(r'\d+$', delay):
         if delay == '0':
@@ -222,6 +227,14 @@ async def process_delay_message(params):
                 delivery_time = gigtz.local_time_str_to_utc(f"{gigtz.get_current_year(giguser.users[author_id].timezone)}-{delay}", giguser.users[author_id].timezone)
             except:
                 raise GigException(f"{delay} is not a valid DateTime")
+
+    if pin_message:
+        if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
+            pin_message = True
+        elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
+            pin_message = False
+        else:
+            raise GigException(f"`{pin_message}` is an invalid value for **pin**")
 
     # validate duration
     repeat_until = None
@@ -240,7 +253,7 @@ async def process_delay_message(params):
 
     # create new Message
     if delivery_time is not None and delivery_time >= 0:
-        newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until)
+        newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until, pin_message)
     elif delivery_time and delivery_time < 0:
         newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description, int(required_approvals))
     else:
@@ -584,14 +597,15 @@ async def edit_delay_message(params):
     description = params.pop('desc', None)
     content = params.pop('content', None)
     duration = params.pop('duration', None)
+    pin_message = params.pop('pin', None)
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`")
 
     need_to_confirm = False
 
-    if not delay and not channel and not repeat and not description and not content and not duration:
-        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, content, or duration"))
+    if not delay and not channel and not repeat and not description and not content and not duration and not pin_message:
+        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, content, duration, or pin"))
         return
 
     if message_id == 'last':
@@ -613,6 +627,8 @@ async def edit_delay_message(params):
                 raise GigException(f"The repeat option may not be used when editing a {type(msg).__name__.lower()}")
             if delay:
                 raise GigException(f"A delivery time may not be specified when editing a {type(msg).__name__.lower()}")
+            if pin_message:
+                raise GigException(f"The pin option may not be used when editing a {type(msg).__name__.lower()}")
 
         if delay:
             if re.match(r'\d+$', delay):
@@ -648,6 +664,14 @@ async def edit_delay_message(params):
             if not await confirm_request(discord_message.channel, discord_message.author.id, f"Edit message {message_id}?", 10, client):
                 return
 
+        if pin_message:
+            if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
+                pin_message = True
+            elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
+                pin_message = False
+            else:
+                raise GigException(f"`{pin_message}` is an invalid value for **pin**")
+
         embed = discord.Embed(description=f"{type(msg).__name__} edited", color=0x00ff00)
         if channel:
             msg.delivery_channel_id = delivery_channel.id
@@ -671,7 +695,7 @@ async def edit_delay_message(params):
 
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage = Message(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description, msg.repeat_until)
+            newMessage = Message(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description, msg.repeat_until, msg.pin_message)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
