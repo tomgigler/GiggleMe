@@ -78,6 +78,8 @@ class Message(DelayedMessage):
         if self.repeat and self.repeat_until:
             output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, timezone, format_24)}\n"
         output += f"> **Description:**  {self.description}\n"
+        if self.pin_message:
+            output += "> **Pin Message:**  True\n"
         return output
 
 class Template(DelayedMessage):

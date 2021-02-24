@@ -204,7 +204,7 @@ async def process_delay_message(params):
 
     if delay == 'proposal':
         if pin_message is not None:
-            raise GigException("The pin option may not be used when creating a proposal")
+            raise GigException("The **pin** option may not be used when creating a proposal")
         pass
 
     elif delay == 'template':
@@ -212,7 +212,7 @@ async def process_delay_message(params):
         if repeat is not None:
             raise GigException("The repeat option may not be used when creating a template")
         if pin_message is not None:
-            raise GigException("The pin option may not be used when creating a template")
+            raise GigException("The **pin** option may not be used when creating a template")
 
     elif re.match(r'\d+$', delay):
         if delay == '0':
@@ -642,7 +642,7 @@ async def edit_delay_message(params):
             if delay:
                 raise GigException(f"A delivery time may not be specified when editing a {type(msg).__name__.lower()}")
             if pin_message:
-                raise GigException(f"The pin option may not be used when editing a {type(msg).__name__.lower()}")
+                raise GigException(f"The **pin** option may not be used when editing a {type(msg).__name__.lower()}")
 
         if delay:
             if re.match(r'\d+$', delay):
@@ -678,6 +678,8 @@ async def edit_delay_message(params):
             if not await confirm_request(discord_message.channel, discord_message.author.id, f"Edit message {message_id}?", 10, client):
                 return
 
+        embed = discord.Embed(description=f"{type(msg).__name__} edited", color=0x00ff00)
+
         if pin_message:
             if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
                 pin_message = True
@@ -685,8 +687,8 @@ async def edit_delay_message(params):
                 pin_message = False
             else:
                 raise GigException(f"`{pin_message}` is an invalid value for **pin**")
+            msg.pin_message = pin_message
 
-        embed = discord.Embed(description=f"{type(msg).__name__} edited", color=0x00ff00)
         if channel:
             msg.delivery_channel_id = delivery_channel.id
             embed.add_field(name="Channel", value=f"{delivery_channel.mention}", inline=False)
