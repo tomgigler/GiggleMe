@@ -38,7 +38,7 @@ async def poll_message_table():
                 delivery_time = row[3]
 
                 if delivery_time and delivery_time >= 0:
-                    delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], False)
+                    delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], False)
                     giguser.users[delayed_messages[msg_id].author_id].set_last_message(msg_id)
                     asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
 
@@ -57,6 +57,7 @@ async def poll_message_table():
                 delayed_messages[msg_id].author_id = row[4]
                 delayed_messages[msg_id].content = row[7]
                 delayed_messages[msg_id].description = row[8]
+                delayed_messages[msg_id].pin_message = row[10]
 
                 if delivery_time and delivery_time >= 0:
                     if row[3] != delayed_messages[msg_id].delivery_time:
@@ -90,7 +91,7 @@ def load_from_db(delayed_messages):
         delivery_time = row[3]
 
         if delivery_time and delivery_time >= 0:
-            delayed_messages[message_id] = Message(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], False)
+            delayed_messages[message_id] = Message(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], False)
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
         elif delivery_time and delivery_time < 0:
@@ -441,6 +442,19 @@ async def schedule_delay_message(msg):
         sent_message = None
         if not skip_delivery:
             sent_message = await msg.get_delivery_channel(client).send(content)
+            if msg.pin_message:
+                try:
+                    await sent_message.pin()
+                except:
+                    message_guild = msg.get_guild(client)
+                    if message_guild.id in gigguild.guilds:
+                        channel = discord.utils.get(message_guild.channels, id=gigguild.guilds[message_guild.id].approval_channel_id)
+                        if channel:
+                            output = f"{msg.get_author(client).mention} Your message failed to pin\n\n"
+                            output += sent_message.jump_url
+                            output += "\n\nThis is probably due to the channel having more than 50 pinned messages"
+                            await channel.send(embed=discord.Embed(description=output, color=0xff0000))
+
         if type(msg) is Message and msg.repeat is not None:
             match = re.match(r'(minutes:(\d+)|hours:(\d+)|daily|weekly|monthly)', msg.repeat)
             if match:
