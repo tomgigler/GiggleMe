@@ -119,7 +119,7 @@ class Message {
   static function create_message_from_command($cmd, $guild_id){
     $db = new DBConnection();
     [ $command, $content ] = explode("\n", $cmd, 2);
-    if(!preg_match("/^~giggle +(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}(:\d{2})?) +channel=([^ ]+) +desc=\"(.+)\" *$/", $command, $matches)){
+    if(!preg_match("/^~giggle +(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2}(:\d{2})?) +channel=([^ ]+) +desc=\"(.+)\"( +pin=[Tt]rue)? *$/", $command, $matches)){
       throw new BadRequestException("Invalid command:\n".$command);
     }
     // ~giggle 2021-02-05 18:00 channel=truth-wanted desc=\"TW NOW - Show Channel\"
@@ -130,8 +130,10 @@ class Message {
     if(is_null($channel_id)){
       throw new BadRequestException("Cannot find channel ".$matches[3] ." in ".$db->get_guild_name($guild_id)." server");
     }
+    if($matches[5]) $pin_message = 1;
+    else $pin_message = null;
     $msg_id = substr(md5(rand().time()),0,8);
-    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $matches[4], null, true);
+    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $matches[4], null, $pin_message, true);
     return $message;
   }
 
