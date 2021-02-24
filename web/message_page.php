@@ -144,7 +144,9 @@ if($message->pin_message) print "True";
 else print "False";
 print "</td>\n";
 print "    <td id='edit_pin_message_cell' class='edit_element'>\n";
-print "      <input id='pin_message_checkbox' type='checkbox' />\n";
+print "      <input id='pin_message_checkbox' type='checkbox' ";
+if($message->pin_message) print "checked ";
+print "/>\n";
 print "    </td>\n";
 print "  </tr>\n";
 
@@ -171,7 +173,6 @@ print "var repeat_until_java_format = '" . $message->repeat_until_java_format . 
 print "var repeat_frequency = '" . $message->repeat_frequency . "'\n";
 print "var repeat_frequency_num = '" . $message->repeat_frequency_num . "'\n";
 print "var repeat_skip_if = '" . $message->repeat_skip_if . "'\n";
-print "var pin_message = '" . $message->pin_message . "'\n";
 
 if(!$_GET['action']=='create'){
   if(!$message->delivery_time){

@@ -13,7 +13,7 @@ function load_message_page(action, repeat_until){
   if(repeat_until==''){
     $('#repeat_until_row').hide();
   }
-  if(action=='create' || pin_message == '1'){
+  if(action=='create' || $('#pin_message_checkbox').prop('checked')){
     $('#pin_message_row').toggle(true);
   }
 }
@@ -29,16 +29,12 @@ function edit_button_click(){
   $('.display_element').toggle(false);
   $('.edit_element').toggle(true);
   $('#repeats_row').toggle(true);
-  $('#pin_message_row').toggle(true);
-  if(pin_message == '1') $('#pin_message_checkbox').prop('checked', true);
-  else $('#pin_message_checkbox').prop('checked', false);
   $('#channel_select').val(channel_id);
   $('#delivery_time').val(delivery_time_java_format);
   $('#description').val($('#display_description_cell').text());
   $('#edit_content').val($('#display_content_pre').text());
-  if($('#message_type_select').val() == 'template'){
-    $('#repeats_row').toggle(false);
-  } else {
+  if($('#message_type_select').val() == 'message'){
+    $('#pin_message_row').toggle(true);
     if(repeat_frequency){
       $('#repeats_select').val(repeat_frequency);
       if(repeat_frequency_num){
@@ -92,7 +88,7 @@ function cancel_button_click(){
     } else {
       $('#repeat_until_row').toggle(false);
     }
-    if(!pin_message){
+    if(!$('#pin_message_checkbox').prop('checked')){
       $('#pin_message_row').toggle(false);
     }
   }
@@ -209,8 +205,7 @@ function save_message(){
         repeat_frequency = message.repeat_frequency;
         repeat_frequency_num = message.repeat_frequency_num;
         repeat_skip_if = message.repeat_skip_if;
-        pin_message = message.pin_message;
-        if(pin_message){
+        if(message.pin_message){
 	  $('#display_pin_message_cell').text('True')
         } else {
           $('#pin_message_row').toggle(false);
@@ -302,6 +297,8 @@ function message_type_updated(){
     $('#repeats_row').toggle(false);
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
+    $('#pin_message_row').toggle(false);
+    $('#pin_message_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
@@ -316,6 +313,7 @@ function message_type_updated(){
       $('#skip_if_row').toggle(true);
       $('#repeat_until_row').toggle(true);
     }
+    $('#pin_message_row').toggle(true);
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
@@ -327,6 +325,7 @@ function message_type_updated(){
     $('#repeats_row').toggle(false);
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
+    $('#pin_message_row').toggle(false);
     $('#description_row').toggle(false);
     $('#edit_content').prop('maxlength','50000');
   }
