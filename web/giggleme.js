@@ -3,14 +3,18 @@ function load_message_page(action, repeat_until){
   update_from_template_select();
   $('#repeats_num').hide();
   $('#skip_if_num').hide();
-  $('#skip_if_row').hide()
+  $('#skip_if_row').hide();
   $('#repeat_until_datetime').hide();
+  $('#pin_message_row').hide();
   if(action=='' && $('#display_repeats_cell').text()==''){
     $('#repeats_row').hide();
     $('#repeat_until_row').hide();
   }
   if(repeat_until==''){
     $('#repeat_until_row').hide();
+  }
+  if(action=='create' || pin_message == '1'){
+    $('#pin_message_row').toggle(true);
   }
 }
 
@@ -25,6 +29,9 @@ function edit_button_click(){
   $('.display_element').toggle(false);
   $('.edit_element').toggle(true);
   $('#repeats_row').toggle(true);
+  $('#pin_message_row').toggle(true);
+  if(pin_message == '1') $('#pin_message_checkbox').prop('checked', true);
+  else $('#pin_message_checkbox').prop('checked', false);
   $('#channel_select').val(channel_id);
   $('#delivery_time').val(delivery_time_java_format);
   $('#description').val($('#display_description_cell').text());
@@ -84,6 +91,9 @@ function cancel_button_click(){
       $('#repeat_until_row').toggle(true);
     } else {
       $('#repeat_until_row').toggle(false);
+    }
+    if(!pin_message){
+      $('#pin_message_row').toggle(false);
     }
   }
 }
@@ -155,7 +165,7 @@ function save_message(){
     data['delivery_time'] = $('#delivery_time').val();
     data['repeats'] = repeats_str;
     data['repeat_until'] = repeat_until;
-
+    data['pin_message'] = $('#pin_message_checkbox').prop('checked');
   }
 
   $.ajax({
@@ -199,6 +209,13 @@ function save_message(){
         repeat_frequency = message.repeat_frequency;
         repeat_frequency_num = message.repeat_frequency_num;
         repeat_skip_if = message.repeat_skip_if;
+        pin_message = message.pin_message;
+        if(pin_message){
+	  $('#display_pin_message_cell').text('True')
+        } else {
+          $('#pin_message_row').toggle(false);
+	  $('#display_pin_message_cell').text('False')
+	}
       }
     },
     error: function(error){ alert(error.responseText) },
