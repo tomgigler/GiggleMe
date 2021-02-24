@@ -6,7 +6,7 @@ class BadRequestException extends Exception {}
 
 class Message {
 
-  function Message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $save=false){
+  function Message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $pin_message, $save=false){
     $this->id = $id;
     $this->guild_id = strval($guild_id);
     $this->delivery_channel_id = strval($delivery_channel_id);
@@ -16,9 +16,10 @@ class Message {
     $this->content = $content;
     $this->description = $description;
     $this->repeat_until = $repeat_until;
+    $this->pin_message = $pin_message;
     if($save){
       $db = new DBConnection();
-      $db->create_or_update_message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until);
+      $db->create_or_update_message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $pin_message);
     }
     $this->set_all();
   }
@@ -100,7 +101,7 @@ class Message {
   static function get_message_by_id($id){
     $db = new DBConnection();
     $msg = $db->get_message_by_id($id);
-    $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
+    $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9], $msg[10]);
     return $message;
   }
 
@@ -109,7 +110,7 @@ class Message {
     $msgs = $db->get_messages();
     $messages = array();
     foreach($msgs as $msg){
-      $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9]);
+      $message = new Message($msg[0], $msg[1], $msg[2], $msg[3], $msg[4], $msg[5], $msg[7], $msg[8], $msg[9], $msg[10]);
       array_push($messages, $message);
     }
     return $messages;
