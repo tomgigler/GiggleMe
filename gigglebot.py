@@ -2,11 +2,12 @@
 import discord
 import re
 import asyncio
-from settings import bot_token, bot_owner_id
+import settings
 from datetime import datetime
 from time import time
 from operator import attrgetter
 from traceback import format_exc
+from twitter import Api
 import help
 from confirm import confirm_request, process_reaction
 import gigtz
@@ -67,7 +68,7 @@ async def poll_message_table():
                         delayed_messages[msg_id].repeat = row[5]
                         delayed_messages[msg_id].repeat_until = row[9]
         except Exception as e:
-            await client.get_user(bot_owner_id).send(f"Unhandled exception when polling message queue\n> **msg_id: {msg_id}**\n> **action: {action}**\n\n`{format_exc()}`")
+            await client.get_user(settings.bot_owner_id).send(f"Unhandled exception when polling message queue\n> **msg_id: {msg_id}**\n> **action: {action}**\n\n`{format_exc()}`")
 
 async def get_message_by_id(guild_id, channel_id, message_id):
     guild = client.get_guild(guild_id)
@@ -530,7 +531,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
 
     for msg_id in sorted_messages:
         msg = sorted_messages[msg_id]
-        if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == bot_owner_id:
+        if msg.guild_id == channel.guild.id or next_or_all == "all" and author_id == settings.bot_owner_id:
             output += "> \n" + await msg.get_show_output(client, show_id=True, guild_id=channel.guild.id, timezone=giguser.users[author_id].timezone, format_24=giguser.users[author_id].format_24)
             count += 1
             total += 1
@@ -802,7 +803,7 @@ async def remove_vip(msg, vip_id):
 async def list_vips(msg, list_all):
     output = ""
     for vip in giguser.vips:
-        if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == bot_owner_id:
+        if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == setings.bot_owner_id:
             output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
             output += " **-** "
             output += "**" + giguser.vips[vip].template_id + "**"
@@ -838,6 +839,11 @@ async def show_guild_config(msg):
         output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].delivery_channel_id).mention
     except:
         output += str(gigguild.guilds[msg.guild.id].delivery_channel_id)
+    output += "\n**tweet_channel**:  "
+    try:
+        output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].tweet_channel_id).mention
+    except:
+        output += str(gigguild.guilds[msg.guild.id].tweet_channel_id)
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_guild_config(params):
@@ -868,16 +874,30 @@ async def set_guild_config(params):
 @client.event
 async def on_message(msg):
     if msg.author == client.user:
+        if isinstance(msg.channel, discord.channel.DMChannel):
+            return
+        if msg.guild.id in gigguild.guilds:
+            if msg.channel.id == gigguild.guilds[msg.guild.id].tweet_channel_id:
+                try:
+                    api = Api(
+                        consumer_key=settings.twitter_consumer_key,
+                        consumer_secret=settings.twitter_consumer_secret,
+                        access_token_key=gigguild.guilds[msg.guild.id].twitter_access_token_key,
+                        access_token_secret=gigguild.guilds[msg.guild.id].twitter_access_token_secret)
+
+                    status = api.PostUpdate(msg.content)
+                except Exception as e:
+                    await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
         return
 
     if isinstance(msg.channel, discord.channel.DMChannel):
-        if msg.author.id == bot_owner_id:
+        if msg.author.id == settings.bot_owner_id:
             match = re.match(r'(\d{18})\s+(.+)', msg.content)
             if match:
                 user = client.get_user(int(match.group(1)))
                 await user.send(match.group(2))
         else:
-            user = client.get_user(bot_owner_id)
+            user = client.get_user(settings.bot_owner_id)
             content = re.sub("\n", "\n> ", msg.content)
             await user.send(f"{msg.author.mention} ({msg.author.id}) said:\n> {content}")
         return
@@ -885,8 +905,8 @@ async def on_message(msg):
     if re.match(r'~(giggle|g |g$)', msg.content):
         if msg.author.id in giguser.user_guilds.keys() and msg.guild.id in giguser.user_guilds[msg.author.id]:
             try:
-                if time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != bot_owner_id:
-                    await client.get_user(bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
+                if time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != settings.bot_owner_id:
+                    await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
@@ -985,7 +1005,7 @@ async def on_message(msg):
                     return
 
                 match = re.match(r'^~g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
-                if match and msg.author.id == bot_owner_id:
+                if match and msg.author.id == settings.bot_owner_id:
                     if match.group(3):
                         guild_id = int(match.group(3))
                     else:
@@ -1003,11 +1023,11 @@ async def on_message(msg):
                 await msg.channel.send(embed=discord.Embed(description=str(e), color=0xff0000))
 
             except Exception as e:
-                if msg.author.id == bot_owner_id:
+                if msg.author.id == settings.bot_owner_id:
                     await msg.channel.send(f"`{format_exc()}`")
                 else:
                     await msg.channel.send(embed=discord.Embed(description=f"Whoops!  Something went wrong.  Please contact {client.user.mention} for help", color=0xff0000))
-                    await client.get_user(bot_owner_id).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
+                    await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
         else:
             await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission", color=0xff0000))
 
@@ -1050,7 +1070,7 @@ async def on_raw_reaction_remove(payload):
 
 @client.event
 async def on_guild_join(guild):
-    user = client.get_user(bot_owner_id)
+    user = client.get_user(settings.bot_owner_id)
     await user.send(f"{client.user.mention} joined {guild.name}")
 
 gigtz.load_timezones()
@@ -1060,4 +1080,4 @@ load_from_db(delayed_messages)
 
 asyncio.get_event_loop().create_task(poll_message_table())
 
-client.run(bot_token)
+client.run(settings.bot_token)

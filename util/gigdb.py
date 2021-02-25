@@ -88,11 +88,14 @@ def set_user_format_24(format_24, user_id):
 def set_user_timezone(tz_id, name, user_id):
     db_execute_sql("UPDATE users SET timezone = %s, name = %s WHERE user = %s", False, tz_id=tz_id, name=name, user_id=user_id)
 
-def save_guild(id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id):
-    db_execute_sql("INSERT INTO guilds ( id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id ) values (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE "
-            "guild_name = %s, proposal_channel_id = %s, approval_channel_id = %s, delivery_channel_id = %s", False, id=id, guild_name=guild_name, proposal_channel_id=proposal_channel_id,
-            approval_channel_id=approval_channel_id, delivery_channel_id=delivery_channel_id, guild_name_2=guild_name, proposal_channel_id_2=proposal_channel_id,
-            approval_channel_id_2=approval_channel_id, delivery_channel_id_2=delivery_channel_id)
+def save_guild(id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id, tweet_channel_id, twitter_access_token_key, twitter_access_token_secret):
+    db_execute_sql("INSERT INTO guilds ( id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id, tweet_channel_id, twitter_access_token_key, twitter_access_token_secret ) "
+            "values (%s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE guild_name = %s, proposal_channel_id = %s, approval_channel_id = %s, delivery_channel_id = %s, "
+            "tweet_channel_id = %s, twitter_access_token_key = %s, twitter_access_token_secret = %s",
+            False, id=id, guild_name=guild_name, proposal_channel_id=proposal_channel_id, approval_channel_id=approval_channel_id, delivery_channel_id=delivery_channel_id,
+            tweet_channel_id=tweet_channel_id, twitter_access_token_key=twitter_access_token_key, twitter_access_token_secret=twitter_access_token_secret,
+            guild_name_2=guild_name, proposal_channel_id_2=proposal_channel_id, approval_channel_id_2=approval_channel_id, delivery_channel_id_2=delivery_channel_id,
+            tweet_channel_id_2=tweet_channel_id, twitter_access_token_key_2=twitter_access_token_key, twitter_access_token_secret_2=twitter_access_token_secret)
 
 def save_channel(id, guild_id, name):
     db_execute_sql("INSERT INTO channels ( id, guild_id, name) values (%s, %s, %s) ON DUPLICATE KEY UPDATE name = %s", False, id=id, guild_id=guild_id, name=name, name_2=name)
