@@ -446,14 +446,17 @@ async def schedule_delay_message(msg):
             if msg.pin_message:
                 try:
                     await sent_message.pin()
-                except:
+                except discord.HTTPException as e:
                     message_guild = msg.get_guild(client)
                     if message_guild.id in gigguild.guilds:
                         channel = discord.utils.get(message_guild.channels, id=gigguild.guilds[message_guild.id].approval_channel_id)
                         if channel:
                             output = f"{msg.get_author(client).mention} Your message failed to pin\n\n"
                             output += sent_message.jump_url
-                            output += "\n\nThis is probably due to the channel having more than 50 pinned messages"
+                            if type(e) is discord.Forbidden:
+                                output += f"\n\n{client.user.mention} does not appear to have permission"
+                            else:
+                                output += "\n\nThis is probably due to the channel having more than 50 pinned messages"
                             await channel.send(embed=discord.Embed(description=output, color=0xff0000))
 
         if type(msg) is Message and msg.repeat is not None:
