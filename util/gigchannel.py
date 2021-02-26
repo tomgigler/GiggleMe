@@ -4,7 +4,7 @@ import gigdb
 channels = {}
 
 class Channel:
-    def __init__(self, id, guild_id, name, channel_type=0, token_key=None, token_secret=None, user_id=None, screen_name=None):
+    def __init__(self, id, guild_id, name, channel_type=1, token_key=None, token_secret=None, user_id=None, screen_name=None):
         self.id = id
         self.guild_id = guild_id
         self.name = name
