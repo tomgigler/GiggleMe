@@ -119,29 +119,50 @@ class Message {
   static function create_message_from_command($cmd, $guild_id){
     $db = new DBConnection();
     [ $command, $content ] = explode("\n", $cmd, 2);
-    if(!preg_match("/^~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} \d{1,2}:\d{2}(:\d{2})?|\d+) +channel=([^ ]+) +desc=\"(.+)\"( +pin=[Tt]rue)? *$/", $command, $matches)){
+    if(!preg_match("/^(~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} \d{1,2}:\d{2}(:\d{2})?|\d+))/", $command, $matches)){
       throw new BadRequestException("Invalid command:\n".$command);
     }
     // ~giggle 2021-02-05 18:00 channel=truth-wanted desc=\"TW NOW - Show Channel\"
-    $date_str = $matches[2];
+    $date_str = $matches[3];
     if(preg_match("/^\d+$/", $date_str)){
       $delay = intval($date_str);
       if($delay == 0) $time = 0;
       else $time = time() + intval($date_str) * 60;
     } else {
-      if(!$matches[3]) $date_str = date("Y")."-".$date_str;
+      if(!$matches[4]) $date_str = date("Y")."-".$date_str;
       if(!$time = strtotime($date_str)){
         throw new BadRequestException("Invalid time format:\n".$date_str);
       }
     }
-    $channel_id = $db->get_channel_by_name($matches[5], $guild_id);
-    if(is_null($channel_id)){
-      throw new BadRequestException("Cannot find channel ".$matches[5] ." in ".$db->get_guild_name($guild_id)." server");
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $command);
+
+    if(!preg_match("/(channel\s*=\s*(\S+))/", $remaining_args, $matches)){
+      throw new BadRequestException("channel is required!\n".$command);
     }
-    if($matches[7]) $pin_message = 1;
-    else $pin_message = null;
+    $channel_id = $db->get_channel_by_name($matches[2], $guild_id);
+    if(is_null($channel_id)){
+      throw new BadRequestException("Cannot find channel ".$matches[2] ." in ".$db->get_guild_name($guild_id)." server");
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+
+    $desc = null;
+    if(preg_match("/(desc\s*=\s*\"([^\"]+)\")/", $remaining_args, $matches)){
+      $desc = $matches[2];
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+
+    $pin_message = null;
+    if(preg_match("/(pin\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $pin_message = 1;
+      elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
+        throw new BadRequestException("Invalid value for pin:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+    if(!preg_match("/^\s*$/", $remaining_args))
+        throw new BadRequestException("Unrecognized parameter(s):\n".$remaining_args);
+
     $msg_id = substr(md5(rand().time()),0,8);
-    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $matches[6], null, $pin_message, true);
+    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $desc, null, $pin_message, true);
     return $message;
   }
 
