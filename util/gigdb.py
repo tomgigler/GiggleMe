@@ -97,8 +97,11 @@ def save_guild(id, guild_name, proposal_channel_id, approval_channel_id, deliver
             guild_name_2=guild_name, proposal_channel_id_2=proposal_channel_id, approval_channel_id_2=approval_channel_id, delivery_channel_id_2=delivery_channel_id,
             tweet_channel_id_2=tweet_channel_id, twitter_access_token_key_2=twitter_access_token_key, twitter_access_token_secret_2=twitter_access_token_secret)
 
-def save_channel(id, guild_id, name):
-    db_execute_sql("INSERT INTO channels ( id, guild_id, name) values (%s, %s, %s) ON DUPLICATE KEY UPDATE name = %s", False, id=id, guild_id=guild_id, name=name, name_2=name)
+def save_channel(id, guild_id, name, channel_type, token_key, token_secret):
+    db_execute_sql("INSERT INTO channels ( id, guild_id, name, channel_type, token_key, token_secret) values (%s, %s, %s, %s, %s, %s) "
+    "ON DUPLICATE KEY UPDATE name = %s, channel_type = %s, token_key = %s, token_secret = %s",
+    False, id=id, guild_id=guild_id, name=name, channel_type=channel_type, token_key=token_key, token_secret=token_secret,
+    name_2=name, channel_type_2=channel_type, token_key_2=token_key, token_secret_2=token_secret)
 
 def pop_request_queue():
     row = db_execute_sql("SELECT id, action FROM request_queue WHERE request_time = (SELECT MIN(request_time) FROM request_queue)", True)
