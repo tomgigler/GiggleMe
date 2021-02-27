@@ -93,7 +93,4 @@ function cc_save_button_click(){
     location.href="twitter_login.php?guild_id="+$('#server_select').val()
 }
 
-setInputFilter(document.getElementById("input_channel_name"), function(value) {
-  return /^\S*$/.test(value);
-});
 </script>
