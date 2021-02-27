@@ -7,7 +7,6 @@ from datetime import datetime
 from time import time
 from operator import attrgetter
 from traceback import format_exc
-from twitter import Api
 import help
 from confirm import confirm_request, process_reaction
 import gigtz
@@ -112,6 +111,13 @@ def get_channel_by_name_or_id(guild, channel_param):
         except:
             pass
     if not channel:
+        try:
+            if (int(channel_param), guild.id) in gigchannel.channels:
+                return gigchannel.channels[(int(channel_param), guild.id)]
+        except:
+            for ch in gigchannel.channels.values():
+                if ch.name == channel_param:
+                    return ch
         raise GigException(f"Cannot find {channel_param} channel")
 
     #check channel permissions
@@ -120,7 +126,7 @@ def get_channel_by_name_or_id(guild, channel_param):
 
     #make sure channel is in gigchannel.channels
     if not channel.id in gigchannel.channels:
-        gigchannel.channels[channel.id] = gigchannel.Channel(channel.id, channel.guild.id, channel.name)
+        gigchannel.channels[(channel.id,channel.guild.id)] = gigchannel.Channel(channel.id, channel.guild.id, channel.name)
 
     return channel
 
@@ -274,7 +280,7 @@ async def process_delay_message(params):
         return
     elif delivery_time == 0:
         if request_channel:
-            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to {delivery_channel.mention} channel now" + repeat_output, color=0x00ff00))
+            await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.mention} channel now" + repeat_output, color=0x00ff00))
     elif request_channel:
         embed=discord.Embed(description=f"Your message will be delivered to {delivery_channel.mention} at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}" + repeat_output, color=0x00ff00)
         embed.add_field(name="Message ID", value=f"{newMessage.id}", inline=True)
@@ -877,20 +883,6 @@ async def set_guild_config(params):
 @client.event
 async def on_message(msg):
     if msg.author == client.user:
-        if isinstance(msg.channel, discord.channel.DMChannel):
-            return
-        if msg.guild.id in gigguild.guilds:
-            if msg.channel.id == gigguild.guilds[msg.guild.id].tweet_channel_id:
-                try:
-                    api = Api(
-                        consumer_key=settings.twitter_consumer_key,
-                        consumer_secret=settings.twitter_consumer_secret,
-                        access_token_key=gigguild.guilds[msg.guild.id].twitter_access_token_key,
-                        access_token_secret=gigguild.guilds[msg.guild.id].twitter_access_token_secret)
-
-                    status = api.PostUpdate(msg.content)
-                except Exception as e:
-                    await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
         return
 
     if isinstance(msg.channel, discord.channel.DMChannel):
@@ -1079,6 +1071,7 @@ async def on_guild_join(guild):
 gigtz.load_timezones()
 giguser.load_users()
 gigguild.load_guilds()
+gigchannel.load_channels()
 load_from_db(delayed_messages)
 
 asyncio.get_event_loop().create_task(poll_message_table())
