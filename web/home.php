@@ -7,6 +7,7 @@ require_once "DBConnection.php";
 
 print "<center>\n";
 print "<button id='new_message_button' onclick=\"location.href='message_page.php?action=create'\">New Message</button>\n";
+print "<button id='custom_channels_button' onclick=\"location.href='custom_channels.php'\" >Custom Channels</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 
 if(isset($_SESSION['message']))
@@ -89,6 +90,7 @@ if(!$db->get_user_guilds()){
   print "</div>\n";
   print "<script>\n";
   print "$('#new_message_button').toggle(false)\n";
+  print "$('#custom_channels_button').toggle(false)\n";
   print "</script>\n";
 }
 

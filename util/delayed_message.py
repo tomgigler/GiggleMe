@@ -6,6 +6,7 @@ from time import time
 import gigdb
 import giguser
 import gigtz
+import gigchannel
 from gigvotes import votes
 
 class DelayedMessage:
@@ -23,7 +24,15 @@ class DelayedMessage:
         return discord.utils.get(client.guilds, id=self.guild_id)
 
     def get_delivery_channel(self, client):
-        return discord.utils.get(self.get_guild(client).text_channels, id=self.delivery_channel_id)
+        channel = None
+        try:
+            channel = discord.utils.get(self.get_guild(client).text_channels, id=self.delivery_channel_id)
+        except:
+            pass
+        if not channel:
+            gigchannel.load_channels()
+            channel = gigchannel.channels[self.delivery_channel_id]
+        return channel
 
     def get_author(self, client):
         return client.get_user(self.author_id)
