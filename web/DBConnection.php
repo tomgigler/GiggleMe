@@ -113,9 +113,9 @@ class DBConnection {
 
   function create_channel($id, $guild_id, $name, $channel_type, $token_key, $token_secret, $user_id, $screen_name){
     $this->connect();
-    $sql = "INSERT INTO channels VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )";
+    $sql = "INSERT INTO channels VALUES ( ?, ?, ?, ?, ?, ?, ?, ? ) ON DUPLICATE KEY UPDATE name = ?, token_key = ?, token_secret = ?, user_id = ?, screen_name = ?";
     $stmt = $this->connection->prepare($sql);
-    $stmt->bind_param('iisissss', $id, $guild_id, $name, $channel_type, $token_key, $token_secret, $user_id, $screen_name);
+    $stmt->bind_param('iisisssssssss', $id, $guild_id, $name, $channel_type, $token_key, $token_secret, $user_id, $screen_name, $name, $token_key, $token_secret, $user_id, $screen_name);
     $stmt->execute();
     $this->close();
   }
