@@ -98,6 +98,28 @@ class DBConnection {
     return $ret;
   }
 
+  function get_custom_channels(){
+    $this->connect();
+    $sql = "SELECT g.guild_name, c.name, c.channel_type, c.screen_name FROM guilds as g, channels as c ";
+    $sql .= "WHERE c.channel_type IS NOT NULL AND c.channel_type != 1 AND g.id = c.guild_id ";
+    $sql .= "AND g.id in ( SELECT guild_id FROM user_guilds WHERE user_id = ? )";
+    $stmt = $this->connection->prepare($sql);
+    $stmt->bind_param('i', $_SESSION['user_id']);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret;
+  }
+
+  function create_channel($id, $guild_id, $name, $channel_type, $token_key, $token_secret, $user_id, $screen_name){
+    $this->connect();
+    $sql = "INSERT INTO channels VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )";
+    $stmt = $this->connection->prepare($sql);
+    $stmt->bind_param('iisissss', $id, $guild_id, $name, $channel_type, $token_key, $token_secret, $user_id, $screen_name);
+    $stmt->execute();
+    $this->close();
+  }
+
   function get_guild_templates($guild_id){
     $this->connect();
     $stmt = $this->connection->prepare("SELECT id, description FROM messages WHERE delivery_time is NULL AND guild_id = ?");
@@ -126,7 +148,7 @@ class DBConnection {
     $this->connect();
     $sql = "INSERT INTO messages VALUES ( ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ? ) ";
     $sql .= "ON DUPLICATE KEY UPDATE guild_id = ?, delivery_channel_id = ?, delivery_time = ?, repeats = ?, content = ?, description = ?, repeat_until = ?, pin_message = ?";
-    $sql = $stmt = $this->connection->prepare($sql);
+    $stmt = $this->connection->prepare($sql);
     $stmt->bind_param('siiiisssiiiiisssii', $id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $pin_message,
     $guild_id, $delivery_channel_id, $delivery_time, $repeats, $content, $description, $repeat_until, $pin_message);
     $stmt->execute();

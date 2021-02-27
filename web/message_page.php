@@ -4,11 +4,16 @@ include "header.php";
 require_once "DBConnection.php";
 require_once "Message.php";
 
+$db = new DBConnection();
+if(!$db->get_user_guilds()){
+  header("Location: home.php");
+  exit;
+}
+
 date_default_timezone_set($_SESSION['timezone']);
 if(isset($_GET['id'])) $msg_id = $_GET['id'];
 else $msg_id = substr(md5(time()),0,8);
 
-$db = new DBConnection();
 $message = Message::get_message_by_id($msg_id);
 
 $channels = array();
