@@ -112,8 +112,8 @@ def get_channel_by_name_or_id(guild, channel_param):
             pass
     if not channel:
         try:
-            if (int(channel_param), guild.id) in gigchannel.channels:
-                return gigchannel.channels[(int(channel_param), guild.id)]
+            if int(channel_param) in gigchannel.channels:
+                return gigchannel.channels[int(channel_param)]
         except:
             for ch in gigchannel.channels.values():
                 if ch.name == channel_param:
@@ -126,7 +126,7 @@ def get_channel_by_name_or_id(guild, channel_param):
 
     #make sure channel is in gigchannel.channels
     if not channel.id in gigchannel.channels:
-        gigchannel.channels[(channel.id,channel.guild.id)] = gigchannel.Channel(channel.id, channel.guild.id, channel.name)
+        gigchannel.channels[channel.id] = gigchannel.Channel(channel.id, channel.guild.id, channel.name)
 
     return channel
 
