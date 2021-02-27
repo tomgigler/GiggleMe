@@ -33,7 +33,7 @@ $token = $connection->oauth(
 );
 
 $db = new DBConnection();
-$db->create_channel($token['user_id'], $_SESSION['new_channel_guild_id'], $_SESSION['new_channel_name'], 2, $token['oauth_token'], $token['oauth_token_secret'], $token['user_id'], $token['screen_name']);
+$new_channel_id = hexdec(substr(md5(sprintf("%d", $token['user_id']).sprintf("%d", $_SESSION['new_channel_guild_id'])),0, 14));
+$db->create_channel($new_channel_id, $_SESSION['new_channel_guild_id'], $token['screen_name']."@twitter", 2, $token['oauth_token'], $token['oauth_token_secret'], $token['user_id'], $token['screen_name']);
 unset($_SESSION['new_channel_guild_id']);
-unset($_SESSION['new_channel_name']);
 header('Location: ' . 'custom_channels.php');

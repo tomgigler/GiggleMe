@@ -32,10 +32,6 @@ print "  </select>\n";
 print "  </td>\n";
 print "</tr>\n";
 print "<tr>\n";
-print "  <th>Channel Name</th>\n";
-print "  <td><input id='input_channel_name' style='display:table-cell; width:100%' /></td>\n";
-print "</tr>\n";
-print "<tr>\n";
 print "  <th>Channel Type</th>\n";
 print "  <td>\n";
 print "  <select id='channel_type_select' style='display:table-cell; width:100%' >\n";
@@ -94,7 +90,7 @@ function cc_save_button_click(){
     return
   }
   if(confirm("You will now be redirected to Twitter to authenticate your account"))
-    location.href="twitter_login.php?guild_id="+$('#server_select').val()+"&channel_name="+$('#input_channel_name').val()
+    location.href="twitter_login.php?guild_id="+$('#server_select').val()
 }
 
 setInputFilter(document.getElementById("input_channel_name"), function(value) {

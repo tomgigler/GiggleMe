@@ -6,7 +6,6 @@ use Abraham\TwitterOAuth\TwitterOAuth;
 
 session_start();
 $_SESSION['new_channel_guild_id'] = $_GET['guild_id'];
-$_SESSION['new_channel_name'] = $_GET['channel_name'];
 
 // create TwitterOAuth object
 $twitteroauth = new TwitterOAuth($twitter_consumer_key, $twitter_consumer_secret);
