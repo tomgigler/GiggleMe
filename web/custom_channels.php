@@ -15,7 +15,7 @@ $servers = $db->get_user_guilds();
 print "<center>\n";
 print "<button onclick=\"window.location.href='home.php'\" >Home</button>\n";
 print "<button id='new_button' onclick='cc_new_button_click()' >New</button>\n";
-print "<button id='save_button' onclick='cc_save_button_click()' >Save</button>\n";
+print "<button id='save_button' onclick='cc_save_button_click()' >Create Channel</button>\n";
 print "<button id='cancel_button' onclick='cc_cancel_button_click()' >Cancel</button>\n";
 print "<button onclick=\"window.location.href='logout.php'\" >Logout</button>\n";
 print "<br><br>\n";
