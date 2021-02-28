@@ -146,7 +146,7 @@ class Message {
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
 
     $desc = null;
-    if(preg_match("/(desc\s*=\s*\"([^\"]+)\")/", $remaining_args, $matches)){
+    if(preg_match("/(desc\s*=\s*[\"\”]([^\"\”]+)[\"\”])/u", $remaining_args, $matches)){
       $desc = $matches[2];
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
