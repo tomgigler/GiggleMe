@@ -448,7 +448,18 @@ async def schedule_delay_message(msg):
 
         sent_message = None
         if not skip_delivery:
-            sent_message = await msg.get_delivery_channel(client).send(content)
+            try:
+                sent_message = await msg.get_delivery_channel(client).send(content)
+            except:
+                    message_guild = msg.get_guild(client)
+                    if message_guild.id in gigguild.guilds:
+                        channel = discord.utils.get(message_guild.channels, id=gigguild.guilds[message_guild.id].approval_channel_id)
+                        author = msg.get_author(client)
+                        if channel:
+                            await channel.send(embed=discord.Embed(description=f"{author.mention} message {msg.id} failed to send", color=0xff0000))
+                    await client.get_user(settings.bot_owner_id).send(f"{author.mention}'s ({author.id}) message {msg.id} failed to send\n`{format_exc()}`")
+                    return
+
             if msg.pin_message:
                 try:
                     await sent_message.pin()
