@@ -68,9 +68,9 @@ $db = new DBConnection();
 $_SESSION['timezone'] = $db->get_user_timezone($_SESSION['user_id']);
 
 if($_GET['state'] == 'true'){
-    setcookie("user_id", $_SESSION['user_id'], time() + 24 * 60 * 60 * 7);
-    setcookie("username", $_SESSION['username'], time() + 24 * 60 * 60 * 7);
-    setcookie("avatar", $_SESSION['avatar'], time() + 24 * 60 * 60 * 7);
+    setcookie("user_id", $_SESSION['user_id'], time() + 24 * 60 * 60 * 7 * 13);
+    setcookie("username", $_SESSION['username'], time() + 24 * 60 * 60 * 7 * 13);
+    setcookie("avatar", $_SESSION['avatar'], time() + 24 * 60 * 60 * 7 * 13);
 }
 
 fclose($fp);
