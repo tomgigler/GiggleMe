@@ -46,7 +46,7 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
 
 } elseif($_POST['message_type']=='batch'){
   $delim = substr(md5(time()),0,18);
-  $input = preg_replace("/\n\n\+{20}\++\n\n/", $delim, $_POST['content']);
+  $input = preg_replace("/\n\s*\n\+{20}\++\n\s*\n/", $delim, $_POST['content']);
   $obj = explode($delim, $input);
 
   $messages = array();
