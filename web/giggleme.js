@@ -49,7 +49,6 @@ function edit_button_click(){
   $('#channel_select').val(channel_id);
   $('#delivery_time').val(delivery_time_java_format);
   $('#description').val($('#display_description_cell').text());
-  $('#edit_content').val($('#display_content_pre').text());
   if($('#message_type_select').val() == 'message'){
     $('#pin_message_row').toggle(true);
     if(repeat_frequency){
@@ -215,6 +214,7 @@ function save_message(){
         $('.edit_element').toggle(false);
         $('#skip_if_row').toggle(false)
         $('#from_template_row').toggle(false)
+        $('#show_as_command_chkbx').prop('checked', false)
         guild_id = message.guild_id;
         channel_id = message.delivery_channel_id;
         delivery_time_java_format = message.delivery_time_java_format;
