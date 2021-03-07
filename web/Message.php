@@ -84,6 +84,10 @@ class Message {
     return "";
   }
 
+  function command(){
+    return "~giggle channel=".$this->channel;
+  }
+
   function set_all(){
     $this->author = $this->author_name();
     $this->server = $this->guild_name();
@@ -96,6 +100,7 @@ class Message {
     $this->repeat_frequency_num = $this->repeat_frequency_num();
     $this->repeat_skip_if = $this->repeat_skip_if();
     $this->message_type = $this->message_type();
+    $this->command = $this->command();
   }
 
   static function get_message_by_id($id){
