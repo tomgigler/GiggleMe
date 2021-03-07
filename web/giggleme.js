@@ -28,12 +28,12 @@ function edit_button_click(){
   server_select_updated();
   $('.display_element').toggle(false);
   $('.edit_element').toggle(true);
-  $('#repeats_row').toggle(true);
   $('#channel_select').val(channel_id);
   $('#delivery_time').val(delivery_time_java_format);
   $('#description').val($('#display_description_cell').text());
   $('#edit_content').val($('#display_content_pre').text());
   if($('#message_type_select').val() == 'message'){
+    $('#repeats_row').toggle(true);
     $('#pin_message_row').toggle(true);
     if(repeat_frequency){
       $('#repeats_select').val(repeat_frequency);
