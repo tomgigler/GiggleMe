@@ -52,8 +52,10 @@ class DelayedMessage:
             output += f"> **Guild:**  {self.get_guild(client).name}\n"
         return output
 
-    def get_show_content(self, raw=False):
-        if raw:
+    def get_show_content(self, raw=False, timezone=None):
+        if raw == "raw+":
+            return self.content + "\n```"
+        elif raw:
             return "```\n" + self.content + "\n```"
         else:
             return self.content
@@ -68,6 +70,23 @@ class Message(DelayedMessage):
         self.pin_message = pin_message
         if update_db:
             self.update_db()
+
+    def get_show_content(self, raw=False, timezone=None):
+        command = ""
+        if raw == "raw+":
+            command = f"~giggle {gigtz.command_localized_time(self.delivery_time, timezone)}"
+            command += f" channel={self.delivery_channel_id}"
+            if self.repeat:
+                command += f" repeat={self.repeat}"
+            if self.repeat_until:
+                command += f" duration={int((self.repeat_until-self.delivery_time)/60)}"
+            if self.pin_message:
+                command += f" pin=true"
+            if self.description:
+                command += f" desc=\"{self.description}\""
+            return "```\n" + command + "\n" + super().get_show_content(raw, timezone)
+        else:
+            return self.content
 
     def update_db(self):
         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until, self.pin_message)

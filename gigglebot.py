@@ -595,7 +595,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
     if msg_num in delayed_messages:
         output = await delayed_messages[msg_num].get_show_output(client, raw=raw, show_id=show_id, guild_id=channel.guild.id, show_content=True, timezone=giguser.users[author_id].timezone, format_24=giguser.users[author_id].format_24)
         await channel.send(output)
-        await channel.send(delayed_messages[msg_num].get_show_content(raw))
+        await channel.send(delayed_messages[msg_num].get_show_content(raw, timezone=giguser.users[author_id].timezone))
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
 
@@ -920,7 +920,7 @@ async def on_message(msg):
                     await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
                     return
 
-                match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)|next) *$', msg.content)
+                match = re.match(r'~g(iggle)? +show( +(raw\+?))?( +(\S+)|next) *$', msg.content)
                 if match:
                     await show_delayed_message(msg.channel, msg.author.id, match.group(5), match.group(3))
                     return

@@ -84,6 +84,25 @@ class Message {
     return "";
   }
 
+  function command(){
+    if(is_null($this->delivery_time))
+      $command_str = "~giggle template";
+    else
+      $command_str = "~giggle ".date("Y-m-d H:i:s",$this->delivery_time);
+    $command_str.= " channel=".$this->channel;
+    if(!is_null($this->repeats))
+      $command_str.= " repeat=".$this->repeats;
+      if(!is_null($this->repeat_until))
+        $duration_minutes = intval(($this->repeat_until-$this->delivery_time)/60);
+        if($duration_minutes > 0)
+          $command_str.= " duration=minutes:".$duration_minutes;
+    if(!is_null($this->pin_message))
+      $command_str.= " pin=true";
+    if($this->description != "")
+      $command_str.= " desc=\"".$this->description."\"";
+    return $command_str;
+  }
+
   function set_all(){
     $this->author = $this->author_name();
     $this->server = $this->guild_name();
@@ -96,6 +115,7 @@ class Message {
     $this->repeat_frequency_num = $this->repeat_frequency_num();
     $this->repeat_skip_if = $this->repeat_skip_if();
     $this->message_type = $this->message_type();
+    $this->command = $this->command();
   }
 
   static function get_message_by_id($id){

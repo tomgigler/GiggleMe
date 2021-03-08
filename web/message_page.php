@@ -156,9 +156,10 @@ print "    </td>\n";
 print "  </tr>\n";
 
 print "</table>\n";
-
-print "<br><br>\n";
+print "<br>\n";
+print "<p class='display_element' style='font-family:\"Calibri\"'><input type='checkbox' id='show_as_command_chkbx' onclick='show_as_command_click()'/>&nbsp;Show as command</p>\n";
 print "<textarea id='edit_content' class='edit_element' cols='124' rows='24' maxlength='1992'>\n";
+print $message->content;
 print "</textarea>\n";
 print "</center>";
 print "<div id='display_content_div' class='display_element content-div'>\n";

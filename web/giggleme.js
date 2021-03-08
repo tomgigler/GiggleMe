@@ -23,6 +23,23 @@ function server_select_updated(){
   update_from_template_select();
 }
 
+function show_as_command_click(){
+  msg_id = $('#message_id_cell').text()
+  $.ajax({
+    url: "get_message_by_id.php",
+    data: {
+      msg_id: msg_id
+    },
+    success: function( response ) {
+      var message = JSON.parse(response);
+      if($('#show_as_command_chkbx').prop('checked'))
+        $('#display_content_pre').text(message.command+"\n"+message.content);
+      else
+        $('#display_content_pre').text(message.content);
+    }
+  });
+}
+
 function edit_button_click(){
   $('#server_select').val(guild_id);
   server_select_updated();
@@ -31,7 +48,6 @@ function edit_button_click(){
   $('#channel_select').val(channel_id);
   $('#delivery_time').val(delivery_time_java_format);
   $('#description').val($('#display_description_cell').text());
-  $('#edit_content').val($('#display_content_pre').text());
   if($('#message_type_select').val() == 'message'){
     $('#repeats_row').toggle(true);
     $('#pin_message_row').toggle(true);
@@ -198,6 +214,7 @@ function save_message(){
         $('.edit_element').toggle(false);
         $('#skip_if_row').toggle(false)
         $('#from_template_row').toggle(false)
+        $('#show_as_command_chkbx').prop('checked', false)
         guild_id = message.guild_id;
         channel_id = message.delivery_channel_id;
         delivery_time_java_format = message.delivery_time_java_format;
