@@ -59,6 +59,8 @@ def show_help(command):
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message
 > `next` may be used as <message-id> to reference the next message in the queue
 > 
+> Use `raw+` to include the full command syntax to re-create the message
+> 
 > Both `show` and `show raw` may be used to show templates"""
 
     if command == "send":
