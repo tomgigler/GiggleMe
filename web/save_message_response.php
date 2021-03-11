@@ -33,6 +33,12 @@ if(!isset($_SESSION['username'])){
 date_default_timezone_set($_SESSION['timezone']);
 
 if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
+  if(preg_match("/\/\/\//", $_POST['content'])){
+    http_response_code(400);
+    print "Placeholder '///' found in message body!";
+    exit();
+  }
+
   $repeats = $_POST['repeats'] == '' ? null : $_POST['repeats'];
   $pin_message = $_POST['pin_message'] == 'true' ? 1 : null;
   $delivery_time = $_POST['delivery_time'] == '' ? null : strtotime($_POST['delivery_time']);
