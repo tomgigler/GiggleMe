@@ -142,6 +142,9 @@ class Message {
     if(!preg_match("/^(~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} \d{1,2}:\d{2}(:\d{2})?|\d+))/", $command, $matches)){
       throw new BadRequestException("Invalid command:\n".$command);
     }
+    if(preg_match("/\/\/\//", $content)){
+      throw new BadRequestException("Placeholder `///` found in message body!");
+    }
     // ~giggle 2021-02-05 18:00 channel=truth-wanted desc=\"TW NOW - Show Channel\"
     $date_str = $matches[3];
     if(preg_match("/^\d+$/", $date_str)){
