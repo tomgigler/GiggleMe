@@ -149,6 +149,9 @@ async def process_delay_message(params):
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
 
+    if content is not None and re.search(r'///', content):
+        raise GigException(f"Placeholder `///` found in message body")
+
     if not content and not from_template:
         raise GigException(f"Message body required if not creating a message from a template\n\nTo see help type:\n\n`~giggle help`")
     elif content and from_template:
