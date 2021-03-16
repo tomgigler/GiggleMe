@@ -349,6 +349,17 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
     message = await get_message_by_id(guild_id, channel_id, message_id)
     await message.edit(content=output)
 
+def replace_generic_emojis(content, guild_id):
+    guild = discord.utils.get(client.guilds, id=int(guild_id))
+    emoji_names = set()
+    for match in re.finditer(r':([^:\n]+):', content):
+        emoji_names.add(match.group(1))
+    for emoji_name in emoji_names:
+        for emoji in guild.emojis:
+            if emoji.name == emoji_name:
+                content = re.sub(f":{emoji_name}:(?!\d+)", f"<:{emoji_name}:{emoji.id}>", content)
+    return content
+
 def replace_mentions(content, guild_id):
         guild = discord.utils.get(client.guilds, id=int(guild_id))
 
@@ -452,7 +463,7 @@ async def schedule_delay_message(msg):
         sent_message = None
         if not skip_delivery:
             try:
-                sent_message = await msg.get_delivery_channel(client).send(content)
+                sent_message = await msg.get_delivery_channel(client).send(replace_generic_emojis(content, msg.guild_id))
             except:
                     message_guild = msg.get_guild(client)
                     if message_guild.id in gigguild.guilds:
@@ -598,7 +609,10 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
     if msg_num in delayed_messages:
         output = await delayed_messages[msg_num].get_show_output(client, raw=raw, show_id=show_id, guild_id=channel.guild.id, show_content=True, timezone=giguser.users[author_id].timezone, format_24=giguser.users[author_id].format_24)
         await channel.send(output)
-        await channel.send(delayed_messages[msg_num].get_show_content(raw, timezone=giguser.users[author_id].timezone))
+        content = delayed_messages[msg_num].get_show_content(raw, timezone=giguser.users[author_id].timezone)
+        if not raw:
+            content = replace_generic_emojis(content, delayed_messages[msg_num].guild_id)
+        await channel.send(content)
     else:
         await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
 
