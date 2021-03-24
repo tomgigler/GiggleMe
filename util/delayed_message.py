@@ -117,7 +117,7 @@ class Template(DelayedMessage):
             self.update_db()
 
     def update_db(self):
-        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, None, self.author_id, None, None, self.content, self.description, None)
+        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, None, self.author_id, None, None, self.content, self.description, None, None)
 
     async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
         output = self.get_show_header(client, show_id, guild_id, show_content)
@@ -133,7 +133,7 @@ class Proposal(DelayedMessage):
             self.update_db()
 
     def update_db(self):
-        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, -1, self.author_id, None, self.approval_message_id, self.content, self.description, None)
+        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, -1, self.author_id, None, self.approval_message_id, self.content, self.description, None, None)
 
     async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
         output = self.get_show_header(client, show_id, guild_id, show_content)
