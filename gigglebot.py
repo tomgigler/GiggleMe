@@ -840,7 +840,7 @@ async def remove_vip(msg, vip_id):
 async def list_vips(msg, list_all):
     output = ""
     for vip in giguser.vips:
-        if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == setings.bot_owner_id:
+        if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == settings.bot_owner_id:
             output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
             output += " **-** "
             output += "**" + giguser.vips[vip].template_id + "**"
