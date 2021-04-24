@@ -57,7 +57,7 @@ async def poll_message_table():
                 delayed_messages[msg_id].author_id = row[4]
                 delayed_messages[msg_id].content = row[7]
                 delayed_messages[msg_id].description = row[8]
-                delayed_messages[msg_id].pin_message = row[10]
+                delayed_messages[msg_id].special_handling = row[10]
 
                 if delivery_time and delivery_time >= 0:
                     if row[3] != delayed_messages[msg_id].delivery_time:
@@ -145,6 +145,9 @@ async def process_delay_message(params):
     required_approvals = params.pop('required_approvals', None)
     duration = params.pop('duration', None)
     pin_message = params.pop('pin', None)
+    set_topic = params.pop('set-topic', None)
+    set_channel_name = params.pop('set-channel-name', None)
+    special_handling = None
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
@@ -212,17 +215,16 @@ async def process_delay_message(params):
     else:
         required_approvals = '1'
 
-    if delay == 'proposal':
+    if delay == 'template' or delay == 'proposal':
         if pin_message is not None:
-            raise GigException("The **pin** option may not be used when creating a proposal")
-        pass
+            raise GigException(f"The **pin** option may not be used when creating a {delay}")
+        if set_topic is not None:
+            raise GigException(f"The **set-topic** option may not be used when creating a {delay}")
+        if set_channel_name is not None:
+            raise GigException(f"The **set-channel-name** option may not be used when creating a {delay}")
 
     elif delay == 'template':
         delivery_time = None
-        if repeat is not None:
-            raise GigException("The repeat option may not be used when creating a template")
-        if pin_message is not None:
-            raise GigException("The **pin** option may not be used when creating a template")
 
     elif re.match(r'\d+$', delay):
         if delay == '0':
@@ -242,6 +244,7 @@ async def process_delay_message(params):
     if pin_message:
         if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
             pin_message = True
+            special_handling = 1
         elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
             pin_message = False
         else:
@@ -264,7 +267,7 @@ async def process_delay_message(params):
 
     # create new Message
     if delivery_time is not None and delivery_time >= 0:
-        newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until, pin_message)
+        newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until, special_handling)
     elif delivery_time and delivery_time < 0:
         newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description, int(required_approvals))
     else:
@@ -474,7 +477,7 @@ async def schedule_delay_message(msg):
                     await client.get_user(settings.bot_owner_id).send(f"{author.mention}'s ({author.id}) message {msg.id} failed to send\n`{format_exc()}`")
                     return
 
-            if msg.pin_message:
+            if msg.special_handling == 1:
                 try:
                     await sent_message.pin()
                 except discord.HTTPException as e:
@@ -724,11 +727,12 @@ async def edit_delay_message(params):
         if pin_message:
             if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
                 pin_message = True
+                msg.special_handling = 1
             elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
                 pin_message = False
+                msg.special_handling = None
             else:
                 raise GigException(f"`{pin_message}` is an invalid value for **pin**")
-            msg.pin_message = pin_message
 
         if channel:
             msg.delivery_channel_id = delivery_channel.id
