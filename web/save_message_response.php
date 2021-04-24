@@ -40,10 +40,10 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
   }
 
   $repeats = $_POST['repeats'] == '' ? null : $_POST['repeats'];
-  $pin_message = $_POST['pin_message'] == 'true' ? 1 : null;
+  $special_handling = $_POST['pin_message'] == 'true' ? 1 : null;
   $delivery_time = $_POST['delivery_time'] == '' ? null : strtotime($_POST['delivery_time']);
   $repeat_until = $_POST['repeat_until'] == '' ? null : strtotime($_POST['repeat_until']);
-  $message = new Message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], $delivery_time, $_SESSION['user_id'], $repeats, $_POST['content'], $_POST['description'], $repeat_until, $pin_message, true);
+  $message = new Message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], $delivery_time, $_SESSION['user_id'], $repeats, $_POST['content'], $_POST['description'], $repeat_until, $special_handling, true);
 
   http_response_code(201);
 
