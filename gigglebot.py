@@ -954,19 +954,13 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    try:
-                        await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
-                        return
-                    except GigParseException:
-                        pass
+                    await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
+                    return
 
                 match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+|template)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    try:
-                        await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
-                        return
-                    except GigParseException:
-                        pass
+                    await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
+                    return
 
                 match = re.match(r'~g(iggle)? +(time-format|tf)( +(12|24))? *$', msg.content)
                 if match:
@@ -986,11 +980,8 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +p(ropose)?( +([^\n]+))?(\n(.+))?$', msg.content, re.DOTALL)
                 if match:
-                    try:
-                        await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': 'proposal', 'content': match.group(6)}, match.group(4))
-                        return
-                    except GigParseException:
-                        pass
+                    await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': 'proposal', 'content': match.group(6)}, match.group(4))
+                    return
 
                 match = re.match(r'~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
                 if match:
@@ -1039,8 +1030,9 @@ async def on_message(msg):
 
                 await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
 
-            except GigParseException:
-                await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
+            except GigParseException as e:
+                await msg.channel.send(embed=discord.Embed(description=f"{str(e)}\n\nTo see help type:\n\n`~giggle help` ", color=0xff0000))
+                return
 
             except GigException as e:
                 await msg.channel.send(embed=discord.Embed(description=str(e), color=0xff0000))
