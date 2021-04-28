@@ -152,6 +152,9 @@ async def process_delay_message(params):
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
 
+    if pin_message and ( set_topic or set_channel_name ) or set_topic and set_channel_name:
+        raise GigException(f"Invalid command.  You may only use one of `pin`, `set-topic`, and `set-channel-name`")
+
     if content is not None and re.search(r'///', content):
         raise GigException(f"Placeholder `///` found in message body")
 
@@ -243,12 +246,27 @@ async def process_delay_message(params):
 
     if pin_message:
         if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
-            pin_message = True
             special_handling = 1
         elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
-            pin_message = False
+            pass
         else:
             raise GigException(f"`{pin_message}` is an invalid value for **pin**")
+
+    if set_topic:
+        if re.match(r'(true|yes)', set_topic, re.IGNORECASE):
+            special_handling = 2
+        elif re.match(r'(false|no)', set_topic, re.IGNORECASE):
+            pass
+        else:
+            raise GigException(f"`{set_topic}` is an invalid value for **set-topic**")
+
+    if set_channel_name:
+        if re.match(r'(true|yes)', set_channel_name, re.IGNORECASE):
+            special_handling = 3
+        elif re.match(r'(false|no)', set_channel_name, re.IGNORECASE):
+            pass
+        else:
+            raise GigException(f"`{set_channel_name}` is an invalid value for **set-channel-name**")
 
     # validate duration
     repeat_until = None
@@ -465,17 +483,22 @@ async def schedule_delay_message(msg):
 
         sent_message = None
         if not skip_delivery:
-            try:
-                sent_message = await msg.get_delivery_channel(client).send(replace_generic_emojis(content, msg.guild_id))
-            except:
-                    message_guild = msg.get_guild(client)
-                    if message_guild.id in gigguild.guilds:
-                        channel = discord.utils.get(message_guild.channels, id=gigguild.guilds[message_guild.id].approval_channel_id)
-                        author = msg.get_author(client)
-                        if channel:
-                            await channel.send(embed=discord.Embed(description=f"{author.mention} message {msg.id} failed to send", color=0xff0000))
-                    await client.get_user(settings.bot_owner_id).send(f"{author.mention}'s ({author.id}) message {msg.id} failed to send\n`{format_exc()}`")
-                    return
+            if msg.special_handling == 2:
+                await msg.get_delivery_channel(client).edit(topic=content)
+            elif msg.special_handling == 3:
+                await msg.get_delivery_channel(client).edit(name=content)
+            else:
+                try:
+                    sent_message = await msg.get_delivery_channel(client).send(replace_generic_emojis(content, msg.guild_id))
+                except:
+                        message_guild = msg.get_guild(client)
+                        if message_guild.id in gigguild.guilds:
+                            channel = discord.utils.get(message_guild.channels, id=gigguild.guilds[message_guild.id].approval_channel_id)
+                            author = msg.get_author(client)
+                            if channel:
+                                await channel.send(embed=discord.Embed(description=f"{author.mention} message {msg.id} failed to send", color=0xff0000))
+                        await client.get_user(settings.bot_owner_id).send(f"{author.mention}'s ({author.id}) message {msg.id} failed to send\n`{format_exc()}`")
+                        return
 
             if msg.special_handling == 1:
                 try:
@@ -726,10 +749,8 @@ async def edit_delay_message(params):
 
         if pin_message:
             if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
-                pin_message = True
                 msg.special_handling = 1
             elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
-                pin_message = False
                 msg.special_handling = None
             else:
                 raise GigException(f"`{pin_message}` is an invalid value for **pin**")
@@ -756,7 +777,7 @@ async def edit_delay_message(params):
 
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage = Message(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description, msg.repeat_until, msg.pin_message)
+            newMessage = Message(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description, msg.repeat_until, msg.special_handling)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
