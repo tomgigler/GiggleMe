@@ -1086,7 +1086,7 @@ async def on_raw_reaction_remove(payload):
 @client.event
 async def on_guild_join(guild):
     user = client.get_user(settings.bot_owner_id)
-    await user.send(f"{client.user.mention} joined {guild.name}")
+    await user.send(f"{client.user.mention} joined {guild.name} {guild.id}")
 
 gigtz.load_timezones()
 giguser.load_users()
