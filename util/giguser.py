@@ -83,7 +83,7 @@ def save_user(user_id, name, guild_id, guild_name):
         gigguild.guilds[guild_id].guild_name = guild_name
         gigguild.guilds[guild_id].save()
     else:
-        gigguild.guilds[guild_id] = Guild(guild_id, guild_name)
+        gigguild.guilds[guild_id] = gigguild.Guild(guild_id, guild_name)
 
 def save_vip(vip):
     gigdb.save_vip(vip.vip_id, vip.guild_id, vip.template_id, vip.grace_period, vip.last_sent)
