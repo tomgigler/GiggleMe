@@ -119,7 +119,9 @@ def show_help(command):
 > 
 > `~giggle timezone`
 > 
-> Display your currently set time zone"""
+> Display your currently set time zone
+> 
+> To see a list of available time zones type `~giggle timezones`"""
 
     if command == "time-format":
         return """> `~giggle time-format <12 or 24>`
