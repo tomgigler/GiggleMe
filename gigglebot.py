@@ -929,6 +929,9 @@ async def on_message(msg):
         return
 
     if re.match(r'~(giggle|g |g$)', msg.content):
+        if msg.author.id not in giguser.user_guilds.keys() or msg.guild.id not in giguser.user_guilds[msg.author.id]:
+            if msg.author.guild_permissions.administrator:
+                giguser.save_user(msg.author.id, msg.author.name, msg.guild.id, client.get_guild(msg.guild.id).name)
         if msg.author.id in giguser.user_guilds.keys() and msg.guild.id in giguser.user_guilds[msg.author.id]:
             try:
                 if time() - giguser.users[msg.author.id].last_active > 3600 and msg.author.id != settings.bot_owner_id:
