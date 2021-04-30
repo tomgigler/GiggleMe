@@ -751,6 +751,10 @@ async def edit_delay_message(params):
         embed = discord.Embed(description=f"{type(msg).__name__} edited", color=0x00ff00)
 
         if pin_message:
+            if msg.special_handling == 2:
+                raise GigException("pin may not be used with set-topic")
+            if msg.special_handling == 3:
+                raise GigException("pin may not be used with set-channel-name")
             if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
                 msg.special_handling = 1
             elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
