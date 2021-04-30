@@ -5,7 +5,7 @@ function load_message_page(action, repeat_until){
   $('#skip_if_num').hide();
   $('#skip_if_row').hide();
   $('#repeat_until_datetime').hide();
-  $('#pin_message_row').hide();
+  $('#special_handling_row').hide();
   if(action=='' && $('#display_repeats_cell').text()==''){
     $('#repeats_row').hide();
     $('#repeat_until_row').hide();
@@ -13,8 +13,8 @@ function load_message_page(action, repeat_until){
   if(repeat_until==''){
     $('#repeat_until_row').hide();
   }
-  if(action=='create' || $('#pin_message_checkbox').prop('checked')){
-    $('#pin_message_row').toggle(true);
+  if(action=='create' || $('#display_special_handling_cell').text()=='True'){
+    $('#special_handling_row').toggle(true);
   }
 }
 
@@ -50,7 +50,10 @@ function edit_button_click(){
   $('#description').val($('#display_description_cell').text());
   if($('#message_type_select').val() == 'message'){
     $('#repeats_row').toggle(true);
-    $('#pin_message_row').toggle(true);
+    if($('#special_handling_header').text() == 'Pin')
+      $('#special_handling_row').toggle(true);
+    else
+      $('#special_handling_row').toggle(false);
     if(repeat_frequency){
       $('#repeats_select').val(repeat_frequency);
       if(repeat_frequency_num){
@@ -105,7 +108,10 @@ function cancel_button_click(){
       $('#repeat_until_row').toggle(false);
     }
     if(!$('#pin_message_checkbox').prop('checked')){
-      $('#pin_message_row').toggle(false);
+      $('#special_handling_row').toggle(false);
+    }
+    if($('#special_handling_header').text() != 'Pin'){
+      $('#special_handling_row').toggle(true);
     }
   }
 }
@@ -177,7 +183,13 @@ function save_message(){
     data['delivery_time'] = $('#delivery_time').val();
     data['repeats'] = repeats_str;
     data['repeat_until'] = repeat_until;
-    data['pin_message'] = $('#pin_message_checkbox').prop('checked');
+    if($('#special_handling_header').text() == 'Pin')
+      if($('#pin_message_checkbox').prop('checked')) data['pin_message'] = 1
+      else data['pin_message'] = 0
+    if($('#special_handling_header').text() == 'Set Topic')
+      data['pin_message'] = 2
+    if($('#special_handling_header').text() == 'Set Channel Name')
+      data['pin_message'] = 3
   }
 
   $.ajax({
@@ -222,11 +234,12 @@ function save_message(){
         repeat_frequency = message.repeat_frequency;
         repeat_frequency_num = message.repeat_frequency_num;
         repeat_skip_if = message.repeat_skip_if;
-        if(message.pin_message){
-	  $('#display_pin_message_cell').text('True')
+        if(message.special_handling){
+	  $('#display_special_handling_cell').text('True')
+          $('#special_handling_row').toggle(true);
         } else {
-          $('#pin_message_row').toggle(false);
-	  $('#display_pin_message_cell').text('False')
+          $('#special_handling_row').toggle(false);
+	  $('#display_special_handling_cell').text('False')
 	}
       }
     },
@@ -314,7 +327,7 @@ function message_type_updated(){
     $('#repeats_row').toggle(false);
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
-    $('#pin_message_row').toggle(false);
+    $('#special_handling_row').toggle(false);
     $('#pin_message_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
@@ -330,7 +343,7 @@ function message_type_updated(){
       $('#skip_if_row').toggle(true);
       $('#repeat_until_row').toggle(true);
     }
-    $('#pin_message_row').toggle(true);
+    $('#special_handling_row').toggle(true);
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
@@ -342,7 +355,7 @@ function message_type_updated(){
     $('#repeats_row').toggle(false);
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
-    $('#pin_message_row').toggle(false);
+    $('#special_handling_row').toggle(false);
     $('#description_row').toggle(false);
     $('#edit_content').prop('maxlength','50000');
   }
