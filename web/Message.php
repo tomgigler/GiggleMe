@@ -181,6 +181,18 @@ class Message {
         throw new BadRequestException("Invalid value for pin:  ".$matches[2]);
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+    if(preg_match("/(set-topic\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 2;
+      elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
+        throw new BadRequestException("Invalid value for set-topic:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+    if(preg_match("/(set-channel-name\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 3;
+      elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
+        throw new BadRequestException("Invalid value for set-channel-name:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
     if(!preg_match("/^\s*$/", $remaining_args))
         throw new BadRequestException("Unrecognized parameter(s):\n".$remaining_args);
 
