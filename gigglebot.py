@@ -484,7 +484,10 @@ async def schedule_delay_message(msg):
         sent_message = None
         if not skip_delivery:
             if msg.special_handling == 2:
-                await msg.get_delivery_channel(client).edit(topic=content)
+                if re.match(r'none', content, re.IGNORECASE):
+                    await msg.get_delivery_channel(client).edit(topic='')
+                else:
+                    await msg.get_delivery_channel(client).edit(topic=content)
             elif msg.special_handling == 3:
                 await msg.get_delivery_channel(client).edit(name=content)
             else:
