@@ -6,7 +6,7 @@ class BadRequestException extends Exception {}
 
 class Message {
 
-  function Message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $pin_message, $save=false){
+  function Message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $special_handling, $save=false){
     $this->id = $id;
     $this->guild_id = strval($guild_id);
     $this->delivery_channel_id = strval($delivery_channel_id);
@@ -16,10 +16,10 @@ class Message {
     $this->content = $content;
     $this->description = $description;
     $this->repeat_until = $repeat_until;
-    $this->pin_message = $pin_message;
+    $this->special_handling = $special_handling;
     if($save){
       $db = new DBConnection();
-      $db->create_or_update_message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $pin_message);
+      $db->create_or_update_message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $special_handling);
     }
     $this->set_all();
   }
@@ -96,7 +96,7 @@ class Message {
         $duration_minutes = intval(($this->repeat_until-$this->delivery_time)/60);
         if($duration_minutes > 0)
           $command_str.= " duration=minutes:".$duration_minutes;
-    if(!is_null($this->pin_message))
+    if($this->special_handling == 1)
       $command_str.= " pin=true";
     if($this->description != "")
       $command_str.= " desc=\"".$this->description."\"";
@@ -174,18 +174,30 @@ class Message {
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
 
-    $pin_message = null;
+    $special_handling = null;
     if(preg_match("/(pin\s*=\s*(\S+))/", $remaining_args, $matches)){
-      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $pin_message = 1;
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 1;
       elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
         throw new BadRequestException("Invalid value for pin:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+    if(preg_match("/(set-topic\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 2;
+      elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
+        throw new BadRequestException("Invalid value for set-topic:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+    if(preg_match("/(set-channel-name\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 3;
+      elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
+        throw new BadRequestException("Invalid value for set-channel-name:  ".$matches[2]);
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
     if(!preg_match("/^\s*$/", $remaining_args))
         throw new BadRequestException("Unrecognized parameter(s):\n".$remaining_args);
 
     $msg_id = substr(md5(rand().time()),0,8);
-    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $desc, null, $pin_message, true);
+    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $desc, null, $special_handling, true);
     return $message;
   }
 

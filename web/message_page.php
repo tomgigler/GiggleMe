@@ -142,15 +142,17 @@ print "    <td id='display_description_cell' class='display_element'>".htmlspeci
 print "    <td  id='edit_description_cell' class='edit_element'><input id='description' style='display:table-cell; width:100%' /></td>\n";
 print "  </tr>\n";
 
-print "  <tr id='pin_message_row'>\n";
-print "    <th>Pin</th>\n";
-print "    <td id='display_pin_message_cell' class='display_element'>";
-if($message->pin_message) print "True";
+print "  <tr id='special_handling_row'>\n";
+if($message->special_handling == 2) print "    <th id='special_handling_header'>Set Topic</th>\n";
+elseif($message->special_handling == 3) print "    <th id='special_handling_header'>Set Channel Name</th>\n";
+else print "    <th id='special_handling_header'>Pin</th>\n";
+print "    <td id='display_special_handling_cell' class='display_element'>";
+if($message->special_handling > 0) print "True";
 else print "False";
 print "</td>\n";
-print "    <td id='edit_pin_message_cell' class='edit_element'>\n";
+print "    <td id='edit_special_handling_cell' class='edit_element'>\n";
 print "      <input id='pin_message_checkbox' type='checkbox' ";
-if($message->pin_message) print "checked ";
+if($message->special_handling == 1) print "checked ";
 print "/>\n";
 print "    </td>\n";
 print "  </tr>\n";

@@ -61,13 +61,13 @@ class DelayedMessage:
             return self.content
 
 class Message(DelayedMessage):
-    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until, pin_message, update_db=True):
+    def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until, special_handling, update_db=True):
         super().__init__(id, guild_id, delivery_channel_id, author_id, content, description)
         self.delivery_time = delivery_time
         self.repeat = repeat
         self.last_repeat_message = last_repeat_message
         self.repeat_until = repeat_until
-        self.pin_message = pin_message
+        self.special_handling = special_handling
         if update_db:
             self.update_db()
 
@@ -80,8 +80,12 @@ class Message(DelayedMessage):
                 command += f" repeat={self.repeat}"
             if self.repeat_until:
                 command += f" duration={int((self.repeat_until-self.delivery_time)/60)}"
-            if self.pin_message:
+            if self.special_handling == 1:
                 command += f" pin=true"
+            if self.special_handling == 2:
+                command += f" set-topic=true"
+            if self.special_handling == 3:
+                command += f" set-channel-name=true"
             if self.description:
                 command += f" desc=\"{self.description}\""
             return "```\n" + command + "\n" + super().get_show_content(raw, timezone)
@@ -89,7 +93,7 @@ class Message(DelayedMessage):
             return super().get_show_content(raw, timezone)
 
     def update_db(self):
-        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until, self.pin_message)
+        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until, self.special_handling)
 
     async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
         output = self.get_show_header(client, show_id, guild_id, show_content)
@@ -106,8 +110,12 @@ class Message(DelayedMessage):
         if self.repeat and self.repeat_until:
             output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, timezone, format_24)}\n"
         output += f"> **Description:**  {self.description}\n"
-        if self.pin_message:
+        if self.special_handling == 1:
             output += "> **Pin Message:**  True\n"
+        if self.special_handling == 2:
+            output += "> **Set Topic:**  True\n"
+        if self.special_handling == 3:
+            output += "> **Set Channel Name:**  True\n"
         return output
 
 class Template(DelayedMessage):

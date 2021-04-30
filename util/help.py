@@ -4,19 +4,27 @@ def show_help(command):
     if not command:
         return """> To schedule **<message>** to be delivered to **<channel>** at **<time>**:
 > 
-> `~giggle <time> channel=<channel> repeat=<frequency> desc="<brief description>" from_template=<template_id> pin=<True|False>`
+> `~giggle <time> <options>`
 > `<message>`
 > 
 > **<time>** may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
 > 
-> **repeat** is optional.  For more information on repeating messages type `~giggle help repeat`
+> **Options:**
 > 
-> **desc** is an optional description of the message
+> `channel=<channel>`:  The channel to deliver the message to.  May be a name, reference, or ID
 > 
-> **pin** is optional.  If True, the new message will be pinned
+> `repeat=<frequency>`:   Repeat message at <frequency>.  For more information on repeating messages type `~giggle help repeat`
 > 
-> **from_template** creates the message body from the <template_id> template
+> `desc="<brief description>"`:  Provide a description of the message.  This is helpful in identifying messages
+> 
+> `from_template=<template_id>`:  creates the message body from the <template_id> template
 > Do not include a message body when using from_template
+> 
+> `pin=<True|False>`:  If True, the new message will be pinned
+> 
+> `set-topic=<True|False>`:  If True, set the channel topic to <message> instead of posting message in channel
+> 
+> `set-channel-name=<True|False>`:  If True, set the channel name to <message> instead of posting message in channel
 > 
 > To create a template:
 > 
