@@ -71,6 +71,21 @@ class Message(DelayedMessage):
         if update_db:
             self.update_db()
 
+    def get_delivery_channel(self, client):
+        channel = None
+        try:
+            channel = discord.utils.get(self.get_guild(client).voice_channels, id=self.delivery_channel_id)
+        except:
+            try:
+                if special_handling > 1:
+                    channel = discord.utils.get(self.get_guild(client).channels, id=self.delivery_channel_id)
+            except:
+                pass
+        if not channel:
+            gigchannel.load_channels()
+            channel = gigchannel.channels[self.delivery_channel_id]
+        return channel
+
     def get_show_content(self, raw=False, timezone=None):
         command = ""
         if raw == "raw+":
