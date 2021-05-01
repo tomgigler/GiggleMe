@@ -75,12 +75,10 @@ class Message(DelayedMessage):
         channel = None
         try:
             channel = discord.utils.get(self.get_guild(client).text_channels, id=self.delivery_channel_id)
+            if not channel and self.special_handling > 1:
+                channel = discord.utils.get(self.get_guild(client).channels, id=self.delivery_channel_id)
         except:
-            try:
-                if self.special_handling > 1:
-                    channel = discord.utils.get(self.get_guild(client).channels, id=self.delivery_channel_id)
-            except:
-                pass
+            pass
         if not channel:
             gigchannel.load_channels()
             channel = gigchannel.channels[self.delivery_channel_id]
