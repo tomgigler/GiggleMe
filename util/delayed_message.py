@@ -74,10 +74,10 @@ class Message(DelayedMessage):
     def get_delivery_channel(self, client):
         channel = None
         try:
-            channel = discord.utils.get(self.get_guild(client).voice_channels, id=self.delivery_channel_id)
+            channel = discord.utils.get(self.get_guild(client).text_channels, id=self.delivery_channel_id)
         except:
             try:
-                if special_handling > 1:
+                if self.special_handling > 1:
                     channel = discord.utils.get(self.get_guild(client).channels, id=self.delivery_channel_id)
             except:
                 pass
