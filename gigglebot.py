@@ -247,6 +247,10 @@ async def process_delay_message(params):
     if pin_message:
         if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
             special_handling = 1
+            if type(delivery_channel).__name__ != 'TextChannel':
+                raise GigException("The pin option is only valid for Discord TextChannels")
+            if not delivery_channel.permissions_for(delivery_channel.guild.get_member(client.user.id)).manage_messages:
+                raise GigException(f"**{client.user.mention}** does not have permission to pin messages in {delivery_channel.mention}")
         elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
             pass
         else:
@@ -255,6 +259,10 @@ async def process_delay_message(params):
     if set_topic:
         if re.match(r'(true|yes)', set_topic, re.IGNORECASE):
             special_handling = 2
+            if type(delivery_channel).__name__ != 'TextChannel' and type(delivery_channel).__name__ != 'StageChannel':
+                raise GigException("The set-topic option is only valid for Discord TextChannels and Discord StageChannels")
+            if not delivery_channel.permissions_for(delivery_channel.guild.get_member(client.user.id)).manage_channels:
+                raise GigException(f"**{client.user.mention}** does not have permission to set the topic in {delivery_channel.mention}")
         elif re.match(r'(false|no)', set_topic, re.IGNORECASE):
             pass
         else:
@@ -263,10 +271,18 @@ async def process_delay_message(params):
     if set_channel_name:
         if re.match(r'(true|yes)', set_channel_name, re.IGNORECASE):
             special_handling = 3
+            if type(delivery_channel).__module__ != 'discord.channel':
+                raise GigException("The set-channel-name option is only valid for Discord Channels")
+            if not delivery_channel.permissions_for(delivery_channel.guild.get_member(client.user.id)).manage_channels:
+                raise GigException(f"**{client.user.mention}** does not have permission to set the channel name  in {delivery_channel.mention}")
         elif re.match(r'(false|no)', set_channel_name, re.IGNORECASE):
             pass
         else:
             raise GigException(f"`{set_channel_name}` is an invalid value for **set-channel-name**")
+
+    if not special_handling:
+        if type(delivery_channel).__name__ != 'TextChannel' and type(delivery_channel).__module__ != 'gigchannel':
+            raise GigException(f"Cannot send messages to {type(delivery_channel).__name__}")
 
     # validate duration
     repeat_until = None
