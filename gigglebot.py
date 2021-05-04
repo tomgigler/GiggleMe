@@ -1123,7 +1123,7 @@ async def on_voice_state_update(member, before, after):
 
 @client.event
 async def on_ready():
-    await client.change_presence(activity=discord.Game('with thegigler'))
+    await client.change_presence(activity=discord.Game('~giggle help'))
 
 @client.event
 async def on_raw_reaction_add(payload):
