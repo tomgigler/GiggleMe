@@ -920,17 +920,17 @@ async def show_guild_config(msg):
     output = f"**Config Settings**"
     output += "\n**proposal_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].proposal_channel_id).mention
+        output += get_channel_by_name_or_id(msg.guild, str(gigguild.guilds[msg.guild.id].proposal_channel_id)).mention
     except:
         output += str(gigguild.guilds[msg.guild.id].proposal_channel_id)
     output += "\n**approval_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].approval_channel_id).mention
+        output += get_channel_by_name_or_id(msg.guild, str(gigguild.guilds[msg.guild.id].approval_channel_id)).mention
     except:
         output += str(gigguild.guilds[msg.guild.id].approval_channel_id)
     output += "\n**delivery_channel**:  "
     try:
-        output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].delivery_channel_id).mention
+        output += get_channel_by_name_or_id(msg.guild, str(gigguild.guilds[msg.guild.id].delivery_channel_id)).mention
     except:
         output += str(gigguild.guilds[msg.guild.id].delivery_channel_id)
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
