@@ -933,11 +933,6 @@ async def show_guild_config(msg):
         output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].delivery_channel_id).mention
     except:
         output += str(gigguild.guilds[msg.guild.id].delivery_channel_id)
-    output += "\n**tweet_channel**:  "
-    try:
-        output += get_channel_by_name_or_id(msg.guild, gigguild.guilds[msg.guild.id].tweet_channel_id).mention
-    except:
-        output += str(gigguild.guilds[msg.guild.id].tweet_channel_id)
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_guild_config(params):
