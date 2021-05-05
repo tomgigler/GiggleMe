@@ -933,6 +933,13 @@ async def show_guild_config(msg):
         output += get_channel_by_name_or_id(msg.guild, str(gigguild.guilds[msg.guild.id].delivery_channel_id)).mention
     except:
         output += str(gigguild.guilds[msg.guild.id].delivery_channel_id)
+    output += "\n**Plan Level**:  "
+    if not gigguild.guilds[msg.guild.id].plan_level:
+        output += "Free"
+    elif gigguild.guilds[msg.guild.id].plan_level == 1:
+        output += "Basic"
+    elif gigguild.guilds[msg.guild.id].plan_level == 2:
+        output += "Premium"
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_guild_config(params):

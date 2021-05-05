@@ -88,11 +88,13 @@ def set_user_format_24(format_24, user_id):
 def set_user_timezone(tz_id, name, user_id):
     db_execute_sql("UPDATE users SET timezone = %s, name = %s WHERE user = %s", False, tz_id=tz_id, name=name, user_id=user_id)
 
-def save_guild(id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id):
-    db_execute_sql("INSERT INTO guilds ( id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id ) "
-            "values (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE guild_name = %s, proposal_channel_id = %s, approval_channel_id = %s, delivery_channel_id = %s",
-            False, id=id, guild_name=guild_name, proposal_channel_id=proposal_channel_id, approval_channel_id=approval_channel_id, delivery_channel_id=delivery_channel_id,
-            guild_name_2=guild_name, proposal_channel_id_2=proposal_channel_id, approval_channel_id_2=approval_channel_id, delivery_channel_id_2=delivery_channel_id)
+def save_guild(id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id, plan_level):
+    db_execute_sql("INSERT INTO guilds ( id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id, plan_level ) "
+            "values (%s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE guild_name = %s, proposal_channel_id = %s, approval_channel_id = %s, "
+            "delivery_channel_id = %s, plan_level = %s", False, id=id, guild_name=guild_name, proposal_channel_id=proposal_channel_id,
+            approval_channel_id=approval_channel_id, delivery_channel_id=delivery_channel_id, plan_level=plan_level, guild_name_2=guild_name,
+            proposal_channel_id_2=proposal_channel_id, approval_channel_id_2=approval_channel_id, delivery_channel_id_2=delivery_channel_id,
+            plan_level_2=plan_level)
 
 def save_channel(id, guild_id, name, channel_type, token_key, token_secret, user_id, screen_name):
     db_execute_sql("INSERT INTO channels ( id, guild_id, name, channel_type, token_key, token_secret, user_id, screen_name) values (%s, %s, %s, %s, %s, %s, %s, %s) "
