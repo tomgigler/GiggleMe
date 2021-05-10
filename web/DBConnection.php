@@ -37,6 +37,16 @@ class DBConnection {
     return $ret[0][0];
   }
 
+  function get_channel_by_id($channel_id, $guild_id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT id FROM channels WHERE id = ? and guild_id = ?");
+    $stmt->bind_param('ii', $channel_id, $guild_id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret[0][0];
+  }
+
   function get_channel_by_name($channel_name, $guild_id){
     $this->connect();
     $stmt = $this->connection->prepare("SELECT id FROM channels WHERE name = ? and guild_id = ?");

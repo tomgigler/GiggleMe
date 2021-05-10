@@ -164,6 +164,9 @@ class Message {
     }
     $channel_id = $db->get_channel_by_name($matches[2], $guild_id);
     if(is_null($channel_id)){
+      $channel_id = $db->get_channel_by_id($matches[2], $guild_id);
+    }
+    if(is_null($channel_id)){
       throw new BadRequestException("Cannot find channel ".$matches[2] ." in ".$db->get_guild_name($guild_id)." server");
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
