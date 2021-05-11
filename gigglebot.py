@@ -103,6 +103,9 @@ def load_from_db(delayed_messages):
     gigtz.load_timezones()
     giguser.load_users()
 
+def count_guild_messages(guild_id):
+    return sum(map(lambda i: i.guild_id == guild_id, delayed_messages.values()))
+
 def get_channel_by_name_or_id(guild, channel_param):
     channel = discord.utils.get(guild.channels, name=channel_param)
     if not channel:
@@ -148,6 +151,9 @@ async def process_delay_message(params):
     set_topic = params.pop('set-topic', None)
     set_channel_name = params.pop('set-channel-name', None)
     special_handling = None
+
+    if count_guild_messages(guild.id) > 2 and not gigguild.guilds[guild.id].plan_level:
+        raise GigException(f"Too many messages")
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
