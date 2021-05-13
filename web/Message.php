@@ -4,6 +4,8 @@ require_once "DBConnection.php";
 
 class BadRequestException extends Exception {}
 
+class InsufficientLevelException extends Exception {}
+
 class Message {
 
   function Message($id, $guild_id, $delivery_channel_id, $delivery_time, $author_id, $repeats, $content, $description, $repeat_until, $special_handling, $save=false){
@@ -136,8 +138,26 @@ class Message {
     return $messages;
   }
 
+  static function get_guild_message_count($guild_id){
+    $db = new DBConnection();
+    return $db->get_guild_message_count($guild_id);
+  }
+
+  static function exceeded_guild_message_limit($guild_id){
+    $db = new DBConnection();
+    if(!$db->get_guild_plan_level($guild_id) && $db->get_guild_message_count($guild_id) >= 10){
+      return true;
+    }
+    return false;
+  }
+
   static function create_message_from_command($cmd, $guild_id){
     $db = new DBConnection();
+
+    if(Message::exceeded_guild_message_limit($guild_id)){
+      throw new BadRequestException("The free version of this software only allows you to have a total of 10 scheduled messages/templates at any one time.  Please DM the bot to inquire about upgrade options.");
+    }
+
     [ $command, $content ] = explode("\n", $cmd, 2);
     if(!preg_match("/^(~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} \d{1,2}:\d{2}(:\d{2})?|\d+))/", $command, $matches)){
       throw new BadRequestException("Invalid command:\n".$command);
