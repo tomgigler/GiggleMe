@@ -32,6 +32,12 @@ if(!isset($_SESSION['username'])){
 
 date_default_timezone_set($_SESSION['timezone']);
 
+if(Message::exceeded_guild_message_limit($_POST['server_id'])){
+  http_response_code(403);
+  print "You currently have " .Message::get_guild_message_count($_POST['server_id']) . " scheduled messages/templates.  The free version of this software only allows you to have a total of 10 scheduled messages/templates at any one time.  Please DM the bot to inquire about upgrade options.";
+  exit;
+}
+
 if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
   if(preg_match("/\/\/\//", $_POST['content'])){
     http_response_code(400);
@@ -65,6 +71,14 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template'){
         Message::delete_message_by_id($msg_id);
       }
       http_response_code(400);
+      print $e->getMessage();
+      exit();
+    }
+    catch(InsufficientLevelException $e) {
+      foreach($messages as $msg_id){
+        Message::delete_message_by_id($msg_id);
+      }
+      http_response_code(403);
       print $e->getMessage();
       exit();
     }

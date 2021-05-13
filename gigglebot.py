@@ -103,6 +103,9 @@ def load_from_db(delayed_messages):
     gigtz.load_timezones()
     giguser.load_users()
 
+def count_guild_messages(guild_id):
+    return sum(map(lambda i: i.guild_id == guild_id, delayed_messages.values()))
+
 def get_channel_by_name_or_id(guild, channel_param):
     channel = discord.utils.get(guild.channels, name=channel_param)
     if not channel:
@@ -148,6 +151,11 @@ async def process_delay_message(params):
     set_topic = params.pop('set-topic', None)
     set_channel_name = params.pop('set-channel-name', None)
     special_handling = None
+
+    if count_guild_messages(guild.id) >= 10 and not gigguild.guilds[guild.id].plan_level:
+        raise GigException(f"You currently have a total of {count_guild_messages(guild.id)} scehduled messages and templates"
+            f"\n\nYou are currently using the free version of {client.user.mention} which limits you to a combined total of 10 scehduled messages and templates"
+            f"\n\nPlease DM {client.user.mention} to inquire about upgrade options")
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
@@ -933,6 +941,13 @@ async def show_guild_config(msg):
         output += get_channel_by_name_or_id(msg.guild, str(gigguild.guilds[msg.guild.id].delivery_channel_id)).mention
     except:
         output += str(gigguild.guilds[msg.guild.id].delivery_channel_id)
+    output += "\n**Plan Level**:  "
+    if not gigguild.guilds[msg.guild.id].plan_level:
+        output += "Free"
+    elif gigguild.guilds[msg.guild.id].plan_level == 1:
+        output += "Basic"
+    elif gigguild.guilds[msg.guild.id].plan_level == 2:
+        output += "Premium"
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def set_guild_config(params):

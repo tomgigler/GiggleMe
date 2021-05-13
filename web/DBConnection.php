@@ -130,6 +130,26 @@ class DBConnection {
     $this->close();
   }
 
+  function get_guild_message_count($guild_id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT count(id) FROM messages WHERE guild_id = ?");
+    $stmt->bind_param('i', $guild_id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret[0][0];
+  }
+
+  function get_guild_plan_level($guild_id){
+    $this->connect();
+    $stmt = $this->connection->prepare("SELECT plan_level FROM guilds WHERE id = ?");
+    $stmt->bind_param('i', $guild_id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all();
+    $this->close();
+    return $ret[0][0];
+  }
+
   function get_guild_templates($guild_id){
     $this->connect();
     $stmt = $this->connection->prepare("SELECT id, description FROM messages WHERE delivery_time is NULL AND guild_id = ?");
