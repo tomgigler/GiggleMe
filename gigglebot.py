@@ -152,8 +152,10 @@ async def process_delay_message(params):
     set_channel_name = params.pop('set-channel-name', None)
     special_handling = None
 
-    if count_guild_messages(guild.id) > 2 and not gigguild.guilds[guild.id].plan_level:
-        raise GigException(f"Too many messages")
+    if count_guild_messages(guild.id) >= 10 and not gigguild.guilds[guild.id].plan_level:
+        raise GigException(f"You currently have a total of {count_guild_messages(guild.id)} scehduled messages and templates"
+            f"\n\nYou are currently using the free version of {client.user.mention} which limits you to a combined total of 10 scehduled messages and templates"
+            f"\n\nPlease DM {client.user.mention} to inquire about upgrade options")
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
