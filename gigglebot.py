@@ -1127,7 +1127,7 @@ async def on_voice_state_update(member, before, after):
         grace_period = 7200 # Default is two hours
         if giguser.vips[(member.id, member.guild.id)].grace_period is not None:
             grace_period = giguser.vips[(member.id, member.guild.id)].grace_period * 60 * 60
-        if not giguser.vips[(member.id, member.guild.id)].last_sent or time() - giguser.vips[(member.id, member.guild.id)].last_sent > grace_period:
+        if not giguser.vips[(member.id, member.guild.id)].last_sent or time() - giguser.vips[(member.id, member.guild.id)].last_sent > float(grace_period):
             giguser.vips[(member.id, member.guild.id)].set_last_sent(time())
             await process_delay_message({'guild': member.guild, 'request_message_id': time(), 'delay': '0', 'from_template': giguser.vips[(member.id, member.guild.id)].template_id })
 
