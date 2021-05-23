@@ -909,7 +909,7 @@ async def list_vips(msg, list_all):
             output += " **-** "
             output += "**" + giguser.vips[vip].template_id + "**"
             output += " **-** "
-            if giguser.vips[vip].grace_period:
+            if giguser.vips[vip].grace_period is not None:
                 output += "**" + str(giguser.vips[vip].grace_period) + "**"
             else:
                 output += "**None**"
