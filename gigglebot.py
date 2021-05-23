@@ -233,9 +233,8 @@ async def process_delay_message(params):
             raise GigException(f"The **set-topic** option may not be used when creating a {delay}")
         if set_channel_name is not None:
             raise GigException(f"The **set-channel-name** option may not be used when creating a {delay}")
-
-    elif delay == 'template':
-        delivery_time = None
+        if delay == 'template':
+            delivery_time = None
 
     elif re.match(r'\d+$', delay):
         if delay == '0':
