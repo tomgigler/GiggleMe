@@ -905,18 +905,21 @@ async def list_vips(msg, list_all):
     output = ""
     for vip in giguser.vips:
         if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == settings.bot_owner_id:
-            output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
-            output += " **-** "
-            output += "**" + giguser.vips[vip].template_id + "**"
-            output += " **-** "
-            if giguser.vips[vip].grace_period is not None:
-                output += "**" + str(giguser.vips[vip].grace_period) + "**"
+            if not client.get_user(giguser.vips[vip].vip_id):
+                output += f"Cannot find user {vip[0]}\n"
             else:
-                output += "**None**"
-            if list_all:
+                output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
                 output += " **-** "
-                output += "**" + client.get_guild(giguser.vips[vip].guild_id).name + "**"
-            output += "\n"
+                output += "**" + giguser.vips[vip].template_id + "**"
+                output += " **-** "
+                if giguser.vips[vip].grace_period is not None:
+                    output += "**" + str(giguser.vips[vip].grace_period) + "**"
+                else:
+                    output += "**None**"
+                if list_all:
+                    output += " **-** "
+                    output += "**" + client.get_guild(giguser.vips[vip].guild_id).name + "**"
+                output += "\n"
     if output:
         output = "**Vip** - **Template** - **Grace Period**\n===================================\n" + output
     else:
