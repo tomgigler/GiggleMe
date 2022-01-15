@@ -219,11 +219,34 @@ class Message {
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
 
+    $repeats = null;
+    if(preg_match("/(repeat\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/((minutes:(\d+))|(hours:(\d+))|daily|weekly|monthly)(;skip_if=(\d+))?$/i", $matches[2])) $repeats = $matches[2];
+      else
+        throw new BadRequestException("Invalid value for repeats:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+
+    $repeat_until = null;
+    if(preg_match("/(duration\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/((minutes:(\d+))|(hours:(\d+))|(days:(\d+)))/i", $matches[2], $times)){
+	if($times[2]) $repeat_until = time() + intval($times[3]) * 60;
+	elseif($times[4]) $repeat_until = time() + intval($times[5]) * 60 * 60;
+	elseif($times[6]) $repeat_until = time() + intval($times[7]) * 60 * 60 * 24;
+      }
+      else
+        throw new BadRequestException("Invalid value for duration:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+
     if(!preg_match("/^\s*$/", $remaining_args))
         throw new BadRequestException("Unrecognized parameter(s):\n".$remaining_args);
 
+    if($repeat_until && !$repeats)
+        throw new BadRequestException("duration parameter may only be used with repeats");
+
     $msg_id = substr(md5(rand().time()),0,8);
-    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], null, $content, $desc, null, $special_handling, true);
+    $message = new Message($msg_id, $guild_id, $channel_id, $time, $_SESSION['user_id'], $repeats, $content, $desc, $repeat_until, $special_handling, true);
     return $message;
   }
 
