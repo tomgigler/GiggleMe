@@ -512,12 +512,12 @@ async def schedule_delay_message(msg):
 
         sent_message = None
         if not skip_delivery:
-            if msg.special_handling == 2:
+            if hasattr(msg, 'special_handling') and msg.special_handling == 2:
                 if re.match(r'none', content, re.IGNORECASE):
                     await msg.get_delivery_channel(client).edit(topic='')
                 else:
                     await msg.get_delivery_channel(client).edit(topic=content)
-            elif msg.special_handling == 3:
+            elif hasattr(msg, 'special_handling') and msg.special_handling == 3:
                 await msg.get_delivery_channel(client).edit(name=content)
             else:
                 try:
@@ -532,7 +532,7 @@ async def schedule_delay_message(msg):
                         await client.get_user(settings.bot_owner_id).send(f"{author.mention}'s ({author.id}) message {msg.id} failed to send\n`{format_exc()}`")
                         return
 
-            if msg.special_handling == 1:
+            if hasattr(msg, 'special_handling') and msg.special_handling == 1:
                 try:
                     await sent_message.pin()
                 except discord.HTTPException as e:
