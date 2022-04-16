@@ -1004,6 +1004,11 @@ async def on_message(msg):
                     await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
+                match = re.match(r'~g(iggle)? +(auto(-text)?)( +([^\n]+))\n(.+)', msg.content)
+                if match:
+                    await msg.channel.send(f"{match.group(5)}\n{match.group(6)}")
+                    return
+
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
                 if match:
                     await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
