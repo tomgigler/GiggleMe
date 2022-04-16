@@ -162,3 +162,20 @@ class Proposal(DelayedMessage):
         output += f"> **Required Approvals:**  {votes.get_required_approvals(self.id)}\n"
         output += f"> **Current Approvals:**  {votes.vote_count(self.id)}\n"
         return output
+
+class AutoReply(DelayedMessage):
+    def __init__(self, id, guild_id, author_id, trigger, content, description, update_db=True):
+        super().__init__(id, guild_id, None, author_id, content, description)
+        self.trigger = trigger
+        if update_db:
+            self.update_db()
+
+    def update_db(self):
+        # We'll us a deliver_time of -2 to indicate AutoReply
+        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, -2, self.author_id, trigger, None, self.content, self.description, None, None)
+
+    async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
+        output = self.get_show_header(client, show_id, guild_id, show_content)
+        output += f"> **Trigger**  {self.trigger}\n"
+        output += f"> **Description:**  {self.description}\n"
+        return output
