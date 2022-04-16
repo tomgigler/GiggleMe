@@ -977,6 +977,9 @@ async def set_guild_config(params):
 
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
+async def create_auto_reply(msg, trigger, reply):
+    await msg.channel.send(f"Some day, the technology will exist for {client.user.name} to replece `{trigger}`\nwith:\n{reply}")
+
 @client.event
 async def on_message(msg):
     if msg.author == client.user:
@@ -1004,9 +1007,9 @@ async def on_message(msg):
                     await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
-                match = re.match(r'~g(iggle)? +(auto(-text)?)( +([^\n]+))\n(.+)', msg.content)
+                match = re.match(r'~g(iggle)? +(auto(-reply)?)( +([^\n]+))\n(.+)', msg.content)
                 if match:
-                    await msg.channel.send(f"{match.group(5)}\n{match.group(6)}")
+                    await create_auto_reply(msg, match.group(5), match.group(6))
                     return
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
