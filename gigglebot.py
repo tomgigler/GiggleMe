@@ -581,6 +581,8 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
         message_type = 'templates'
     elif message_type == 'proposals' or message_type == 'proposal' or message_type == 'p':
         message_type = 'proposals'
+    elif message_type == 'auto-repl' or message_type == 'auto' or message_type == 'a':
+        message_type = 'auto-replies'
     elif message_type == 'repeats' or message_type == 'repeat':
         message_type = 'repeats'
 
@@ -612,6 +614,9 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
         elif message_type == 'proposals':
             if type(delayed_messages[msg_id]) is Proposal:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
+        elif message_type == 'auto-replies':
+            if type(delayed_messages[msg_id]) is AutoReply:
+                sorted_messages[msg_id] = delayed_messages[msg_id]
         else:
             if type(delayed_messages[msg_id]) is Message:
                 if message_type == 'repeats' or message_type == 'repeat':
@@ -620,7 +625,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
                 else:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
 
-    if message_type != 'templates' and message_type != 'proposals':
+    if message_type != 'templates' and message_type != 'proposals' and message_type != 'auto-replies':
         sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
@@ -1018,7 +1023,7 @@ async def on_message(msg):
                     await create_auto_reply(msg, match.group(5), match.group(6))
                     return
 
-                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
+                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)|a(uto(-replies)?)?)?)? *$', msg.content)
                 if match:
                     await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
                     return
