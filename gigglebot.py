@@ -692,8 +692,8 @@ async def send_delay_message(channel, author, msg_num):
 
     if message_id in delayed_messages:
         msg = delayed_messages[message_id]
-        if type(msg) is Template:
-            raise GigException(f"{message_id} is a template and cannot be sent")
+        if type(msg) is Template or type(msg) is AutoReply:
+            raise GigException(f"**{message_id}** is a(n) **{type(msg).__name__}** and cannot be sent")
         prompt = f"Send message {message_id} now?"
         if type(msg) is Proposal:
             prompt = f"Send proposed message {message_id} now?"
