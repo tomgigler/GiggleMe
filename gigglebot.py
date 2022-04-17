@@ -14,7 +14,7 @@ import gigdb
 import giguser
 import gigguild
 import gigchannel
-from delayed_message import Message, Template, Proposal
+from delayed_message import Message, Template, Proposal, AutoReply
 from gigparse import parse_args, GigParseException
 from gigvotes import votes
 
@@ -97,6 +97,8 @@ def load_from_db(delayed_messages):
         elif delivery_time and delivery_time == -1:
             votes.load_proposal_votes(message_id)
             delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(message_id), False)
+        elif delivery_time and delivery_time == -2:
+            delayed_messages[message_id] = AutoReply(message_id, row[1], row[4], row[5], row[7], row[8], False)
         else:
             delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8], False)
 
@@ -978,7 +980,11 @@ async def set_guild_config(params):
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def create_auto_reply(msg, trigger, reply):
-    await msg.channel.send(f"Some day, the technology will exist for {client.user.name} to replece `{trigger}`\nwith:\n{reply}")
+    newAutoReply = AutoReply(None, msg.guild.id, msg.author.id, trigger, reply, None, True)
+    delayed_messages[newAutoReply.id] = newAutoReply;
+    embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
+    embed.add_field(name="ID", value=f"{newAutoReply.id}", inline=True)
+    await msg.channel.send(embed=embed)
 
 @client.event
 async def on_message(msg):
