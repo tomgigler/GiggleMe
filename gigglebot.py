@@ -990,6 +990,12 @@ async def set_guild_config(params):
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
 async def create_auto_reply(msg, trigger, reply):
+    for message_id in delayed_messages:
+        if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == msg.guild.id and delayed_messages[message_id].trigger == trigger:
+            embed=discord.Embed(description=f"**{trigger}** is already in use", color=0xff0000)
+            embed.add_field(name="ID", value=f"{message_id}", inline=True)
+            await msg.channel.send(embed=embed)
+            return
     newAutoReply = AutoReply(None, msg.guild.id, msg.author.id, trigger, reply, None, True)
     delayed_messages[newAutoReply.id] = newAutoReply;
     embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
