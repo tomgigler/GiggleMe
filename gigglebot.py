@@ -1136,6 +1136,12 @@ async def on_message(msg):
         await process_delay_message({'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': time(), 'author_id': msg.author.id, 'delay': 'proposal',
             'content': msg.content, 'channel': gigguild.guilds[msg.guild.id].delivery_channel_id, 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': gigguild.guilds[msg.guild.id].approval_channel_id})
 
+    else:
+        for message_id in delayed_messages:
+            if type(delayed_messages[message_id]) is AutoReply:
+                if msg.guild.id == delayed_messages[message_id].guild_id and msg.content == delayed_messages[message_id].trigger:
+                    await msg.channel.send(delayed_messages[message_id].content)
+
 @client.event
 async def on_voice_state_update(member, before, after):
     if not before.channel and after.channel and (member.id, member.guild.id) in giguser.vips:
