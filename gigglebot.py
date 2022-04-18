@@ -45,6 +45,8 @@ async def poll_message_table():
                 elif delivery_time and delivery_time == -1:
                     votes.load_proposal_votes(msg_id)
                     delayed_messages[msg_id] = Proposal(msg_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(msg_id), False)
+                elif delivery_time and delivery_time == -2:
+                    delayed_messages[msg_id] = AutoReply(msg_id, row[1], row[4], row[5], row[7], row[8], False)
                 else:
                     delayed_messages[msg_id] = Template(msg_id, row[1], row[2], row[4], row[7], row[8], False)
 
