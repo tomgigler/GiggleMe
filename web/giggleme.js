@@ -143,7 +143,11 @@ function save_message(){
 
   if($('#message_type_select').find(":selected").val() !== 'batch'){
     data['message_id'] = $('#message_id_cell').text();
-    if($('#message_type_select').find(":selected").val() !== 'autoreply'){
+    if($('#message_type_select').find(":selected").val() == 'autoreply'){
+      if($('#trigger_text').val()==''){
+        alert('Trigger is required!'); return;
+      }
+      data['repeats'] = $('#trigger_text').val();
       data['channel_id'] = $('#channel_select').val();
     }
     data['description'] = $('#description').val();
@@ -208,9 +212,12 @@ function save_message(){
         $('#display_server_cell').text(message.server);
         $('#display_channel_cell').text(message.channel);
         $('#display_delivery_time_cell').text(message.delivery_time_format);
-        if(!message.repeats){
+        if(!message.repeats || $('#message_type_select').find(":selected").val() == 'autoreply'){
           $('#repeats_row').toggle(false)
           $('#repeat_until_row').toggle(false)
+          if($('#message_type_select').find(":selected").val() == 'autoreply'){
+            $('#display_trigger_cell').text(message.repeats);
+	  }
         } else {
           $('#repeats_row').toggle(true)
           $('#display_repeats_cell').text(message.repeats)
