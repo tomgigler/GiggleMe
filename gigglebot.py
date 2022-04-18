@@ -14,7 +14,7 @@ import gigdb
 import giguser
 import gigguild
 import gigchannel
-from delayed_message import Message, Template, Proposal
+from delayed_message import Message, Template, Proposal, AutoReply
 from gigparse import parse_args, GigParseException
 from gigvotes import votes
 
@@ -42,7 +42,7 @@ async def poll_message_table():
                     giguser.users[delayed_messages[msg_id].author_id].set_last_message(msg_id)
                     asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
 
-                elif delivery_time and delivery_time < 0:
+                elif delivery_time and delivery_time == -1:
                     votes.load_proposal_votes(msg_id)
                     delayed_messages[msg_id] = Proposal(msg_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(msg_id), False)
                 else:
@@ -94,9 +94,11 @@ def load_from_db(delayed_messages):
             delayed_messages[message_id] = Message(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], False)
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
-        elif delivery_time and delivery_time < 0:
+        elif delivery_time and delivery_time == -1:
             votes.load_proposal_votes(message_id)
             delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(message_id), False)
+        elif delivery_time and delivery_time == -2:
+            delayed_messages[message_id] = AutoReply(message_id, row[1], row[4], row[5], row[7], row[8], False)
         else:
             delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8], False)
 
@@ -309,7 +311,7 @@ async def process_delay_message(params):
     # create new Message
     if delivery_time is not None and delivery_time >= 0:
         newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until, special_handling)
-    elif delivery_time and delivery_time < 0:
+    elif delivery_time and delivery_time == -1:
         newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description, int(required_approvals))
     else:
         newMessage =  Template(None, guild.id, delivery_channel.id, author_id, content, description)
@@ -579,6 +581,8 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
         message_type = 'templates'
     elif message_type == 'proposals' or message_type == 'proposal' or message_type == 'p':
         message_type = 'proposals'
+    elif message_type == 'auto-repl' or message_type == 'auto' or message_type == 'a':
+        message_type = 'auto-replies'
     elif message_type == 'repeats' or message_type == 'repeat':
         message_type = 'repeats'
 
@@ -610,6 +614,9 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
         elif message_type == 'proposals':
             if type(delayed_messages[msg_id]) is Proposal:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
+        elif message_type == 'auto-replies':
+            if type(delayed_messages[msg_id]) is AutoReply:
+                sorted_messages[msg_id] = delayed_messages[msg_id]
         else:
             if type(delayed_messages[msg_id]) is Message:
                 if message_type == 'repeats' or message_type == 'repeat':
@@ -618,7 +625,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
                 else:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
 
-    if message_type != 'templates' and message_type != 'proposals':
+    if message_type != 'templates' and message_type != 'proposals' and message_type != 'auto-replies':
         sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
@@ -685,8 +692,8 @@ async def send_delay_message(channel, author, msg_num):
 
     if message_id in delayed_messages:
         msg = delayed_messages[message_id]
-        if type(msg) is Template:
-            raise GigException(f"{message_id} is a template and cannot be sent")
+        if type(msg) is Template or type(msg) is AutoReply:
+            raise GigException(f"**{message_id}** is a(n) **{type(msg).__name__}** and cannot be sent")
         prompt = f"Send message {message_id} now?"
         if type(msg) is Proposal:
             prompt = f"Send proposed message {message_id} now?"
@@ -737,11 +744,16 @@ async def edit_delay_message(params):
 
         else:
             if repeat is not None:
-                raise GigException(f"The repeat option may not be used when editing a {type(msg).__name__.lower()}")
+                raise GigException(f"The **repeat** option may not be used when editing a {type(msg).__name__.lower()}")
             if delay:
                 raise GigException(f"A delivery time may not be specified when editing a {type(msg).__name__.lower()}")
             if pin_message:
                 raise GigException(f"The **pin** option may not be used when editing a {type(msg).__name__.lower()}")
+            if type(msg) == AutoReply:
+                if channel:
+                    raise GigException(f"The **channel** option may not be used when editing a {type(msg).__name__.lower()}")
+                if duration:
+                    raise GigException(f"The **duration** option may not be used when editing a {type(msg).__name__.lower()}")
 
         if delay:
             if re.match(r'\d+$', delay):
@@ -977,6 +989,19 @@ async def set_guild_config(params):
 
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
+async def create_auto_reply(msg, trigger, reply):
+    for message_id in delayed_messages:
+        if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == msg.guild.id and delayed_messages[message_id].trigger == trigger:
+            embed=discord.Embed(description=f"**{trigger}** is already in use", color=0xff0000)
+            embed.add_field(name="ID", value=f"{message_id}", inline=True)
+            await msg.channel.send(embed=embed)
+            return
+    newAutoReply = AutoReply(None, msg.guild.id, msg.author.id, trigger, reply, None, True)
+    delayed_messages[newAutoReply.id] = newAutoReply;
+    embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
+    embed.add_field(name="ID", value=f"{newAutoReply.id}", inline=True)
+    await msg.channel.send(embed=embed)
+
 @client.event
 async def on_message(msg):
     if msg.author == client.user:
@@ -1004,7 +1029,12 @@ async def on_message(msg):
                     await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
-                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)?))? *$', msg.content)
+                match = re.match(r'~g(iggle)? +(auto(-reply)?)( +([^\n]+))\n(.+)', msg.content, re.DOTALL)
+                if match:
+                    await create_auto_reply(msg, match.group(5), match.group(6))
+                    return
+
+                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)|a(uto(-replies)?)?)?)? *$', msg.content)
                 if match:
                     await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
                     return
@@ -1121,6 +1151,12 @@ async def on_message(msg):
     elif msg.guild.id in gigguild.guilds and msg.channel.id == gigguild.guilds[msg.guild.id].proposal_channel_id and gigguild.guilds[msg.guild.id].delivery_channel_id and gigguild.guilds[msg.guild.id].approval_channel_id:
         await process_delay_message({'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': time(), 'author_id': msg.author.id, 'delay': 'proposal',
             'content': msg.content, 'channel': gigguild.guilds[msg.guild.id].delivery_channel_id, 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': gigguild.guilds[msg.guild.id].approval_channel_id})
+
+    else:
+        for message_id in delayed_messages:
+            if type(delayed_messages[message_id]) is AutoReply:
+                if msg.guild.id == delayed_messages[message_id].guild_id and msg.content == delayed_messages[message_id].trigger:
+                    await msg.channel.send(delayed_messages[message_id].content)
 
 @client.event
 async def on_voice_state_update(member, before, after):

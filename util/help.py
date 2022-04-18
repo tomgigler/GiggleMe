@@ -39,7 +39,9 @@ def show_help(command):
 > 
 > `~giggle help <command>`
 > 
-> You may also propose messages to be sent once approved.  For more information on proposing messages type `~giggle help proposals`"""
+> You may also propose messages to be sent once approved.  For more information on proposing messages type `~giggle help proposals`
+> 
+> You may also create auto-replies.  For more information on auto-replies type `~giggle help auto-replies`"""
 
     if command == "list":
         return """> `~giggle list <range>`
@@ -198,5 +200,17 @@ def show_help(command):
 > 
 > `required_approvals=<N>`  The number of approvals required before the message is sent
 > If **required_approvals** is not specified, the message will be sent after it receives two approvals"""
+
+    if command == "auto-replies":
+        return """> The `auto-reply` command is used to create auto replies.  To create an auto-reply:
+> 
+> `~giggle auto-reply <trigger>`
+> `<reply>`
+> 
+> **<trigger>** is the text that will trigger the auto reply
+> 
+> The following optional parameters may also be used when creating an auto-reply:
+> 
+> `description="<description>"` A brief description of the auto-reply"""
 
     return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `proposals`"

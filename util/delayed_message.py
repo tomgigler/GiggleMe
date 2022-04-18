@@ -31,7 +31,8 @@ class DelayedMessage:
             pass
         if not channel:
             gigchannel.load_channels()
-            channel = gigchannel.channels[self.delivery_channel_id]
+            if self.delivery_channel_id is not None:
+                channel = gigchannel.channels[self.delivery_channel_id]
         return channel
 
     def get_author(self, client):
@@ -47,7 +48,8 @@ class DelayedMessage:
         if show_id:
             output += f"> **ID:**  {self.id}\n"
         output += f"> **Author:**  {self.get_author(client).name}\n"
-        output += f"> **Channel:**  {self.get_delivery_channel(client).mention}\n"
+        if self.get_delivery_channel(client) is not None:
+            output += f"> **Channel:**  {self.get_delivery_channel(client).mention}\n"
         if guild_id != self.guild_id:
             output += f"> **Guild:**  {self.get_guild(client).name}\n"
         return output
@@ -161,4 +163,21 @@ class Proposal(DelayedMessage):
         output += f"> **Description:**  {self.description}\n"
         output += f"> **Required Approvals:**  {votes.get_required_approvals(self.id)}\n"
         output += f"> **Current Approvals:**  {votes.vote_count(self.id)}\n"
+        return output
+
+class AutoReply(DelayedMessage):
+    def __init__(self, id, guild_id, author_id, trigger, content, description, update_db=True):
+        super().__init__(id, guild_id, None, author_id, content, description)
+        self.trigger = trigger
+        if update_db:
+            self.update_db()
+
+    def update_db(self):
+        # We'll us a deliver_time of -2 to indicate AutoReply
+        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, -2, self.author_id, self.trigger, None, self.content, self.description, None, None)
+
+    async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
+        output = self.get_show_header(client, show_id, guild_id, show_content)
+        output += f"> **Trigger**  {self.trigger}\n"
+        output += f"> **Description:**  {self.description}\n"
         return output
