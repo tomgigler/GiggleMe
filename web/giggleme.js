@@ -60,7 +60,6 @@ function edit_button_click(){
         $('#repeats_num').val(repeat_frequency_num);
         $('#repeats_num').toggle(true);
       }
-      $('#skip_if_row').toggle(true);
       $('#skip_if_num').val(repeat_skip_if);
       if(repeat_skip_if){
         $('#skip_if_checkbox').prop('checked', true)
@@ -144,7 +143,9 @@ function save_message(){
 
   if($('#message_type_select').find(":selected").val() !== 'batch'){
     data['message_id'] = $('#message_id_cell').text();
-    data['channel_id'] = $('#channel_select').val();
+    if($('#message_type_select').find(":selected").val() !== 'autoreply'){
+      data['channel_id'] = $('#channel_select').val();
+    }
     data['description'] = $('#description').val();
   }
 
@@ -325,6 +326,7 @@ function message_type_updated(){
     $('#delivery_time_row').toggle(false);
     $('#from_template_row').toggle(false);
     $('#repeats_row').toggle(false);
+    $('#trigger_row').toggle(false);
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
     $('#special_handling_row').toggle(false);
@@ -338,6 +340,7 @@ function message_type_updated(){
     $('#id_table_header').text('Message ID');
     $('#delivery_time_row').toggle(true);
     $('#from_template_row').toggle(true);
+    $('#trigger_row').toggle(false);
     $('#repeats_row').toggle(true);
     if($('#repeats_select').val()!='None'){
       $('#skip_if_row').toggle(true);
@@ -353,11 +356,27 @@ function message_type_updated(){
     $('#delivery_time_row').toggle(false);
     $('#from_template_row').toggle(false);
     $('#repeats_row').toggle(false);
+    $('#trigger_row').toggle(false);
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
     $('#special_handling_row').toggle(false);
     $('#description_row').toggle(false);
     $('#edit_content').prop('maxlength','50000');
+  } else if($('#message_type_select').find(":selected").val() == 'autoreply'){
+    $('#message_id_row').toggle(true);
+    $('#channel_row').toggle(false);
+    $('#message_id_header_cell').text('AutoReply ID');
+    $('#delivery_time_row').toggle(false);
+    $('#from_template_row').toggle(false);
+    $('#trigger_row').toggle(true);
+    $('#repeats_row').toggle(false);
+    $('#skip_if_row').toggle(false);
+    $('#repeat_until_row').toggle(false);
+    $('#special_handling_row').toggle(false);
+    $('#pin_message_checkbox').prop('checked', false)
+    $('#description_row').toggle(true);
+    $('#edit_content').prop('maxlength','1992');
+    $('#edit_content').val('')
   }
 }
 

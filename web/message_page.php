@@ -50,6 +50,7 @@ print "      <select id='message_type_select' style='display:table-cell; width:1
 print "        <option selected value='message'>Message</option>\n";
 print "        <option value='template'>Template</option>\n";
 print "        <option value='batch'>Batch Process</option>\n";
+print "        <option value='autoreply'>Auto Reply</option>\n";
 print "      </select>\n";
 print "    </td>\n";
 print "  </tr>\n";
@@ -114,6 +115,14 @@ print "        <option value='weekly'>weekly</option>\n";
 print "        <option value='monthly'>monthly</option>\n";
 print "      </select>\n";
 print "      <input id='repeats_num' style='display:table-cell; width:20%' />\n";
+print "    </td>\n";
+print "  </tr>\n";
+
+print "  <tr id='trigger_row' hidden='true'>\n";
+print "    <th id='trigger_header_cell'>Trigger</th>\n";
+print "    <td id='display_trigger_cell' class='display_element'>".$message->repeats."</td>\n";
+print "    <td id='edit_trigger_cell' class='edit_element'>\n";
+print "      <input id='trigger_text' style='display:table-cell;' value='".$message->repeats."'/>\n";
 print "    </td>\n";
 print "  </tr>\n";
 
@@ -188,10 +197,12 @@ if(!$_GET['action']=='create'){
     print "$('#delivery_time_row').toggle(false)\n";
     print "$('#message_type_select').val('template')\n";
   } elseif($message->delivery_time == -2){
+    print "$('#delivery_time_row').hide()\n";
     print "$('#message_id_header_cell').text('AutoReply ID')\n";
-    print "$('#repeats_header_cell').text('Trigger')\n";
-    print "$('#delivery_time_row').toggle(false)\n";
-    print "$('#channel_row').toggle(false)\n";
+    print "$('#trigger_row').show()\n";
+    print "$('skip_if_row').hide()\n";
+    print "$('#repeats_row').hide()\n";
+    print "$('#channel_row').hide()\n";
     print "$('#message_type_select').val('autoreply')\n";
   }
   print "$('#message_type_row').toggle(false)\n";
