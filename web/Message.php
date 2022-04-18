@@ -43,7 +43,8 @@ class Message {
 
   function message_type(){
     if(is_null($this->delivery_time)) return "template";
-    elseif($this->delivery_time < 0) return "proposal";
+    elseif($this->delivery_time == -1) return "proposal";
+    elseif($this->delivery_time == -2) return "autoreply";
     else return "message";
   }
 

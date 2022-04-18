@@ -76,6 +76,28 @@ if(count($messages)){
     print "  </tr>\n";
   }
   print "</table>\n";
+  print "<br><br>\n";
+}
+
+if(count($messages)){
+  print "<table border=1>\n";
+  print "  <tr><th colspan=5><b>AutoReplies</b></th></tr>\n";
+  print "  <tr>\n";
+  print "    <th>AutoReply ID</th>\n";
+  print "    <th>Server Name</th>\n";
+  print "    <th>Author</th>\n";
+  print "    <th>Description</th>\n";
+  print "  </tr>\n";
+  foreach($messages as $autoreply) {
+    if($autoreply->message_type() != 'autoreply') continue;
+    print "  <tr class='link-row' onclick=\"location.href='message_page.php?id=$autoreply->id'\">\n";
+    print "    <td>$autoreply->id</td>\n";
+    print "    <td>".htmlspecialchars($autoreply->server)."</td>\n";
+    print "    <td>".htmlspecialchars($autoreply->author)."</td>\n";
+    print "    <td>".htmlspecialchars($autoreply->description)."</td>\n";
+    print "  </tr>\n";
+  }
+  print "</table>\n";
 }
 
 $db = new DBConnection();
