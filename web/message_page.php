@@ -102,7 +102,7 @@ print "    </td>\n";
 print "  </tr>\n";
 
 print "  <tr id='repeats_row'>\n";
-print "    <th>Repeats</th>\n";
+print "    <th id='repeats_header_cell'>Repeats</th>\n";
 print "    <td id='display_repeats_cell' class='display_element'>".$message->repeats."</td>\n";
 print "    <td id='edit_repeats_cell' class='edit_element'>\n";
 print "      <select id='repeats_select' style='display:table-cell; width:50%' onchange='update_repeats_select()'>\n";
@@ -187,6 +187,12 @@ if(!$_GET['action']=='create'){
     print "$('#message_id_header_cell').text('Template ID')\n";
     print "$('#delivery_time_row').toggle(false)\n";
     print "$('#message_type_select').val('template')\n";
+  } elseif($message->delivery_time == -2){
+    print "$('#message_id_header_cell').text('AutoReply ID')\n";
+    print "$('#repeats_header_cell').text('Trigger')\n";
+    print "$('#delivery_time_row').toggle(false)\n";
+    print "$('#channel_row').toggle(false)\n";
+    print "$('#message_type_select').val('autoreply')\n";
   }
   print "$('#message_type_row').toggle(false)\n";
 }
