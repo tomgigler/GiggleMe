@@ -162,8 +162,8 @@ class DBConnection {
 
   function get_messages(){
     $this->connect();
-    $sql = "SELECT m.* FROM messages AS m, guilds AS g, users AS u, channels AS c ";
-    $sql .= "WHERE m.guild_id = g.id AND m.author_id = u.user AND c.id = m.delivery_channel_id ";
+    $sql = "SELECT m.* FROM messages AS m, guilds AS g, users AS u ";
+    $sql .= "WHERE m.guild_id = g.id AND m.author_id = u.user ";
     $sql .= "AND g.id in ( SELECT guild_id FROM user_guilds WHERE user_id = ? ) ";
     $sql .= "ORDER BY delivery_time";
     $stmt = $this->connection->prepare($sql);
