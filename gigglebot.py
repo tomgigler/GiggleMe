@@ -993,8 +993,8 @@ async def set_guild_config(params):
 
 async def create_auto_reply(msg, trigger, reply):
     for message_id in delayed_messages:
-        if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == msg.guild.id and delayed_messages[message_id].trigger == trigger:
-            embed=discord.Embed(description=f"**{trigger}** is already in use", color=0xff0000)
+        if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == msg.guild.id and delayed_messages[message_id].trigger.lower() == trigger.lower():
+            embed=discord.Embed(description=f"**{delayed_messages[message_id].trigger}** is already in use", color=0xff0000)
             embed.add_field(name="ID", value=f"{message_id}", inline=True)
             await msg.channel.send(embed=embed)
             return
@@ -1157,7 +1157,7 @@ async def on_message(msg):
     else:
         for message_id in delayed_messages:
             if type(delayed_messages[message_id]) is AutoReply:
-                if msg.guild.id == delayed_messages[message_id].guild_id and msg.content == delayed_messages[message_id].trigger:
+                if msg.guild.id == delayed_messages[message_id].guild_id and msg.content.lower() == delayed_messages[message_id].trigger.lower():
                     await msg.channel.send(delayed_messages[message_id].content)
 
 @client.event
