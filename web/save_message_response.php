@@ -42,13 +42,28 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template' || $_
   if(preg_match("/\/\/\//", $_POST['content'])){
     http_response_code(400);
     print "Placeholder '///' found in message body!";
-    exit();
+    exit;
   }
 
   $repeats = $_POST['repeats'] == '' ? null : $_POST['repeats'];
   $special_handling = $_POST['pin_message'] == 0 ? null : $_POST['pin_message'];
   $delivery_time = $_POST['delivery_time'] == '' ? null : strtotime($_POST['delivery_time']);
-  if($_POST['message_type']=='autoreply') { $delivery_time = -2; }
+  if($_POST['message_type']=='autoreply') {
+	$delivery_time = -2;
+	# check for other auto-replies with the same trigger
+	$messages = Message::get_messages();
+	foreach($messages as $message){
+		if($message->message_type() == "autoreply"){
+			if($message->guild_id == $_POST['server_id']){
+				if($message->id != $_POST['message_id'] && strtolower($message->repeats) == strtolower($repeats)){
+					http_response_code(400);
+					print "Trigger $message->repeats is already in use!";
+					exit;
+				}
+			}
+		}
+	}
+  }
   $repeat_until = $_POST['repeat_until'] == '' ? null : strtotime($_POST['repeat_until']);
   $message = new Message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], $delivery_time, $_SESSION['user_id'], $repeats, $_POST['content'], $_POST['description'], $repeat_until, $special_handling, true);
 
