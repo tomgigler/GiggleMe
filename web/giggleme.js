@@ -148,8 +148,8 @@ function save_message(){
         alert('Trigger is required!'); return;
       }
       data['repeats'] = $('#trigger_text').val();
-      data['channel_id'] = $('#channel_select').val();
     }
+    data['channel_id'] = $('#channel_select').val();
     data['description'] = $('#description').val();
   }
 

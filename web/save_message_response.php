@@ -48,8 +48,10 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template' || $_
   $repeats = $_POST['repeats'] == '' ? null : $_POST['repeats'];
   $special_handling = $_POST['pin_message'] == 0 ? null : $_POST['pin_message'];
   $delivery_time = $_POST['delivery_time'] == '' ? null : strtotime($_POST['delivery_time']);
+  $channel_id = $_POST['channel_id'];
   if($_POST['message_type']=='autoreply') {
 	$delivery_time = -2;
+	$channel_id = null;
 	# check for other auto-replies with the same trigger
 	$messages = Message::get_messages();
 	foreach($messages as $message){
@@ -65,7 +67,7 @@ if($_POST['message_type']=='message' || $_POST['message_type']=='template' || $_
 	}
   }
   $repeat_until = $_POST['repeat_until'] == '' ? null : strtotime($_POST['repeat_until']);
-  $message = new Message($_POST['message_id'], $_POST['server_id'], $_POST['channel_id'], $delivery_time, $_SESSION['user_id'], $repeats, $_POST['content'], $_POST['description'], $repeat_until, $special_handling, true);
+  $message = new Message($_POST['message_id'], $_POST['server_id'], $channel_id, $delivery_time, $_SESSION['user_id'], $repeats, $_POST['content'], $_POST['description'], $repeat_until, $special_handling, true);
 
   http_response_code(201);
 
