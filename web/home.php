@@ -85,6 +85,7 @@ if(count($messages)){
   print "  <tr>\n";
   print "    <th>AutoReply ID</th>\n";
   print "    <th>Server Name</th>\n";
+  print "    <th>Trigger</th>\n";
   print "    <th>Author</th>\n";
   print "    <th>Description</th>\n";
   print "  </tr>\n";
@@ -93,6 +94,7 @@ if(count($messages)){
     print "  <tr class='link-row' onclick=\"location.href='message_page.php?id=$autoreply->id'\">\n";
     print "    <td>$autoreply->id</td>\n";
     print "    <td>".htmlspecialchars($autoreply->server)."</td>\n";
+    print "    <td>".htmlspecialchars($autoreply->repeats)."</td>\n";
     print "    <td>".htmlspecialchars($autoreply->author)."</td>\n";
     print "    <td>".htmlspecialchars($autoreply->description)."</td>\n";
     print "  </tr>\n";
