@@ -46,7 +46,7 @@ async def poll_message_table():
                     votes.load_proposal_votes(msg_id)
                     delayed_messages[msg_id] = Proposal(msg_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(msg_id), False)
                 elif delivery_time and delivery_time == -2:
-                    delayed_messages[msg_id] = AutoReply(msg_id, row[1], row[4], row[5], row[7], row[8], False)
+                    delayed_messages[msg_id] = AutoReply(msg_id, row[1], row[4], row[5], row[7], row[8], row[10], False)
                 else:
                     delayed_messages[msg_id] = Template(msg_id, row[1], row[2], row[4], row[7], row[8], False)
 
@@ -100,7 +100,7 @@ def load_from_db(delayed_messages):
             votes.load_proposal_votes(message_id)
             delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(message_id), False)
         elif delivery_time and delivery_time == -2:
-            delayed_messages[message_id] = AutoReply(message_id, row[1], row[4], row[5], row[7], row[8], False)
+            delayed_messages[message_id] = AutoReply(message_id, row[1], row[4], row[5], row[7], row[8], row[10], False)
         else:
             delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8], False)
 
@@ -998,7 +998,7 @@ async def create_auto_reply(msg, trigger, reply):
             embed.add_field(name="ID", value=f"{message_id}", inline=True)
             await msg.channel.send(embed=embed)
             return
-    newAutoReply = AutoReply(None, msg.guild.id, msg.author.id, trigger, reply, None, True)
+    newAutoReply = AutoReply(None, msg.guild.id, msg.author.id, trigger, reply, None, None, True)
     delayed_messages[newAutoReply.id] = newAutoReply;
     embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
     embed.add_field(name="ID", value=f"{newAutoReply.id}", inline=True)
@@ -1157,8 +1157,12 @@ async def on_message(msg):
     else:
         for message_id in delayed_messages:
             if type(delayed_messages[message_id]) is AutoReply:
-                if msg.guild.id == delayed_messages[message_id].guild_id and msg.content.lower() == delayed_messages[message_id].trigger.lower():
-                    await msg.channel.send(delayed_messages[message_id].content)
+                if msg.guild.id == delayed_messages[message_id].guild_id:
+                    if delayed_messages[message_id].special_handling == 1:
+                        if re.match(f".*{delayed_messages[message_id].trigger}.*", msg.content, re.IGNORECASE):
+                            await msg.channel.send(delayed_messages[message_id].content)
+                    elif msg.content.lower() == delayed_messages[message_id].trigger.lower():
+                        await msg.channel.send(delayed_messages[message_id].content)
 
 @client.event
 async def on_voice_state_update(member, before, after):

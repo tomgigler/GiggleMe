@@ -175,12 +175,12 @@ class AutoReply(DelayedMessage):
 
     def update_db(self):
         # We'll use a deliver_time of -2 to indicate AutoReply
-        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, -2, self.author_id, self.trigger, None, self.content, self.description, self.special_handling, None, None)
+        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, -2, self.author_id, self.trigger, None, self.content, self.description, None, self.special_handling)
 
     async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
         output = self.get_show_header(client, show_id, guild_id, show_content)
         output += f"> **Trigger**  {self.trigger}\n"
         output += f"> **Description:**  {self.description}\n"
-        if self.special_handling is not None and self.special_handling = 1:
+        if self.special_handling is not None and self.special_handling == 1:
             output += f"> **Wildcard:**  true\n"
         return output
