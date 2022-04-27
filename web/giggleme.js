@@ -13,7 +13,7 @@ function load_message_page(action, repeat_until){
   if(repeat_until==''){
     $('#repeat_until_row').hide();
   }
-  if(action=='create' || $('#display_special_handling_cell').text()=='True'){
+  if(action=='create' || $('#display_special_handling_cell').text()=='True' || $('#special_handling_header').text() == 'Wildcard'){
     $('#special_handling_row').toggle(true);
   }
 }
@@ -50,8 +50,11 @@ function edit_button_click(){
   $('#description').val($('#display_description_cell').text());
   if($('#message_type_select').val() == 'message'){
     $('#repeats_row').toggle(true);
-    if($('#special_handling_header').text() == 'Pin' || $('#special_handling_header').text() == 'Wildcard')
+    if($('#special_handling_header').text() == 'Pin' || $('#special_handling_header').text() == 'Wildcard'){
       $('#special_handling_row').toggle(true);
+      if($('#display_special_handling_cell').text()=='True') $('#skip_if_checkbox').prop('checked', true)
+      else $('#pin_message_checkbox').prop('checked', false)
+    }
     else
       $('#special_handling_row').toggle(false);
     if(repeat_frequency){
@@ -247,6 +250,9 @@ function save_message(){
         repeat_skip_if = message.repeat_skip_if;
         if(message.special_handling){
 	  $('#display_special_handling_cell').text('True')
+          $('#special_handling_row').toggle(true);
+	} else if($('#message_type_select').find(":selected").val() == 'autoreply'){
+	  $('#display_special_handling_cell').text('False')
           $('#special_handling_row').toggle(true);
         } else {
           $('#special_handling_row').toggle(false);

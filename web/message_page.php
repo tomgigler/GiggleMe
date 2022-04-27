@@ -201,7 +201,8 @@ if(!$_GET['action']=='create'){
     print "$('#delivery_time_row').hide()\n";
     print "$('#message_id_header_cell').text('AutoReply ID')\n";
     print "$('#trigger_row').show()\n";
-    print "$('skip_if_row').hide()\n";
+    print "$('#special_handling_row').show()\n";
+    print "$('#skip_if_row').hide()\n";
     print "$('#repeats_row').hide()\n";
     print "$('#channel_row').hide()\n";
     print "$('#message_type_select').val('autoreply')\n";
