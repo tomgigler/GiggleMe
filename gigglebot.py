@@ -746,16 +746,16 @@ async def edit_delay_message(params):
 
         else:
             if repeat is not None:
-                raise GigException(f"The **repeat** option may not be used when editing a {type(msg).__name__.lower()}")
+                raise GigException(f"The **repeat** option may not be used when editing a(n) {type(msg).__name__.lower()}")
             if delay:
-                raise GigException(f"A delivery time may not be specified when editing a {type(msg).__name__.lower()}")
+                raise GigException(f"A delivery time may not be specified when editing a(n) {type(msg).__name__.lower()}")
             if pin_message:
-                raise GigException(f"The **pin** option may not be used when editing a {type(msg).__name__.lower()}")
+                raise GigException(f"The **pin** option may not be used when editing a(n) {type(msg).__name__.lower()}")
             if type(msg) == AutoReply:
                 if channel:
-                    raise GigException(f"The **channel** option may not be used when editing a {type(msg).__name__.lower()}")
+                    raise GigException(f"The **channel** option may not be used when editing a(n) {type(msg).__name__.lower()}")
                 if duration:
-                    raise GigException(f"The **duration** option may not be used when editing a {type(msg).__name__.lower()}")
+                    raise GigException(f"The **duration** option may not be used when editing a(n) {type(msg).__name__.lower()}")
 
         if delay:
             if re.match(r'\d+$', delay):
