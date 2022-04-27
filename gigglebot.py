@@ -783,8 +783,8 @@ async def edit_delay_message(params):
         if channel:
             delivery_channel = get_channel_by_name_or_id(discord_message.guild, channel)
 
-        if content:
-            #Make sure {roles} exist
+        if content and type(msg) != AutoReply:
+            #Make sure {roles} exist if message is not an AutoReply
             replace_mentions(content, discord_message.guild.id)
 
         if need_to_confirm:
@@ -1179,7 +1179,13 @@ async def on_message(msg):
                 if msg.guild.id == delayed_messages[message_id].guild_id:
                     if delayed_messages[message_id].special_handling == 1:
                         if re.match(f".*{delayed_messages[message_id].trigger}.*", msg.content, re.IGNORECASE):
-                            await msg.channel.send(delayed_messages[message_id].content)
+                            content = re.sub(f"{{user}}", msg.author.mention, delayed_messages[message_id].content)
+                            content = re.sub(f"{{server}}", msg.guild.name, content)
+                            try:
+                                content = replace_mentions(content, msg.guild.id)
+                            except:
+                                pass
+                            await msg.channel.send(content)
                     elif msg.content.lower() == delayed_messages[message_id].trigger.lower():
                         await msg.channel.send(delayed_messages[message_id].content)
 
