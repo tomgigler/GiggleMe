@@ -50,7 +50,7 @@ function edit_button_click(){
   $('#description').val($('#display_description_cell').text());
   if($('#message_type_select').val() == 'message'){
     $('#repeats_row').toggle(true);
-    if($('#special_handling_header').text() == 'Pin')
+    if($('#special_handling_header').text() == 'Pin' || $('#special_handling_header').text() == 'Wildcard')
       $('#special_handling_row').toggle(true);
     else
       $('#special_handling_row').toggle(false);
@@ -109,7 +109,7 @@ function cancel_button_click(){
     if(!$('#pin_message_checkbox').prop('checked')){
       $('#special_handling_row').toggle(false);
     }
-    if($('#special_handling_header').text() != 'Pin'){
+    if($('#special_handling_header').text() != 'Pin' || $('#special_handling_header').text() != 'Wildcard'){
       $('#special_handling_row').toggle(true);
     }
   }
@@ -151,6 +151,9 @@ function save_message(){
     }
     data['channel_id'] = $('#channel_select').val();
     data['description'] = $('#description').val();
+    if($('#special_handling_header').text() == 'Wildcard')
+      if($('#pin_message_checkbox').prop('checked')) data['pin_message'] = 1
+      else data['pin_message'] = 0
   }
 
   if($('#message_type_select').find(":selected").val() == 'message'){
