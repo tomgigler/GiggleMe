@@ -1004,9 +1004,9 @@ async def create_auto_reply(params):
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
 
     if wildcard is not None:
-        if wildcard.lower() != 'true' and wildcard.lower() != 'false' and wildcard != 0 and wildcard != 1:
+        if wildcard.lower() != 'true' and wildcard.lower() != 'false' and wildcard != '0' and wildcard != '1':
             raise GigException(f"**{wildcard}** is an invalid value for wildcard\n\nTo see help type:\n\n`~giggle help`")
-        if wildcard.lower() == 'true' or wildcard == 1:
+        if wildcard.lower() == 'true' or wildcard == '1':
             wildcard = 1;
         else:
             wildcard = None;
