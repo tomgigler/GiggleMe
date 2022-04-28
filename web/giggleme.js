@@ -363,9 +363,11 @@ function message_type_updated(){
       $('#repeat_until_row').toggle(true);
     }
     $('#special_handling_row').toggle(true);
+    $('#pin_message_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
+    $('#special_handling_header').text('Pin')
   } else if($('#message_type_select').find(":selected").val() == 'batch'){
     $('#message_id_row').toggle(false);
     $('#channel_row').toggle(false);
@@ -393,6 +395,8 @@ function message_type_updated(){
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
+    $('#special_handling_row').toggle(true);
+    $('#special_handling_header').text('Wildcard')
   }
 }
 
