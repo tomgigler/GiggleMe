@@ -1178,7 +1178,7 @@ async def on_message(msg):
             if type(delayed_messages[message_id]) is AutoReply:
                 if msg.guild.id == delayed_messages[message_id].guild_id:
                     if delayed_messages[message_id].special_handling == 1:
-                        if re.match(f".*{delayed_messages[message_id].trigger}.*", msg.content, re.IGNORECASE):
+                        if re.match(f".*{delayed_messages[message_id].trigger}.*", msg.content, re.IGNORECASE | re.DOTALL):
                             content = re.sub(f"{{user}}", msg.author.mention, delayed_messages[message_id].content)
                             content = re.sub(f"{{server}}", msg.guild.name, content)
                             try:
