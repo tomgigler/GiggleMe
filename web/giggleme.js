@@ -13,7 +13,7 @@ function load_message_page(action, repeat_until){
   if(repeat_until==''){
     $('#repeat_until_row').hide();
   }
-  if(action=='create' || $('#display_special_handling_cell').text()=='True'){
+  if(action=='create' || $('#display_special_handling_cell').text()=='True' || $('#special_handling_header').text() == 'Wildcard'){
     $('#special_handling_row').toggle(true);
   }
 }
@@ -50,8 +50,11 @@ function edit_button_click(){
   $('#description').val($('#display_description_cell').text());
   if($('#message_type_select').val() == 'message'){
     $('#repeats_row').toggle(true);
-    if($('#special_handling_header').text() == 'Pin')
+    if($('#special_handling_header').text() == 'Pin' || $('#special_handling_header').text() == 'Wildcard'){
       $('#special_handling_row').toggle(true);
+      if($('#display_special_handling_cell').text()=='True') $('#skip_if_checkbox').prop('checked', true)
+      else $('#pin_message_checkbox').prop('checked', false)
+    }
     else
       $('#special_handling_row').toggle(false);
     if(repeat_frequency){
@@ -109,7 +112,7 @@ function cancel_button_click(){
     if(!$('#pin_message_checkbox').prop('checked')){
       $('#special_handling_row').toggle(false);
     }
-    if($('#special_handling_header').text() != 'Pin'){
+    if($('#special_handling_header').text() != 'Pin' || $('#special_handling_header').text() != 'Wildcard'){
       $('#special_handling_row').toggle(true);
     }
   }
@@ -151,6 +154,9 @@ function save_message(){
     }
     data['channel_id'] = $('#channel_select').val();
     data['description'] = $('#description').val();
+    if($('#special_handling_header').text() == 'Wildcard')
+      if($('#pin_message_checkbox').prop('checked')) data['pin_message'] = 1
+      else data['pin_message'] = 0
   }
 
   if($('#message_type_select').find(":selected").val() == 'message'){
@@ -244,6 +250,9 @@ function save_message(){
         repeat_skip_if = message.repeat_skip_if;
         if(message.special_handling){
 	  $('#display_special_handling_cell').text('True')
+          $('#special_handling_row').toggle(true);
+	} else if($('#message_type_select').find(":selected").val() == 'autoreply'){
+	  $('#display_special_handling_cell').text('False')
           $('#special_handling_row').toggle(true);
         } else {
           $('#special_handling_row').toggle(false);
@@ -354,9 +363,11 @@ function message_type_updated(){
       $('#repeat_until_row').toggle(true);
     }
     $('#special_handling_row').toggle(true);
+    $('#pin_message_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
+    $('#special_handling_header').text('Pin')
   } else if($('#message_type_select').find(":selected").val() == 'batch'){
     $('#message_id_row').toggle(false);
     $('#channel_row').toggle(false);
@@ -384,6 +395,8 @@ function message_type_updated(){
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
+    $('#special_handling_row').toggle(true);
+    $('#special_handling_header').text('Wildcard')
   }
 }
 

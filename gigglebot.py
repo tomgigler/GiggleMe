@@ -46,7 +46,7 @@ async def poll_message_table():
                     votes.load_proposal_votes(msg_id)
                     delayed_messages[msg_id] = Proposal(msg_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(msg_id), False)
                 elif delivery_time and delivery_time == -2:
-                    delayed_messages[msg_id] = AutoReply(msg_id, row[1], row[4], row[5], row[7], row[8], False)
+                    delayed_messages[msg_id] = AutoReply(msg_id, row[1], row[4], row[5], row[7], row[8], row[10], False)
                 else:
                     delayed_messages[msg_id] = Template(msg_id, row[1], row[2], row[4], row[7], row[8], False)
 
@@ -100,7 +100,7 @@ def load_from_db(delayed_messages):
             votes.load_proposal_votes(message_id)
             delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(message_id), False)
         elif delivery_time and delivery_time == -2:
-            delayed_messages[message_id] = AutoReply(message_id, row[1], row[4], row[5], row[7], row[8], False)
+            delayed_messages[message_id] = AutoReply(message_id, row[1], row[4], row[5], row[7], row[8], row[10], False)
         else:
             delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8], False)
 
@@ -746,16 +746,16 @@ async def edit_delay_message(params):
 
         else:
             if repeat is not None:
-                raise GigException(f"The **repeat** option may not be used when editing a {type(msg).__name__.lower()}")
+                raise GigException(f"The **repeat** option may not be used when editing a(n) {type(msg).__name__.lower()}")
             if delay:
-                raise GigException(f"A delivery time may not be specified when editing a {type(msg).__name__.lower()}")
+                raise GigException(f"A delivery time may not be specified when editing a(n) {type(msg).__name__.lower()}")
             if pin_message:
-                raise GigException(f"The **pin** option may not be used when editing a {type(msg).__name__.lower()}")
+                raise GigException(f"The **pin** option may not be used when editing a(n) {type(msg).__name__.lower()}")
             if type(msg) == AutoReply:
                 if channel:
-                    raise GigException(f"The **channel** option may not be used when editing a {type(msg).__name__.lower()}")
+                    raise GigException(f"The **channel** option may not be used when editing a(n) {type(msg).__name__.lower()}")
                 if duration:
-                    raise GigException(f"The **duration** option may not be used when editing a {type(msg).__name__.lower()}")
+                    raise GigException(f"The **duration** option may not be used when editing a(n) {type(msg).__name__.lower()}")
 
         if delay:
             if re.match(r'\d+$', delay):
@@ -783,8 +783,8 @@ async def edit_delay_message(params):
         if channel:
             delivery_channel = get_channel_by_name_or_id(discord_message.guild, channel)
 
-        if content:
-            #Make sure {roles} exist
+        if content and type(msg) != AutoReply:
+            #Make sure {roles} exist if message is not an AutoReply
             replace_mentions(content, discord_message.guild.id)
 
         if need_to_confirm:
@@ -991,18 +991,37 @@ async def set_guild_config(params):
 
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
-async def create_auto_reply(msg, trigger, reply):
+async def create_auto_reply(params):
+    guild_id = params.pop('guild_id')
+    author_id = params.pop('author_id')
+    trigger = params.pop('trigger')
+    reply = params.pop('reply')
+    channel = params.pop('channel')
+    desc = params.pop('desc', None)
+    wildcard = params.pop('wildcard', None)
+
+    if params:
+        raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
+
+    if wildcard is not None:
+        if wildcard.lower() != 'true' and wildcard.lower() != 'false' and wildcard != '0' and wildcard != '1':
+            raise GigException(f"**{wildcard}** is an invalid value for wildcard\n\nTo see help type:\n\n`~giggle help`")
+        if wildcard.lower() == 'true' or wildcard == '1':
+            wildcard = 1;
+        else:
+            wildcard = None;
+
     for message_id in delayed_messages:
-        if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == msg.guild.id and delayed_messages[message_id].trigger.lower() == trigger.lower():
+        if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == guild_id and delayed_messages[message_id].trigger.lower() == trigger.lower():
             embed=discord.Embed(description=f"**{delayed_messages[message_id].trigger}** is already in use", color=0xff0000)
             embed.add_field(name="ID", value=f"{message_id}", inline=True)
-            await msg.channel.send(embed=embed)
+            await channel.send(embed=embed)
             return
-    newAutoReply = AutoReply(None, msg.guild.id, msg.author.id, trigger, reply, None, True)
+    newAutoReply = AutoReply(None, guild_id, author_id, trigger, reply, desc, wildcard, True)
     delayed_messages[newAutoReply.id] = newAutoReply;
     embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
     embed.add_field(name="ID", value=f"{newAutoReply.id}", inline=True)
-    await msg.channel.send(embed=embed)
+    await channel.send(embed=embed)
 
 @client.event
 async def on_message(msg):
@@ -1031,9 +1050,9 @@ async def on_message(msg):
                     await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
-                match = re.match(r'~g(iggle)? +(auto(-reply)?)( +([^\n]+))\n(.+)', msg.content, re.DOTALL)
+                match = re.match(r'~g(iggle)? +(auto(-reply)?)( +([^\s\n]+))\s*([^\n]*)\n(.+)', msg.content, re.DOTALL)
                 if match:
-                    await create_auto_reply(msg, match.group(5), match.group(6))
+                    await parse_args(create_auto_reply, {'channel': msg.channel, 'guild_id': msg.guild.id, 'author_id': msg.author.id, 'trigger': match.group(5), 'reply': match.group(7)}, match.group(6))
                     return
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)|a(uto(-replies)?)?)?)? *$', msg.content)
@@ -1157,8 +1176,18 @@ async def on_message(msg):
     else:
         for message_id in delayed_messages:
             if type(delayed_messages[message_id]) is AutoReply:
-                if msg.guild.id == delayed_messages[message_id].guild_id and msg.content.lower() == delayed_messages[message_id].trigger.lower():
-                    await msg.channel.send(delayed_messages[message_id].content)
+                if msg.guild.id == delayed_messages[message_id].guild_id:
+                    if delayed_messages[message_id].special_handling == 1:
+                        if re.match(f".*{delayed_messages[message_id].trigger}.*", msg.content, re.IGNORECASE | re.DOTALL):
+                            content = re.sub(f"{{user}}", msg.author.mention, delayed_messages[message_id].content)
+                            content = re.sub(f"{{server}}", msg.guild.name, content)
+                            try:
+                                content = replace_mentions(content, msg.guild.id)
+                            except:
+                                pass
+                            await msg.channel.send(content)
+                    elif msg.content.lower() == delayed_messages[message_id].trigger.lower():
+                        await msg.channel.send(delayed_messages[message_id].content)
 
 @client.event
 async def on_voice_state_update(member, before, after):

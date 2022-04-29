@@ -152,7 +152,8 @@ print "    <td  id='edit_description_cell' class='edit_element'><input id='descr
 print "  </tr>\n";
 
 print "  <tr id='special_handling_row'>\n";
-if($message->special_handling == 2) print "    <th id='special_handling_header'>Set Topic</th>\n";
+if($message->delivery_time == -2) print "    <th id='special_handling_header'>Wildcard</th>\n";
+elseif($message->special_handling == 2) print "    <th id='special_handling_header'>Set Topic</th>\n";
 elseif($message->special_handling == 3) print "    <th id='special_handling_header'>Set Channel Name</th>\n";
 else print "    <th id='special_handling_header'>Pin</th>\n";
 print "    <td id='display_special_handling_cell' class='display_element'>";
@@ -200,7 +201,8 @@ if(!$_GET['action']=='create'){
     print "$('#delivery_time_row').hide()\n";
     print "$('#message_id_header_cell').text('AutoReply ID')\n";
     print "$('#trigger_row').show()\n";
-    print "$('skip_if_row').hide()\n";
+    print "$('#special_handling_row').show()\n";
+    print "$('#skip_if_row').hide()\n";
     print "$('#repeats_row').hide()\n";
     print "$('#channel_row').hide()\n";
     print "$('#message_type_select').val('autoreply')\n";

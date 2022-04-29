@@ -182,6 +182,22 @@ def show_help(command):
 > 
 > For example: `duration=hours:2`"""
 
+    if command == "auto" or command == "auto-replies":
+        return f"""> The `{command}` command is used send auto replies.  To create an AutoReply:
+> 
+> `~giggle {command} <trigger> desc=<description> wildcard=<wildcard>`
+> `<reply>`
+> 
+> **<trigger>** is the text that will "trigger" the AutoReply.  Triggers are case insensitive
+>   and must be the only text in the message unless `wildcard=true` is specified
+> 
+> The following optional parameters may also be used when creating an AutoReply:
+> 
+> `desc="<description>"` A brief description of the message
+> 
+> `wildcard=true` If specified, the AutoReply will trigger if the Trigger text is found
+>   anywhere in the message"""
+
     if command == "proposals":
         return """> The `propose` command is used to propose messages.  To propose <message>:
 > 
