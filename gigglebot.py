@@ -79,7 +79,8 @@ async def poll_message_table():
                         delayed_messages[msg_id].repeat = row[5]
                         delayed_messages[msg_id].repeat_until = row[9]
         except Exception as e:
-            await client.get_user(settings.bot_owner_id).send(f"Unhandled exception when polling message queue\n> **msg_id: {msg_id}**\n> **action: {action}**\n\n`{format_exc()}`")
+            await client.get_user(settings.bot_owner_id).send(f"Unhandled exception when polling message queue\n> "
+                    "**msg_id: {msg_id}**\n> **action: {action}**\n\n`{format_exc()}`")
 
 async def get_message_by_id(guild_id, channel_id, message_id):
     guild = client.get_guild(guild_id)
