@@ -70,7 +70,10 @@ async def poll_message_table():
 
                 if delivery_time and delivery_time >= 0:
                     if row[3] != delayed_messages[msg_id].delivery_time:
-                        delayed_messages[msg_id] = Message(msg_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], False)
+                        delayed_messages[msg_id] = Message(id=msg_id, guild_id=row[1], delivery_channel_id=row[2],
+                                delivery_time=row[3], author_id=row[4], repeat=row[5], last_repeat_message=row[6],
+                                content=row[7], description=row[8], repeat_until=row[9], special_handling=row[10],
+                                update_db=False)
                         asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
                     else:
                         delayed_messages[msg_id].repeat = row[5]
@@ -100,14 +103,19 @@ def load_from_db(delayed_messages):
         delivery_time = row[3]
 
         if delivery_time is not None and delivery_time >= 0:
-            delayed_messages[message_id] = Message(message_id, row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], False)
+            delayed_messages[message_id] = Message(id=message_id, guild_id=row[1], delivery_channel_id=row[2],
+                    delivery_time=row[3], author_id=row[4], repeat=row[5], last_repeat_message=row[6], content=row[7],
+                    description=row[8], repeat_until=row[9], special_handling=row[10], update_db=False)
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
         elif delivery_time and delivery_time == -1:
             votes.load_proposal_votes(message_id)
-            delayed_messages[message_id] = Proposal(message_id, row[1], row[2], row[4], row[6], row[7], row[8], votes.get_required_approvals(message_id), False)
+            delayed_messages[message_id] = Proposal(id=message_id, guild_id=row[1], delivery_channel_id=row[2],
+                    author_id=row[4], approval_message_id=row[6], content=row[7], description=row[8],
+                    required_approvals=votes.get_required_approvals(message_id), update_db=False)
         elif delivery_time and delivery_time == -2:
-            delayed_messages[message_id] = AutoReply(message_id, row[1], row[4], row[5], row[7], row[8], row[10], False)
+            delayed_messages[message_id] = AutoReply(id=message_id, guild_id=row[1], author_id=row[4], trigger=row[5],
+                    content=row[7], description=row[8], special_handling=row[10], update_db=False)
         else:
             delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8], False)
 
