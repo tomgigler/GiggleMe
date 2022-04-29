@@ -118,7 +118,8 @@ def load_from_db(delayed_messages):
             delayed_messages[message_id] = AutoReply(id=message_id, guild_id=row[1], author_id=row[4], trigger=row[5],
                     content=row[7], description=row[8], special_handling=row[10], update_db=False)
         else:
-            delayed_messages[message_id] = Template(message_id, row[1], row[2], row[4], row[7], row[8], False)
+            delayed_messages[message_id] = Template(id=message_id, guild_id=row[1], delivery_channel_id=row[2],
+                    author_id=row[4], content=row[7], description=row[8], update_db=False)
 
     gigtz.load_timezones()
     giguser.load_users()
@@ -328,11 +329,16 @@ async def process_delay_message(params):
 
     # create new Message
     if delivery_time is not None and delivery_time >= 0:
-        newMessage =  Message(None, guild.id, delivery_channel.id, delivery_time, author_id, repeat, None, content, description, repeat_until, special_handling)
+        newMessage = Message(id=None, guild_id=guild.id, delivery_channel_id=delivery_channel.id,
+                delivery_time=delivery_time, author_id=author_id, repeat=repeat, last_repeat_message=None,
+                content=content, description=description, repeat_until=repeat_until, special_handling=special_handling)
     elif delivery_time and delivery_time == -1:
-        newMessage =  Proposal(None, guild.id, delivery_channel.id, author_id, None, content, description, int(required_approvals))
+        newMessage = Proposal(id=None, guild_id=guild.id, delivery_channel_id=delivery_channel.id,
+                author_id=author_id, approval_message_id=None, content=content, description=description,
+                required_approvals=int(required_approvals))
     else:
-        newMessage =  Template(None, guild.id, delivery_channel.id, author_id, content, description)
+        newMessage = Template(id=None, guild_id=guild.id, delivery_channel_id=delivery_channel.id,
+                author_id=author_id, content=content, description=description)
 
     delayed_messages[newMessage.id] = newMessage
 
@@ -843,7 +849,10 @@ async def edit_delay_message(params):
 
         if delay:
             loop = asyncio.get_event_loop()
-            newMessage = Message(msg.id, msg.guild_id, msg.delivery_channel_id, delivery_time, msg.author_id, msg.repeat, msg.last_repeat_message, msg.content, msg.description, msg.repeat_until, msg.special_handling)
+            newMessage = Message(id=msg.id, guild_id=msg.guild_id, delivery_channel_id=msg.delivery_channel_id,
+                    delivery_time=delivery_time, author_id=msg.author_id, repeat=msg.repeat,
+                    last_repeat_message=msg.last_repeat_message, content=msg.content, description=msg.description,
+                    repeat_until=msg.repeat_until, special_handling=msg.special_handling)
             delayed_messages[msg.id] = newMessage
             if delivery_time == 0:
                 embed.add_field(name="Deliver", value="Now", inline=False)
