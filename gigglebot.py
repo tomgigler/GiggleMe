@@ -1202,7 +1202,7 @@ async def on_message(msg):
         for message_id in delayed_messages:
             if type(delayed_messages[message_id]) is AutoReply:
                 if msg.guild.id == delayed_messages[message_id].guild_id:
-                    if delayed_messages[message_id].special_handling == 1:
+                    if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 1:
                         if re.match(f".*{delayed_messages[message_id].trigger}.*", msg.content, re.IGNORECASE | re.DOTALL):
                             content = re.sub(f"{{user}}", msg.author.mention, delayed_messages[message_id].content)
                             content = re.sub(f"{{server}}", msg.guild.name, content)
@@ -1211,6 +1211,11 @@ async def on_message(msg):
                             except:
                                 pass
                             await msg.channel.send(content)
+                            if delayed_messages[message_id].special_handling & 2:
+                                await msg.delete()
+                            if delayed_messages[message_id].special_handling & 4:
+                                channel = discord.utils.get(msg.guild.channels, id=gigguild.guilds[msg.guild.id].approval_channel_id)
+                                await channel.send(f"The following message from {msg.author.mention} has been deleted from {msg.channel.mention}:\n{msg.content}")
                     elif msg.content.lower() == delayed_messages[message_id].trigger.lower():
                         await msg.channel.send(delayed_messages[message_id].content)
 
