@@ -1020,13 +1020,14 @@ async def create_auto_reply(params):
     trigger = params.pop('trigger')
     reply = params.pop('reply')
     message_channel = params.pop('message_channel')
-    channel = params.pop('channel')
+    channel = params.pop('channel', None)
     desc = params.pop('desc', None)
     wildcard = params.pop('wildcard', None)
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
 
+    channel_id = None
     if channel is not None:
         channel_id = get_channel_by_name_or_id(client.get_guild(guild_id), channel).id
 
