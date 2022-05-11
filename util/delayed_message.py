@@ -181,6 +181,6 @@ class AutoReply(DelayedMessage):
         output = self.get_show_header(client, show_id, guild_id, show_content)
         output += f"> **Trigger**  {self.trigger}\n"
         output += f"> **Description:**  {self.description}\n"
-        if self.special_handling is not None and self.special_handling == 1:
+        if self.special_handling is not None and self.special_handling & 1:
             output += f"> **Wildcard:**  true\n"
         return output
