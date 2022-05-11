@@ -427,6 +427,8 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
 
 def replace_generic_emojis(content, guild_id):
     guild = discord.utils.get(client.guilds, id=int(guild_id))
+    if not guild:
+        return content
     emoji_names = set()
     for match in re.finditer(r':([^:\n]+):', content):
         emoji_names.add(match.group(1))
