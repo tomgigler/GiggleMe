@@ -548,8 +548,19 @@ async def schedule_delay_message(msg):
             elif hasattr(msg, 'special_handling') and msg.special_handling == 3:
                 await msg.get_delivery_channel(client).edit(name=content)
             else:
+                content = replace_generic_emojis(content, msg.guild_id)
                 try:
-                    sent_message = await msg.get_delivery_channel(client).send(replace_generic_emojis(content, msg.guild_id))
+                    while len(content) > 2000:
+                        index = content.rfind('\n\n',1500, 2000)
+                        if index == -1:
+                            index = content.rfind('\n',1500, 2000)
+                            if index == -1:
+                                index = content.rfind(' ',1500, 2000)
+                                if index == -1:
+                                    break
+                        await msg.get_delivery_channel(client).send(content[:index])
+                        content = content[index:]
+                    sent_message = await msg.get_delivery_channel(client).send(content)
                 except:
                         message_guild = msg.get_guild(client)
                         if message_guild.id in gigguild.guilds:
