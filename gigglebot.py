@@ -1220,9 +1220,9 @@ async def on_message(msg):
                                 await channel.send(content)
                         else:
                             await msg.channel.send(content)
-                        if delayed_messages[message_id].special_handling & 2:
+                        if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 2:
                             await msg.delete()
-                        if delayed_messages[message_id].special_handling & 4:
+                        if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 4:
                             channel = discord.utils.get(msg.guild.channels, id=gigguild.guilds[msg.guild.id].approval_channel_id)
                             await channel.send(f"The following message from {msg.author.mention} has been deleted from {msg.channel.mention}:\n{msg.content}")
 
