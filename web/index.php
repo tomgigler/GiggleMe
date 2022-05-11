@@ -27,7 +27,7 @@ else
     print "<br><br>\n";
 
     print "<center>\n";
-    print "   <button onclick='login_click()'>Login</button><br><br>\n";
+    print "   <button onclick='login_click()'>Login via Discord</button><br><br>\n";
     print "   <input type='checkbox' id='persist' />&nbsp;<b class='footer'>Keep me signed in</b>\n";
     include "footer.php";
 }
