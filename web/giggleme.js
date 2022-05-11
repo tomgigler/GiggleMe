@@ -155,8 +155,8 @@ function save_message(){
     data['channel_id'] = $('#channel_select').val();
     data['description'] = $('#description').val();
     if($('#special_handling_header').text() == 'Wildcard')
-      if($('#pin_message_checkbox').prop('checked')) data['pin_message'] = 1
-      else data['pin_message'] = 0
+      if($('#pin_message_checkbox').prop('checked')) data['pin_message'] = special_handling | 1 // set first bit
+      else data['pin_message'] = special_handling & 254 // set all bits but 1
   }
 
   if($('#message_type_select').find(":selected").val() == 'message'){

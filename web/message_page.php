@@ -157,12 +157,12 @@ elseif($message->special_handling == 2) print "    <th id='special_handling_head
 elseif($message->special_handling == 3) print "    <th id='special_handling_header'>Set Channel Name</th>\n";
 else print "    <th id='special_handling_header'>Pin</th>\n";
 print "    <td id='display_special_handling_cell' class='display_element'>";
-if($message->special_handling > 0) print "True";
+if($message->special_handling & 1 || !$message->delivery_time == -2 && $message->special_handling > 0) print "True";
 else print "False";
 print "</td>\n";
 print "    <td id='edit_special_handling_cell' class='edit_element'>\n";
 print "      <input id='pin_message_checkbox' type='checkbox' ";
-if($message->special_handling == 1) print "checked ";
+if($message->special_handling & 1) print "checked ";
 print "/>\n";
 print "    </td>\n";
 print "  </tr>\n";
@@ -191,6 +191,7 @@ print "var repeat_until_java_format = '" . $message->repeat_until_java_format . 
 print "var repeat_frequency = '" . $message->repeat_frequency . "'\n";
 print "var repeat_frequency_num = '" . $message->repeat_frequency_num . "'\n";
 print "var repeat_skip_if = '" . $message->repeat_skip_if . "'\n";
+print "var special_handling = " . $message->special_handling . "\n";
 
 if(!$_GET['action']=='create'){
   if(!$message->delivery_time){
