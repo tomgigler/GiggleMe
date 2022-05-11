@@ -1215,12 +1215,21 @@ async def on_message(msg):
                             content = replace_mentions(content, msg.guild.id)
                         except:
                             pass
+                        channel = msg.channel
                         if delayed_messages[message_id].delivery_channel_id is not None:
                             channel = get_channel_by_name_or_id(msg.guild, str(delayed_messages[message_id].delivery_channel_id))
-                            if channel.permissions_for(msg.author).send_messages:
-                                await channel.send(content)
-                        else:
-                            await msg.channel.send(content)
+                        if channel.permissions_for(msg.author).send_messages:
+                            while len(content) > 2000:
+                                index = content.rfind('\n\n',1500, 2000)
+                                if index == -1:
+                                    index = content.rfind('\n',1500, 2000)
+                                    if index == -1:
+                                        index = content.rfind(' ',1500, 2000)
+                                        if index == -1:
+                                            break
+                                await channel.send(content[:index])
+                                content = content[index:]
+                            await channel.send(content)
                         if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 2:
                             await msg.delete()
                         if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 4:
