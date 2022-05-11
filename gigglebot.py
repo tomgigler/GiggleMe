@@ -1021,7 +1021,7 @@ async def create_auto_reply(params):
     author_id = params.pop('author_id')
     trigger = params.pop('trigger')
     reply = params.pop('reply')
-    channel = params.pop('channel')
+    message_channel = params.pop('message_channel')
     desc = params.pop('desc', None)
     wildcard = params.pop('wildcard', None)
 
@@ -1040,13 +1040,13 @@ async def create_auto_reply(params):
         if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == guild_id and delayed_messages[message_id].trigger.lower() == trigger.lower():
             embed=discord.Embed(description=f"**{delayed_messages[message_id].trigger}** is already in use", color=0xff0000)
             embed.add_field(name="ID", value=f"{message_id}", inline=True)
-            await channel.send(embed=embed)
+            await message_channel.send(embed=embed)
             return
     newAutoReply = AutoReply(None, guild_id, author_id, trigger, reply, desc, wildcard, True)
     delayed_messages[newAutoReply.id] = newAutoReply;
     embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
     embed.add_field(name="ID", value=f"{newAutoReply.id}", inline=True)
-    await channel.send(embed=embed)
+    await message_channel.send(embed=embed)
 
 @client.event
 async def on_message(msg):
@@ -1077,7 +1077,7 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +(auto(-reply)?)( +([^\s\n]+))\s*([^\n]*)\n(.+)', msg.content, re.DOTALL)
                 if match:
-                    await parse_args(create_auto_reply, {'channel': msg.channel, 'guild_id': msg.guild.id, 'author_id': msg.author.id, 'trigger': match.group(5), 'reply': match.group(7)}, match.group(6))
+                    await parse_args(create_auto_reply, {'message_channel': msg.channel, 'guild_id': msg.guild.id, 'author_id': msg.author.id, 'trigger': match.group(5), 'reply': match.group(7)}, match.group(6))
                     return
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)|a(uto(-replies)?)?)?)? *$', msg.content)
