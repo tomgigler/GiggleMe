@@ -427,6 +427,8 @@ async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, m
 
 def replace_generic_emojis(content, guild_id):
     guild = discord.utils.get(client.guilds, id=int(guild_id))
+    if not guild:
+        return content
     emoji_names = set()
     for match in re.finditer(r':([^:\n]+):', content):
         emoji_names.add(match.group(1))
@@ -546,8 +548,19 @@ async def schedule_delay_message(msg):
             elif hasattr(msg, 'special_handling') and msg.special_handling == 3:
                 await msg.get_delivery_channel(client).edit(name=content)
             else:
+                content = replace_generic_emojis(content, msg.guild_id)
                 try:
-                    sent_message = await msg.get_delivery_channel(client).send(replace_generic_emojis(content, msg.guild_id))
+                    while len(content) > 2000:
+                        index = content.rfind('\n\n',1500, 2000)
+                        if index == -1:
+                            index = content.rfind('\n',1500, 2000)
+                            if index == -1:
+                                index = content.rfind(' ',1500, 2000)
+                                if index == -1:
+                                    break
+                        await msg.get_delivery_channel(client).send(content[:index])
+                        content = content[index:]
+                    sent_message = await msg.get_delivery_channel(client).send(content)
                 except:
                         message_guild = msg.get_guild(client)
                         if message_guild.id in gigguild.guilds:
@@ -1215,12 +1228,21 @@ async def on_message(msg):
                             content = replace_mentions(content, msg.guild.id)
                         except:
                             pass
+                        channel = msg.channel
                         if delayed_messages[message_id].delivery_channel_id is not None:
                             channel = get_channel_by_name_or_id(msg.guild, str(delayed_messages[message_id].delivery_channel_id))
-                            if channel.permissions_for(msg.author).send_messages:
-                                await channel.send(content)
-                        else:
-                            await msg.channel.send(content)
+                        if channel.permissions_for(msg.author).send_messages:
+                            while len(content) > 2000:
+                                index = content.rfind('\n\n',1500, 2000)
+                                if index == -1:
+                                    index = content.rfind('\n',1500, 2000)
+                                    if index == -1:
+                                        index = content.rfind(' ',1500, 2000)
+                                        if index == -1:
+                                            break
+                                await channel.send(content[:index])
+                                content = content[index:]
+                            await channel.send(content)
                         if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 2:
                             await msg.delete()
                         if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 4:
