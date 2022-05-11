@@ -320,6 +320,7 @@ function update_channel_select(){
   var server = $('#server_select').val();
   var channel_select = $('#channel_select');
   channel_select.empty();
+  if(!channels[server]) return
   for(var j = 0 ; j < channels[server].length ; j++){
       $('#channel_select').append("<option value='"+channels[server][j][0]+"'>"+channels[server][j][1]+"</option>");
   }
