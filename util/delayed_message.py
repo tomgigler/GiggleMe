@@ -166,8 +166,8 @@ class Proposal(DelayedMessage):
         return output
 
 class AutoReply(DelayedMessage):
-    def __init__(self, id, guild_id, author_id, trigger, content, description, special_handling, update_db=True):
-        super().__init__(id, guild_id, None, author_id, content, description)
+    def __init__(self, id, guild_id, delivery_channel_id, author_id, trigger, content, description, special_handling, update_db=True):
+        super().__init__(id, guild_id, delivery_channel_id, author_id, content, description)
         self.trigger = trigger
         self.special_handling = special_handling
         if update_db:

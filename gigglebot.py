@@ -51,7 +51,7 @@ async def poll_message_table():
                             author_id=row[4], approval_message_id=row[6], content=row[7], description=row[8],
                             required_approvals=votes.get_required_approvals(msg_id), update_db=False)
                 elif delivery_time and delivery_time == -2:
-                    delayed_messages[msg_id] = AutoReply(id=msg_id, guild_id=row[1], author_id=row[4], trigger=row[5],
+                    delayed_messages[msg_id] = AutoReply(id=msg_id, guild_id=row[1], delivery_channel_id=row[2], author_id=row[4], trigger=row[5],
                             content=row[7], description=row[8], special_handling=row[10], update_db=False)
                 else:
                     delayed_messages[msg_id] = Template(id=msg_id, guild_id=row[1], delivery_channel_id=row[2],
@@ -115,7 +115,7 @@ def load_from_db(delayed_messages):
                     author_id=row[4], approval_message_id=row[6], content=row[7], description=row[8],
                     required_approvals=votes.get_required_approvals(message_id), update_db=False)
         elif delivery_time and delivery_time == -2:
-            delayed_messages[message_id] = AutoReply(id=message_id, guild_id=row[1], author_id=row[4], trigger=row[5],
+            delayed_messages[message_id] = AutoReply(id=message_id, guild_id=row[1], delivery_channel_id=row[2], author_id=row[4], trigger=row[5],
                     content=row[7], description=row[8], special_handling=row[10], update_db=False)
         else:
             delayed_messages[message_id] = Template(id=message_id, guild_id=row[1], delivery_channel_id=row[2],
@@ -774,8 +774,6 @@ async def edit_delay_message(params):
             if pin_message:
                 raise GigException(f"The **pin** option may not be used when editing a(n) {type(msg).__name__.lower()}")
             if type(msg) == AutoReply:
-                if channel:
-                    raise GigException(f"The **channel** option may not be used when editing a(n) {type(msg).__name__.lower()}")
                 if duration:
                     raise GigException(f"The **duration** option may not be used when editing a(n) {type(msg).__name__.lower()}")
 
@@ -1022,11 +1020,15 @@ async def create_auto_reply(params):
     trigger = params.pop('trigger')
     reply = params.pop('reply')
     message_channel = params.pop('message_channel')
+    channel = params.pop('channel')
     desc = params.pop('desc', None)
     wildcard = params.pop('wildcard', None)
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
+
+    if channel is not None:
+        channel_id = get_channel_by_name_or_id(client.get_guild(guild_id), channel).id
 
     if wildcard is not None:
         if wildcard.lower() != 'true' and wildcard.lower() != 'false' and wildcard != '0' and wildcard != '1' and wildcard.lower() != 'yes' and wildcard.lower() != 'no':
@@ -1042,7 +1044,7 @@ async def create_auto_reply(params):
             embed.add_field(name="ID", value=f"{message_id}", inline=True)
             await message_channel.send(embed=embed)
             return
-    newAutoReply = AutoReply(None, guild_id, author_id, trigger, reply, desc, wildcard, True)
+    newAutoReply = AutoReply(None, guild_id, channel_id, author_id, trigger, reply, desc, wildcard, True)
     delayed_messages[newAutoReply.id] = newAutoReply;
     embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
     embed.add_field(name="ID", value=f"{newAutoReply.id}", inline=True)
@@ -1210,7 +1212,11 @@ async def on_message(msg):
                                 content = replace_mentions(content, msg.guild.id)
                             except:
                                 pass
-                            await msg.channel.send(content)
+                            if delayed_messages[message_id].delivery_channel_id is not None:
+                                channel = get_channel_by_name_or_id(msg.guild, str(delayed_messages[message_id].delivery_channel_id))
+                                await channel.send(content)
+                            else:
+                                await msg.channel.send(content)
                             if delayed_messages[message_id].special_handling & 2:
                                 await msg.delete()
                             if delayed_messages[message_id].special_handling & 4:
