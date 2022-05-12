@@ -1036,6 +1036,8 @@ async def create_auto_reply(params):
     channel = params.pop('channel', None)
     desc = params.pop('desc', None)
     wildcard = params.pop('wildcard', None)
+    delete = params.pop('delete', None)
+    report = params.pop('report', None)
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
@@ -1044,13 +1046,28 @@ async def create_auto_reply(params):
     if channel is not None:
         channel_id = get_channel_by_name_or_id(client.get_guild(guild_id), channel).id
 
+    special_handling = 0
+
     if wildcard is not None:
         if wildcard.lower() != 'true' and wildcard.lower() != 'false' and wildcard != '0' and wildcard != '1' and wildcard.lower() != 'yes' and wildcard.lower() != 'no':
             raise GigException(f"**{wildcard}** is an invalid value for wildcard\n\nTo see help type:\n\n`~giggle help`")
         if wildcard.lower() == 'true' or wildcard == '1' or wildcard.lower() == 'yes':
-            wildcard = 1;
-        else:
-            wildcard = None;
+            special_handling = special_handling | 1
+
+    if delete is not None:
+        if delete.lower() != 'true' and delete.lower() != 'false' and delete != '0' and delete != '1' and delete.lower() != 'yes' and delete.lower() != 'no':
+            raise GigException(f"**{delete}** is an invalid value for delete\n\nTo see help type:\n\n`~giggle help`")
+        if delete.lower() == 'true' or delete == '1' or delete.lower() == 'yes':
+            special_handling = special_handling | 2
+
+    if report is not None:
+        if report.lower() != 'true' and report.lower() != 'false' and report != '0' and report != '1' and report.lower() != 'yes' and report.lower() != 'no':
+            raise GigException(f"**{report}** is an invalid value for report\n\nTo see help type:\n\n`~giggle help`")
+        if report.lower() == 'true' or report == '1' or report.lower() == 'yes':
+            special_handling = special_handling | 4
+
+    if special_handling == 0:
+        special_handling = None
 
     for message_id in delayed_messages:
         if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == guild_id and delayed_messages[message_id].trigger.lower() == trigger.lower():
@@ -1058,8 +1075,9 @@ async def create_auto_reply(params):
             embed.add_field(name="ID", value=f"{message_id}", inline=True)
             await message_channel.send(embed=embed)
             return
-    newAutoReply = AutoReply(None, guild_id, channel_id, author_id, trigger, reply, desc, wildcard, True)
-    delayed_messages[newAutoReply.id] = newAutoReply;
+
+    newAutoReply = AutoReply(None, guild_id, channel_id, author_id, trigger, reply, desc, special_handling, True)
+    delayed_messages[newAutoReply.id] = newAutoReply
     embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
     embed.add_field(name="ID", value=f"{newAutoReply.id}", inline=True)
     await message_channel.send(embed=embed)
