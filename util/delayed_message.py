@@ -183,4 +183,8 @@ class AutoReply(DelayedMessage):
         output += f"> **Description:**  {self.description}\n"
         if self.special_handling is not None and self.special_handling & 1:
             output += f"> **Wildcard:**  true\n"
+        if self.special_handling is not None and self.special_handling & 2:
+            output += f"> **Delete:**  true\n"
+        if self.special_handling is not None and self.special_handling & 4:
+            output += f"> **Report:**  true\n"
         return output
