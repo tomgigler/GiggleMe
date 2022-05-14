@@ -155,8 +155,13 @@ function save_message(){
     data['channel_id'] = $('#channel_select').val();
     data['description'] = $('#description').val();
     if($('#special_handling_header').text() == 'Wildcard')
-      if($('#pin_message_checkbox').prop('checked')) data['pin_message'] = special_handling | 1 // set first bit
-      else data['pin_message'] = special_handling & 254 // set all bits but 1
+      if($('#pin_message_checkbox').prop('checked')) special_handling = special_handling | 1 // set first bit
+      else special_handling = special_handling & 254 // unset first bit
+      if($('#autoreply_delete_checkbox').prop('checked')) special_handling = special_handling | 2 // set second bit
+      else special_handling = special_handling & 253 // unset second bit
+      if($('#autoreply_report_checkbox').prop('checked')) special_handling = special_handling | 4 // set third bit
+      else special_handling = special_handling & 251 // unset third bit
+      data['pin_message'] = special_handling
   }
 
   if($('#message_type_select').find(":selected").val() == 'message'){
@@ -248,11 +253,16 @@ function save_message(){
         repeat_frequency = message.repeat_frequency;
         repeat_frequency_num = message.repeat_frequency_num;
         repeat_skip_if = message.repeat_skip_if;
-        if(message.special_handling){
-	  $('#display_special_handling_cell').text('True')
+	if($('#message_type_select').find(":selected").val() == 'autoreply'){
+          if(special_handling & 1) $('#display_special_handling_cell').text('True')
+          else $('#display_special_handling_cell').text('False')
+          if(special_handling & 2) $('#display_autoreply_delete_cell').text('True')
+          else $('#display_autoreply_delete_cell').text('False')
+          if(special_handling & 4) $('#display_autoreply_report_cell').text('True')
+          else $('#display_autoreply_report_cell').text('False')
           $('#special_handling_row').toggle(true);
-	} else if($('#message_type_select').find(":selected").val() == 'autoreply'){
-	  $('#display_special_handling_cell').text('False')
+	} else if(special_handling){
+	  $('#display_special_handling_cell').text('True')
           $('#special_handling_row').toggle(true);
         } else {
           $('#special_handling_row').toggle(false);
@@ -347,6 +357,8 @@ function message_type_updated(){
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
     $('#special_handling_row').toggle(false);
+    $('#autoreply_delete_row').toggle(false);
+    $('#autoreply_report_row').toggle(false);
     $('#pin_message_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
@@ -364,6 +376,8 @@ function message_type_updated(){
       $('#repeat_until_row').toggle(true);
     }
     $('#special_handling_row').toggle(true);
+    $('#autoreply_delete_row').toggle(false);
+    $('#autoreply_report_row').toggle(false);
     $('#pin_message_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
@@ -379,6 +393,8 @@ function message_type_updated(){
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
     $('#special_handling_row').toggle(false);
+    $('#autoreply_delete_row').toggle(false);
+    $('#autoreply_report_row').toggle(false);
     $('#description_row').toggle(false);
     $('#edit_content').prop('maxlength','50000');
   } else if($('#message_type_select').find(":selected").val() == 'autoreply'){
@@ -391,13 +407,14 @@ function message_type_updated(){
     $('#repeats_row').toggle(false);
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
-    $('#special_handling_row').toggle(false);
     $('#pin_message_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
     $('#special_handling_row').toggle(true);
     $('#special_handling_header').text('Wildcard')
+    $('#autoreply_delete_row').toggle(true);
+    $('#autoreply_report_row').toggle(true);
   }
 }
 

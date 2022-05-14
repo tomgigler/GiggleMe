@@ -167,6 +167,36 @@ print "/>\n";
 print "    </td>\n";
 print "  </tr>\n";
 
+print "  <tr id='autoreply_delete_row'>\n";
+print "    <th>Delete</th>\n";
+print "    <td id='display_autoreply_delete_cell' class='display_element'>";
+if($message->special_handling & 2)
+  print "True</td>\n";
+else
+  print "False</td>\n";
+print "    <td id='edit_autoreply_delete_cell' class='edit_element'>\n";
+print "      <input id='autoreply_delete_checkbox' type='checkbox' ";
+if($message->special_handling & 2)
+  print "checked />\n";
+else
+  print "/>\n";
+print "    </td>\n";
+print "  </tr>\n";
+print "  <tr id='autoreply_report_row'>\n";
+print "    <th>Report</th>\n";
+print "    <td id='display_autoreply_report_cell' class='display_element'>";
+if($message->special_handling & 4)
+  print "True</td>\n";
+else
+  print "False</td>\n";
+print "    <td id='edit_autoreply_report_cell' class='edit_element'>\n";
+print "      <input id='autoreply_report_checkbox' type='checkbox' ";
+if($message->special_handling & 4)
+  print "checked ";
+print "/>\n";
+print "    </td>\n";
+print "  </tr>\n";
+
 print "</table>\n";
 print "<br>\n";
 print "<p class='display_element' style='font-family:\"Calibri\"'><input type='checkbox' id='show_as_command_chkbx' onclick='show_as_command_click()'/>&nbsp;Show as command</p>\n";
@@ -193,6 +223,8 @@ print "var repeat_frequency_num = '" . $message->repeat_frequency_num . "'\n";
 print "var repeat_skip_if = '" . $message->repeat_skip_if . "'\n";
 print "var special_handling = " . $message->special_handling . "\n";
 
+print "$('#autoreply_delete_row').hide()\n";
+print "$('#autoreply_report_row').hide()\n";
 if(!$_GET['action']=='create'){
   if(!$message->delivery_time){
     print "$('#message_id_header_cell').text('Template ID')\n";
@@ -203,6 +235,8 @@ if(!$_GET['action']=='create'){
     print "$('#message_id_header_cell').text('AutoReply ID')\n";
     print "$('#trigger_row').show()\n";
     print "$('#special_handling_row').show()\n";
+    print "$('#autoreply_delete_row').show()\n";
+    print "$('#autoreply_report_row').show()\n";
     print "$('#skip_if_row').hide()\n";
     print "$('#repeats_row').hide()\n";
     print "$('#channel_row').hide()\n";
