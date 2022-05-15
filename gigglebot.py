@@ -1260,7 +1260,7 @@ async def on_message(msg):
                                             break
                                 await channel.send(content[:index])
                                 content = content[index:]
-                            if delayed_messages[message_id].special_handling and not delayed_messages[message_id].special_handling & 4:
+                            if not delayed_messages[message_id].special_handling or not delayed_messages[message_id].special_handling & 4:
                                 await channel.send(content)
                         if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 2:
                             await msg.delete()
