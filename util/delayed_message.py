@@ -33,7 +33,8 @@ class DelayedMessage:
             pass
         if not channel:
             gigchannel.load_channels()
-            channel = gigchannel.channels[self.delivery_channel_id]
+            if self.delivery_channel_id:
+                channel = gigchannel.channels[self.delivery_channel_id]
         return channel
 
     def get_author(self, client):

@@ -785,14 +785,15 @@ async def edit_delay_message(params):
     content = params.pop('content', None)
     duration = params.pop('duration', None)
     pin_message = params.pop('pin', None)
+    publish = params.pop('publish', None)
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help edit`")
 
     need_to_confirm = False
 
-    if not delay and not channel and not repeat and not description and not content and not duration and not pin_message:
-        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, content, duration, or pin"))
+    if not delay and not channel and not repeat and not description and not content and not duration and not pin_message and not publish:
+        await discord_message.channel.send(embed=discord.Embed(description="You must modify at least one of scheduled time, channel, repeat, description, content, duration, pin or publish"))
         return
 
     if message_id == 'last':
@@ -816,6 +817,8 @@ async def edit_delay_message(params):
                 raise GigException(f"A delivery time may not be specified when editing a(n) {type(msg).__name__.lower()}")
             if pin_message:
                 raise GigException(f"The **pin** option may not be used when editing a(n) {type(msg).__name__.lower()}")
+            if publish:
+                raise GigException(f"The **publish** may not be used when editing a(n) {type(msg).__name__.lower()}")
             if type(msg) == AutoReply:
                 if duration:
                     raise GigException(f"The **duration** option may not be used when editing a(n) {type(msg).__name__.lower()}")
@@ -857,16 +860,36 @@ async def edit_delay_message(params):
         embed = discord.Embed(description=f"{type(msg).__name__} edited", color=0x00ff00)
 
         if pin_message:
-            if msg.special_handling & 16:
+            if msg.special_handling and msg.special_handling & 16:
                 raise GigException("pin may not be used with set-topic")
-            if msg.special_handling & 32:
+            if msg.special_handling and msg.special_handling & 32:
                 raise GigException("pin may not be used with set-channel-name")
             if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
-                msg.special_handling = msg.special_handling | 8
+                if msg.special_handling:
+                    msg.special_handling = msg.special_handling | 8
+                else:
+                    msg.special_handling = 8
             elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
-                msg.special_handling = msg.special_handling & 247 # all bits but 8
+                if msg.special_handling:
+                    msg.special_handling = msg.special_handling & 247 # all bits but 8
             else:
                 raise GigException(f"`{pin_message}` is an invalid value for **pin**")
+
+        if publish:
+            if msg.special_handling & 16:
+                raise GigException("publish may not be used with set-topic")
+            if msg.special_handling & 32:
+                raise GigException("publish may not be used with set-channel-name")
+            if re.match(r'(true|yes)', publish, re.IGNORECASE):
+                if msg.special_handling:
+                    msg.special_handling = msg.special_handling | 64
+                else:
+                    msg.special_handling = 64
+            elif re.match(r'(false|no)', publish, re.IGNORECASE):
+                if msg.special_handling:
+                    msg.special_handling = msg.special_handling & 191 # all bits but 64
+            else:
+                raise GigException(f"`{publish}` is an invalid value for **publish**")
 
         if channel:
             msg.delivery_channel_id = delivery_channel.id
