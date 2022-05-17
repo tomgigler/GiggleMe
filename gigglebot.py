@@ -274,7 +274,7 @@ async def process_delay_message(params):
 
     if pin_message:
         if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
-            special_handling = 1
+            special_handling = 8
             if type(delivery_channel).__name__ != 'TextChannel':
                 raise GigException("The pin option is only valid for Discord TextChannels")
             if not delivery_channel.permissions_for(delivery_channel.guild.get_member(client.user.id)).manage_messages:
@@ -286,7 +286,7 @@ async def process_delay_message(params):
 
     if set_topic:
         if re.match(r'(true|yes)', set_topic, re.IGNORECASE):
-            special_handling = 2
+            special_handling = 16
             if type(delivery_channel).__name__ != 'TextChannel' and type(delivery_channel).__name__ != 'StageChannel':
                 raise GigException("The set-topic option is only valid for Discord TextChannels and Discord StageChannels")
             if not delivery_channel.permissions_for(delivery_channel.guild.get_member(client.user.id)).manage_channels:
@@ -298,7 +298,7 @@ async def process_delay_message(params):
 
     if set_channel_name:
         if re.match(r'(true|yes)', set_channel_name, re.IGNORECASE):
-            special_handling = 3
+            special_handling = 32
             if type(delivery_channel).__module__ != 'discord.channel':
                 raise GigException("The set-channel-name option is only valid for Discord Channels")
             if not delivery_channel.permissions_for(delivery_channel.guild.get_member(client.user.id)).manage_channels:
@@ -308,7 +308,7 @@ async def process_delay_message(params):
         else:
             raise GigException(f"`{set_channel_name}` is an invalid value for **set-channel-name**")
 
-    if not special_handling:
+    if not special_handling & 16 and not special_handling & 32:
         if type(delivery_channel).__name__ != 'TextChannel' and type(delivery_channel).__module__ != 'gigchannel':
             raise GigException(f"Cannot send messages to {type(delivery_channel).__name__}")
 
@@ -353,12 +353,12 @@ async def process_delay_message(params):
         return
     elif delivery_time == 0:
         if request_channel:
-            if special_handling and special_handling > 1:
+            if special_handling and ( special_handling & 16 or special_handling & 32 ):
                 await request_channel.send(embed=discord.Embed(description=f"Your change will be made to the {delivery_channel.mention} channel now" + repeat_output, color=0x00ff00))
             else:
                 await request_channel.send(embed=discord.Embed(description=f"Your message will be delivered to the {delivery_channel.mention} channel now" + repeat_output, color=0x00ff00))
     elif request_channel:
-        if special_handling and special_handling > 1:
+        if special_handling and ( special_handling & 16 or special_handling & 32 ):
             embed=discord.Embed(description=f"Your change will be made to {delivery_channel.mention} at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}" + repeat_output, color=0x00ff00)
         else:
             embed=discord.Embed(description=f"Your message will be delivered to {delivery_channel.mention} at {gigtz.display_localized_time(newMessage.delivery_time, giguser.users[author_id].timezone, giguser.users[author_id].format_24)}" + repeat_output, color=0x00ff00)
@@ -540,12 +540,12 @@ async def schedule_delay_message(msg):
 
         sent_message = None
         if not skip_delivery:
-            if hasattr(msg, 'special_handling') and msg.special_handling == 2:
+            if hasattr(msg, 'special_handling') and msg.special_handling & 16:
                 if re.match(r'none', content, re.IGNORECASE):
                     await msg.get_delivery_channel(client).edit(topic='')
                 else:
                     await msg.get_delivery_channel(client).edit(topic=content)
-            elif hasattr(msg, 'special_handling') and msg.special_handling == 3:
+            elif hasattr(msg, 'special_handling') and msg.special_handling & 32:
                 await msg.get_delivery_channel(client).edit(name=content)
             else:
                 content = replace_generic_emojis(content, msg.guild_id)
@@ -571,7 +571,7 @@ async def schedule_delay_message(msg):
                         await client.get_user(settings.bot_owner_id).send(f"{author.mention}'s ({author.id}) message {msg.id} failed to send\n`{format_exc()}`")
                         return
 
-            if hasattr(msg, 'special_handling') and msg.special_handling == 1:
+            if hasattr(msg, 'special_handling') and msg.special_handling & 8:
                 try:
                     await sent_message.pin()
                 except discord.HTTPException as e:
@@ -827,14 +827,14 @@ async def edit_delay_message(params):
         embed = discord.Embed(description=f"{type(msg).__name__} edited", color=0x00ff00)
 
         if pin_message:
-            if msg.special_handling == 2:
+            if msg.special_handling & 16:
                 raise GigException("pin may not be used with set-topic")
-            if msg.special_handling == 3:
+            if msg.special_handling & 32:
                 raise GigException("pin may not be used with set-channel-name")
             if re.match(r'(true|yes)', pin_message, re.IGNORECASE):
-                msg.special_handling = 1
+                msg.special_handling = msg.special_handling | 8
             elif re.match(r'(false|no)', pin_message, re.IGNORECASE):
-                msg.special_handling = None
+                msg.special_handling = msg.special_handling & 247 # all bits but 8
             else:
                 raise GigException(f"`{pin_message}` is an invalid value for **pin**")
 

@@ -143,6 +143,7 @@ function save_message(){
   data['message_type'] = $('#message_type_select').find(":selected").val();
   data['server_id'] = $('#server_select').val();
   data['content'] = $('#edit_content').val();
+  special_handling = 0
 
   if($('#message_type_select').find(":selected").val() !== 'batch'){
     data['message_id'] = $('#message_id_cell').text();
@@ -161,7 +162,6 @@ function save_message(){
       else special_handling = special_handling & 253 // unset second bit
       if($('#autoreply_report_checkbox').prop('checked')) special_handling = special_handling | 4 // set third bit
       else special_handling = special_handling & 251 // unset third bit
-      data['pin_message'] = special_handling
   }
 
   if($('#message_type_select').find(":selected").val() == 'message'){
@@ -200,13 +200,16 @@ function save_message(){
     data['repeats'] = repeats_str;
     data['repeat_until'] = repeat_until;
     if($('#special_handling_header').text() == 'Pin')
-      if($('#pin_message_checkbox').prop('checked')) data['pin_message'] = 1
-      else data['pin_message'] = 0
+      if($('#pin_message_checkbox').prop('checked')) special_handling = special_handling | 8
+      else special_handling = special_handling & 247
     if($('#special_handling_header').text() == 'Set Topic')
-      data['pin_message'] = 2
+      if($('#pin_message_checkbox').prop('checked')) special_handling = special_handling | 16
+      else special_handling = special_handling & 239
     if($('#special_handling_header').text() == 'Set Channel Name')
-      data['pin_message'] = 3
+      if($('#pin_message_checkbox').prop('checked')) special_handling = special_handling | 32
+      else special_handling = special_handling & 223
   }
+  data['pin_message'] = special_handling
 
   $.ajax({
     type: "POST",
@@ -261,7 +264,7 @@ function save_message(){
           if(special_handling & 4) $('#display_autoreply_report_cell').text('True')
           else $('#display_autoreply_report_cell').text('False')
           $('#special_handling_row').toggle(true);
-	} else if(special_handling){
+	} else if(special_handling & 8){
 	  $('#display_special_handling_cell').text('True')
           $('#special_handling_row').toggle(true);
         } else {
