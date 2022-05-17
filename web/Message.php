@@ -99,7 +99,7 @@ class Message {
         $duration_minutes = intval(($this->repeat_until-$this->delivery_time)/60);
         if($duration_minutes > 0)
           $command_str.= " duration=minutes:".$duration_minutes;
-    if($this->special_handling == 1)
+    if($this->special_handling & 8)
       $command_str.= " pin=true";
     if($this->description != "")
       $command_str.= " desc=\"".$this->description."\"";
@@ -200,21 +200,21 @@ class Message {
 
     $special_handling = null;
     if(preg_match("/(pin\s*=\s*(\S+))/", $remaining_args, $matches)){
-      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 1;
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 8;
       elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
         throw new BadRequestException("Invalid value for pin:  ".$matches[2]);
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
 
     if(preg_match("/(set-topic\s*=\s*(\S+))/", $remaining_args, $matches)){
-      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 2;
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 16;
       elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
         throw new BadRequestException("Invalid value for set-topic:  ".$matches[2]);
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
 
     if(preg_match("/(set-channel-name\s*=\s*(\S+))/", $remaining_args, $matches)){
-      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 3;
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 32;
       elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
         throw new BadRequestException("Invalid value for set-channel-name:  ".$matches[2]);
     }
