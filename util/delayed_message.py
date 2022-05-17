@@ -113,11 +113,11 @@ class Message(DelayedMessage):
         if self.repeat and self.repeat_until:
             output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, timezone, format_24)}\n"
         output += f"> **Description:**  {self.description}\n"
-        if self.special_handling & 8:
+        if self.special_handling and self.special_handling & 8:
             output += "> **Pin Message:**  True\n"
-        if self.special_handling & 16:
+        if self.special_handling and self.special_handling & 16:
             output += "> **Set Topic:**  True\n"
-        if self.special_handling & 32:
+        if self.special_handling and self.special_handling & 32:
             output += "> **Set Channel Name:**  True\n"
         return output
 

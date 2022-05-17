@@ -540,12 +540,12 @@ async def schedule_delay_message(msg):
 
         sent_message = None
         if not skip_delivery:
-            if hasattr(msg, 'special_handling') and msg.special_handling & 16:
+            if hasattr(msg, 'special_handling') and msg.special_handling and msg.special_handling & 16:
                 if re.match(r'none', content, re.IGNORECASE):
                     await msg.get_delivery_channel(client).edit(topic='')
                 else:
                     await msg.get_delivery_channel(client).edit(topic=content)
-            elif hasattr(msg, 'special_handling') and msg.special_handling & 32:
+            elif hasattr(msg, 'special_handling') and msg.special_handling and msg.special_handling & 32:
                 await msg.get_delivery_channel(client).edit(name=content)
             else:
                 content = replace_generic_emojis(content, msg.guild_id)
@@ -571,7 +571,7 @@ async def schedule_delay_message(msg):
                         await client.get_user(settings.bot_owner_id).send(f"{author.mention}'s ({author.id}) message {msg.id} failed to send\n`{format_exc()}`")
                         return
 
-            if hasattr(msg, 'special_handling') and msg.special_handling & 8:
+            if hasattr(msg, 'special_handling') and msg.special_handling and msg.special_handling & 8:
                 try:
                     await sent_message.pin()
                 except discord.HTTPException as e:
