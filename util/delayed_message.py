@@ -27,12 +27,13 @@ class DelayedMessage:
         channel = None
         try:
             channel = discord.utils.get(self.get_guild(client).text_channels, id=self.delivery_channel_id)
+            if not channel and ( self.special_handling & 16 or self.special_handling & 32):
+                channel = discord.utils.get(self.get_guild(client).channels, id=self.delivery_channel_id)
         except:
             pass
         if not channel:
             gigchannel.load_channels()
-            if self.delivery_channel_id is not None:
-                channel = gigchannel.channels[self.delivery_channel_id]
+            channel = gigchannel.channels[self.delivery_channel_id]
         return channel
 
     def get_author(self, client):
@@ -73,19 +74,6 @@ class Message(DelayedMessage):
         if update_db:
             self.update_db()
 
-    def get_delivery_channel(self, client):
-        channel = None
-        try:
-            channel = discord.utils.get(self.get_guild(client).text_channels, id=self.delivery_channel_id)
-            if not channel and self.special_handling > 1:
-                channel = discord.utils.get(self.get_guild(client).channels, id=self.delivery_channel_id)
-        except:
-            pass
-        if not channel:
-            gigchannel.load_channels()
-            channel = gigchannel.channels[self.delivery_channel_id]
-        return channel
-
     def get_show_content(self, raw=False, timezone=None):
         command = ""
         if raw == "raw+":
@@ -95,11 +83,11 @@ class Message(DelayedMessage):
                 command += f" repeat={self.repeat}"
             if self.repeat_until:
                 command += f" duration={int((self.repeat_until-self.delivery_time)/60)}"
-            if self.special_handling == 1:
+            if self.special_handling & 8:
                 command += f" pin=true"
-            if self.special_handling == 2:
+            if self.special_handling & 16:
                 command += f" set-topic=true"
-            if self.special_handling == 3:
+            if self.special_handling & 32:
                 command += f" set-channel-name=true"
             if self.description:
                 command += f" desc=\"{self.description}\""
@@ -125,11 +113,11 @@ class Message(DelayedMessage):
         if self.repeat and self.repeat_until:
             output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, timezone, format_24)}\n"
         output += f"> **Description:**  {self.description}\n"
-        if self.special_handling == 1:
+        if self.special_handling & 8:
             output += "> **Pin Message:**  True\n"
-        if self.special_handling == 2:
+        if self.special_handling & 16:
             output += "> **Set Topic:**  True\n"
-        if self.special_handling == 3:
+        if self.special_handling & 32:
             output += "> **Set Channel Name:**  True\n"
         return output
 
