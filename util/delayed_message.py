@@ -89,6 +89,8 @@ class Message(DelayedMessage):
                 command += f" set-topic=true"
             if self.special_handling & 32:
                 command += f" set-channel-name=true"
+            if self.special_handling & 64:
+                command += f" publish=true"
             if self.description:
                 command += f" desc=\"{self.description}\""
             return "```\n" + command + "\n" + super().get_show_content(raw, timezone)
@@ -119,6 +121,8 @@ class Message(DelayedMessage):
             output += "> **Set Topic:**  True\n"
         if self.special_handling and self.special_handling & 32:
             output += "> **Set Channel Name:**  True\n"
+        if self.special_handling and self.special_handling & 64:
+            output += "> **Publish:**  True\n"
         return output
 
 class Template(DelayedMessage):

@@ -171,6 +171,7 @@ async def process_delay_message(params):
     pin_message = params.pop('pin', None)
     set_topic = params.pop('set-topic', None)
     set_channel_name = params.pop('set-channel-name', None)
+    publish = params.pop('publish', None)
     special_handling = None
 
     if count_guild_messages(guild.id) >= 10 and not gigguild.guilds[guild.id].plan_level:
@@ -183,6 +184,8 @@ async def process_delay_message(params):
 
     if pin_message and ( set_topic or set_channel_name ) or set_topic and set_channel_name:
         raise GigException(f"Invalid command.  You may only use one of `pin`, `set-topic`, and `set-channel-name`")
+    elif publish and ( set_topic or set_channel_name ):
+        raise GigException(f"Invalid command.  `publish` may not be used with `set-topic` or `set-channel-name`")
 
     if content is not None and re.search(r'///', content):
         raise GigException(f"Placeholder `///` found in message body")
@@ -308,7 +311,20 @@ async def process_delay_message(params):
         else:
             raise GigException(f"`{set_channel_name}` is an invalid value for **set-channel-name**")
 
-    if not special_handling & 16 and not special_handling & 32:
+    if publish:
+        if re.match(r'(true|yes)', publish, re.IGNORECASE):
+            if not special_handling:
+                special_handling = 64
+            else:
+                special_handling = special_handling | 64
+            if type(delivery_channel).__module__ != 'discord.channel':
+                raise GigException("The publish option is only valid for Discord Channels")
+        elif re.match(r'(false|no)', publish, re.IGNORECASE):
+            pass
+        else:
+            raise GigException(f"`{publish}` is an invalid value for **publish**")
+
+    if special_handling and not special_handling & 16 and not special_handling & 32:
         if type(delivery_channel).__name__ != 'TextChannel' and type(delivery_channel).__module__ != 'gigchannel':
             raise GigException(f"Cannot send messages to {type(delivery_channel).__name__}")
 
@@ -585,6 +601,20 @@ async def schedule_delay_message(msg):
                                 output += f"\n\n{client.user.mention} does not appear to have permission"
                             else:
                                 output += "\n\nThis is probably due to the channel having more than 50 pinned messages"
+                            await channel.send(embed=discord.Embed(description=output, color=0xff0000))
+
+            if hasattr(msg, 'special_handling') and msg.special_handling and msg.special_handling & 64:
+                try:
+                    await sent_message.publish()
+                except discord.HTTPException as e:
+                    message_guild = msg.get_guild(client)
+                    if message_guild.id in gigguild.guilds:
+                        channel = discord.utils.get(message_guild.channels, id=gigguild.guilds[message_guild.id].approval_channel_id)
+                        if channel:
+                            output = f"{msg.get_author(client).mention} Your message failed to publish\n\n"
+                            output += sent_message.jump_url
+                            if type(e) is discord.Forbidden:
+                                output += f"\n\n{client.user.mention} does not appear to have permission"
                             await channel.send(embed=discord.Embed(description=output, color=0xff0000))
 
         if type(msg) is Message and msg.repeat is not None:
