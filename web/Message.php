@@ -90,15 +90,20 @@ class Message {
   function command(){
     if(is_null($this->delivery_time))
       $command_str = "~giggle template";
+    elseif($this->delivery_time == -2)
+      $command_str = "~giggle autoreply";
     else
       $command_str = "~giggle ".date("Y-m-d H:i:s",$this->delivery_time);
-    $command_str.= " channel=".$this->channel;
+    if(!is_null($this->channel))
+      $command_str.= " channel=".$this->channel;
     if(!is_null($this->repeats))
       $command_str.= " repeat=".$this->repeats;
       if(!is_null($this->repeat_until))
         $duration_minutes = intval(($this->repeat_until-$this->delivery_time)/60);
         if($duration_minutes > 0)
           $command_str.= " duration=minutes:".$duration_minutes;
+    if($this->special_handling & 1)
+      $command_str.= " wildcard=true";
     if($this->special_handling & 8)
       $command_str.= " pin=true";
     if($this->description != "")
