@@ -876,9 +876,9 @@ async def edit_delay_message(params):
                 raise GigException(f"`{pin_message}` is an invalid value for **pin**")
 
         if publish:
-            if msg.special_handling & 16:
+            if msg.special_handling and msg.special_handling & 16:
                 raise GigException("publish may not be used with set-topic")
-            if msg.special_handling & 32:
+            if msg.special_handling and msg.special_handling & 32:
                 raise GigException("publish may not be used with set-channel-name")
             if re.match(r'(true|yes)', publish, re.IGNORECASE):
                 if msg.special_handling:
