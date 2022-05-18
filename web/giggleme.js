@@ -91,6 +91,7 @@ function edit_button_click(){
       $('#repeat_until_checkbox').prop('checked', false);
       $('#repeat_until_datetime').toggle(false);
     }
+    $('#publish_row').toggle(true);
   }
 }
 
@@ -155,13 +156,17 @@ function save_message(){
     }
     data['channel_id'] = $('#channel_select').val();
     data['description'] = $('#description').val();
-    if($('#special_handling_header').text() == 'Wildcard')
+    if($('#special_handling_header').text() == 'Wildcard'){
       if($('#pin_message_checkbox').prop('checked')) special_handling = special_handling | 1 // set first bit
       else special_handling = special_handling & 254 // unset first bit
       if($('#autoreply_delete_checkbox').prop('checked')) special_handling = special_handling | 2 // set second bit
       else special_handling = special_handling & 253 // unset second bit
       if($('#autoreply_report_checkbox').prop('checked')) special_handling = special_handling | 4 // set third bit
       else special_handling = special_handling & 251 // unset third bit
+    } else {
+      if($('#publish_checkbox').prop('checked')) special_handling = special_handling | 64 // set seventh bit
+      else special_handling = special_handling & 191 // unset seventh bit
+    }
   }
 
   if($('#message_type_select').find(":selected").val() == 'message'){
@@ -271,6 +276,8 @@ function save_message(){
           $('#special_handling_row').toggle(false);
 	  $('#display_special_handling_cell').text('False')
 	}
+        if(special_handling & 64) $('#display_publish_cell').text('True')
+        else $('#display_publish_cell').text('False')
       }
     },
     error: function(error){ alert(error.responseText) },
@@ -363,6 +370,7 @@ function message_type_updated(){
     $('#autoreply_delete_row').toggle(false);
     $('#autoreply_report_row').toggle(false);
     $('#pin_message_checkbox').prop('checked', false)
+    $('#publish_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
@@ -382,6 +390,7 @@ function message_type_updated(){
     $('#autoreply_delete_row').toggle(false);
     $('#autoreply_report_row').toggle(false);
     $('#pin_message_checkbox').prop('checked', false)
+    $('#publish_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')
@@ -411,6 +420,7 @@ function message_type_updated(){
     $('#skip_if_row').toggle(false);
     $('#repeat_until_row').toggle(false);
     $('#pin_message_checkbox').prop('checked', false)
+    $('#publish_checkbox').prop('checked', false)
     $('#description_row').toggle(true);
     $('#edit_content').prop('maxlength','1992');
     $('#edit_content').val('')

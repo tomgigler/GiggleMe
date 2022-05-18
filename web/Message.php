@@ -90,15 +90,20 @@ class Message {
   function command(){
     if(is_null($this->delivery_time))
       $command_str = "~giggle template";
+    elseif($this->delivery_time == -2)
+      $command_str = "~giggle autoreply";
     else
       $command_str = "~giggle ".date("Y-m-d H:i:s",$this->delivery_time);
-    $command_str.= " channel=".$this->channel;
+    if(!is_null($this->channel))
+      $command_str.= " channel=".$this->channel;
     if(!is_null($this->repeats))
       $command_str.= " repeat=".$this->repeats;
       if(!is_null($this->repeat_until))
         $duration_minutes = intval(($this->repeat_until-$this->delivery_time)/60);
         if($duration_minutes > 0)
           $command_str.= " duration=minutes:".$duration_minutes;
+    if($this->special_handling & 1)
+      $command_str.= " wildcard=true";
     if($this->special_handling & 8)
       $command_str.= " pin=true";
     if($this->description != "")
@@ -217,6 +222,18 @@ class Message {
       if(preg_match("/t(rue)?|y(es)?/i", $matches[2])) $special_handling = 32;
       elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
         throw new BadRequestException("Invalid value for set-channel-name:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+
+    if(preg_match("/(publish\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])){
+        if($special_handling)
+          $special_handling = $special_handling | 64;
+        else
+          $special_handling = 64;
+      }
+      elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
+      throw new BadRequestException("Invalid value for set-channel-name:  ".$matches[2]);
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
 
