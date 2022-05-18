@@ -182,6 +182,7 @@ else
   print "/>\n";
 print "    </td>\n";
 print "  </tr>\n";
+
 print "  <tr id='autoreply_report_row'>\n";
 print "    <th>Report</th>\n";
 print "    <td id='display_autoreply_report_cell' class='display_element'>";
@@ -192,6 +193,21 @@ else
 print "    <td id='edit_autoreply_report_cell' class='edit_element'>\n";
 print "      <input id='autoreply_report_checkbox' type='checkbox' ";
 if($message->special_handling & 4)
+  print "checked ";
+print "/>\n";
+print "    </td>\n";
+print "  </tr>\n";
+
+print "  <tr id='publish_row'>\n";
+print "    <th>Publish</th>\n";
+print "    <td id='display_publish_cell' class='display_element'>";
+if($message->special_handling & 64)
+  print "True</td>\n";
+else
+  print "False</td>\n";
+print "    <td id='edit_publish_cell' class='edit_element'>\n";
+print "      <input id='publish_checkbox' type='checkbox' ";
+if($message->special_handling & 64)
   print "checked ";
 print "/>\n";
 print "    </td>\n";
@@ -225,6 +241,7 @@ print "var special_handling = " . $message->special_handling . "\n";
 
 print "$('#autoreply_delete_row').hide()\n";
 print "$('#autoreply_report_row').hide()\n";
+print "$('#publish_row').hide()\n";
 if(!$_GET['action']=='create'){
   if(!$message->delivery_time){
     print "$('#message_id_header_cell').text('Template ID')\n";
@@ -241,6 +258,8 @@ if(!$_GET['action']=='create'){
     print "$('#repeats_row').hide()\n";
     print "$('#channel_row').hide()\n";
     print "$('#message_type_select').val('autoreply')\n";
+  } elseif($message->special_handling & 64) {
+    print "$('#publish_row').show()\n";
   }
   print "$('#message_type_row').toggle(false)\n";
 }

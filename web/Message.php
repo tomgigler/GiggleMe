@@ -225,6 +225,18 @@ class Message {
     }
     $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
 
+    if(preg_match("/(publish\s*=\s*(\S+))/", $remaining_args, $matches)){
+      if(preg_match("/t(rue)?|y(es)?/i", $matches[2])){
+        if($special_handling)
+          $special_handling = $special_handling | 64;
+        else
+          $special_handling = 64;
+      }
+      elseif(!preg_match("/f(alse)?|n(o)?/i", $matches[2]))
+      throw new BadRequestException("Invalid value for set-channel-name:  ".$matches[2]);
+    }
+    $remaining_args = preg_replace("/".preg_quote($matches[1])."/", "", $remaining_args);
+
     $repeats = null;
     if(preg_match("/(repeat\s*=\s*(\S+))/", $remaining_args, $matches)){
       if(preg_match("/((minutes:(\d+))|(hours:(\d+))|daily|weekly|monthly)(;skip_if=(\d+))?$/i", $matches[2])) $repeats = $matches[2];
