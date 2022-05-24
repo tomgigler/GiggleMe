@@ -34,7 +34,7 @@ if(count($messages)){
   print "    <th>Author</th>\n";
   print "    <th>Delivery Time</th>\n";
   print "    <th>Repeats</th>\n";
-  print "    <th>Repeat Until</th>\n";
+  print "    <th>Publish</th>\n";
   print "    <th>Description</th>\n";
   print "  </tr>\n";
   foreach($messages as $message) {
@@ -47,7 +47,8 @@ if(count($messages)){
     print "    <td>".htmlspecialchars($message->author)."</td>\n";
     print "    <td>$message->delivery_time_format</td>\n";
     print "    <td>$message->repeats</td>\n";
-    print "    <td>$message->repeat_until_format</td>\n";
+    if($message->publish()) print "    <td>Yes</td>\n";
+    else print "    <td/>\n";
     print "    <td>".htmlspecialchars($message->description)."</td>\n";
     print "  </tr>\n";
   }

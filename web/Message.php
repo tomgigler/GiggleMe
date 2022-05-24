@@ -26,6 +26,11 @@ class Message {
     $this->set_all();
   }
 
+  function publish(){
+    if($this->special_handling & 64) return true;
+    else return false;
+  }
+
   function guild_name(){
     $db = new DBConnection();
     return $db->get_guild_name($this->guild_id);
