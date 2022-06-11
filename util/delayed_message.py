@@ -49,11 +49,17 @@ class DelayedMessage:
             output += f"> **{type(self).__name__}**\n"
         if show_id:
             output += f"> **ID:**  {self.id}\n"
-        output += f"> **Author:**  {self.get_author(client).name}\n"
+        try:
+            output += f"> **Author:**  {self.get_author(client).name}\n"
+        except:
+            pass
         if self.get_delivery_channel(client) is not None:
             output += f"> **Channel:**  {self.get_delivery_channel(client).mention}\n"
         if guild_id != self.guild_id:
-            output += f"> **Guild:**  {self.get_guild(client).name}\n"
+            try:
+                output += f"> **Guild:**  {self.get_guild(client).name}\n"
+            except:
+                pass
         return output
 
     def get_show_content(self, raw=False, timezone=None):
@@ -111,8 +117,11 @@ class Message(DelayedMessage):
         if self.delivery_time and self.delivery_time >= 0:
             output += f"> **Repeat:**  {self.repeat}\n"
         if self.repeat and self.last_repeat_message:
-            last_message = await self.get_delivery_channel(client).fetch_message(self.last_repeat_message)
-            output += f"> **Last Delivery:**  {last_message.jump_url}\n"
+            try:
+                last_message = await self.get_delivery_channel(client).fetch_message(self.last_repeat_message)
+                output += f"> **Last Delivery:**  {last_message.jump_url}\n"
+            except:
+                pass
         if self.repeat and self.repeat_until:
             output += f"> **Repeat Until:**  {gigtz.display_localized_time(self.repeat_until, timezone, format_24)}\n"
         output += f"> **Description:**  {self.description}\n"
