@@ -88,6 +88,17 @@ class DBConnection {
     return $ret;
   }
 
+  function get_user_timezone_url($user_id){
+    $this->connect();
+    $sql = "SELECT timezones.url FROM users, timezones WHERE users.user = ? AND users.timezone = timezones.id";
+    $stmt = $this->connection->prepare($sql);
+    $stmt->bind_param('i', $user_id);
+    $stmt->execute();
+    $ret = $stmt->get_result()->fetch_all()[0][0];
+    $this->close();
+    return $ret;
+  }
+
   function get_user_guilds(){
     $this->connect();
     $stmt = $this->connection->prepare("SELECT g.id, g.guild_name FROM user_guilds AS u, guilds AS g WHERE u.guild_id = g.id AND u.user_id = ?");
