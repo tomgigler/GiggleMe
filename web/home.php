@@ -5,13 +5,12 @@ include "settings.php";
 require_once "Message.php";
 require_once "DBConnection.php";
 
+$db = new DBConnection();
 print "<center>\n";
-print "Current " . $_SESSION['timezone'] . " time:";
-?>
-<br>
-<iframe src="https://free.timeanddate.com/clock/i8ec1q3x/n3339/ts1" frameborder="0" width="94" height="18"></iframe>
-<br><br><br>
-<?php
+print "Current " . $db->get_user_timezone($_SESSION['user_id']) . " time:";
+print "<br>";
+print "<iframe src='" . $db->get_user_timezone_url($_SESSION['user_id']) . "' frameborder='0' width='94' height='18'></iframe>";
+print "<br><br><br>";
 print "<button id='new_message_button' onclick=\"location.href='message_page.php?action=create'\">New Message</button>\n";
 print "<button id='custom_channels_button' onclick=\"location.href='custom_channels.php'\" >Custom Channels</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
@@ -114,7 +113,6 @@ if(count($messages)){
   print "</table>\n";
 }
 
-$db = new DBConnection();
 if(!$db->get_user_guilds()){
   print "<br><br><br>\n";
   print "<div class='footer'>\n";
