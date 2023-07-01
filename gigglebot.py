@@ -1235,7 +1235,7 @@ async def on_message(msg):
                     await list_vips(msg, match.group(3))
                     return
 
-                match = re.match(r'~g(iggle)? +vip +add +(\d+) +(\S+)( +(\d))? *$', msg.content)
+                match = re.match(r'~g(iggle)? +vip +add +(\d+) +(\S+)( +(\d+))? *$', msg.content)
                 if match:
                     await add_vip(msg, match.group(2), match.group(3), match.group(5))
                     return
