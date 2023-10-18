@@ -33,7 +33,7 @@ def show_help(command):
 > 
 > The following commands may be used to manage scheduled messages:
 > 
-> `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `time-format`, `help`
+> `list`, `show`, `send`, `edit`, `modify`, `cancel`, `timezone`, `timezones`, `time-format`, `help`
 > 
 > To see help for one of the above commands:
 > 
@@ -78,6 +78,13 @@ def show_help(command):
 > 
 > Send message identified by <message-id> immediately and remove it from the queue
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message"""
+
+    if command == "modify":
+        return """> `~giggle modify <message-id>`
+> `<content>`
+> 
+> replace the content of message identified by <message-id>
+> **Note:**  `message-id` is the Discord message id"""
 
     if command == "edit":
         return """> `~giggle edit <message-id> <time> channel=<channel> repeat=<frequency> duration=<duration> desc="<desc> pin=<True|False>"`
