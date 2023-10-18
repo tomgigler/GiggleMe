@@ -84,8 +84,10 @@ async def poll_message_table():
 
 async def get_message_by_id(guild_id, channel_id, message_id):
     guild = client.get_guild(guild_id)
+    message = None
     if channel_id is not None:
         channel = guild.get_channel(channel_id)
+        message = await channel.fetch_message(message_id)
     else:
         for channel in guild.text_channels:
             try:
@@ -93,7 +95,9 @@ async def get_message_by_id(guild_id, channel_id, message_id):
             except:
                 continue
             break
-    return await channel.fetch_message(message_id)
+    if not message:
+        raise GigException(f"Message " + message_id + " not found")
+    return message
 
 def load_from_db(delayed_messages):
 
@@ -775,6 +779,10 @@ async def send_delay_message(channel, author, msg_num):
     else:
         await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
 
+async def modify_message(guild_id, message_id, content):
+    message = await get_message_by_id(guild_id, None, message_id)
+    await message.edit(content=content)
+
 async def edit_delay_message(params):
     discord_message = params.pop('discord_message', None)
     message_id = params.pop('message_id', None)
@@ -1185,6 +1193,11 @@ async def on_message(msg):
                 match = re.match(r'~g(iggle)? +send +(\S+) *$', msg.content)
                 if match:
                     await send_delay_message(msg.channel, msg.author, match.group(2))
+                    return
+
+                match = re.match(r'~g(iggle)? +modify +(\d+) *\n(.*)$', msg.content)
+                if match:
+                    await modify_message(msg.guild.id, match.group(2), match.group(3))
                     return
 
                 match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
