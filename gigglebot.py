@@ -781,6 +781,9 @@ async def send_delay_message(channel, author, msg_num):
 
 async def modify_message(guild_id, message_id, content):
     message = await get_message_by_id(guild_id, None, message_id)
+    if message.author.id is not client.user.id:
+        # raise GigException(f"**{message_id}** is not a message sent by (client.user)")
+        raise GigException(f"**{message_id}** is not a message sent by {client.user.name}")
     await message.edit(content=content)
 
 async def edit_delay_message(params):
