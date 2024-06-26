@@ -739,7 +739,7 @@ async def show_delayed_message(channel, author_id, msg_num, raw):
     if msg_num == 'next':
         messages = {}
         for msg_id in delayed_messages:
-            if delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].guild_id == channel.guild.id:
+            if hasattr(delayed_messages[msg_id], 'delivery_time') and delayed_messages[msg_id].delivery_time is not None and delayed_messages[msg_id].guild_id == channel.guild.id:
                 messages[msg_id] = delayed_messages[msg_id]
         if messages:
             msg_num = min(messages.values(), key=lambda x: x.delivery_time).id
