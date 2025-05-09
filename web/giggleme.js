@@ -1,3 +1,11 @@
+function toggleAllCheckboxes(groupClass) {
+  const checkboxes = document.querySelectorAll('.' + groupClass);
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+  checkboxes.forEach(cb => cb.checked = !allChecked);
+  updateDeleteButtonState()
+}
+
 function load_message_page(action, repeat_until){
   update_channel_select();
   update_from_template_select();
@@ -134,6 +142,21 @@ function deleteMessage(msg_id, msg_type){
     }
     location.href='home.php';
   });
+}
+
+function deleteMessages(){
+  if(!confirm("Delete all selected messages?")) return;
+
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+
+  checkboxes.forEach(cb => {
+    const row = cb.closest('tr');
+    if (row) {
+      row.remove();
+    }
+  });
+  document.getElementById('delete_selected_button').disabled = true;
+
 }
 
 function save_message(){
@@ -447,4 +470,9 @@ function setInputFilter(textbox, inputFilter) {
       }
     });
   });
+}
+
+function updateDeleteButtonState() {
+  const anyChecked = document.querySelectorAll('.delete-checkbox:checked').length > 0;
+  document.getElementById('delete_selected_button').disabled = !anyChecked;
 }

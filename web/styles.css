@@ -7,6 +7,13 @@ tr.link-row:hover {
   cursor: pointer;
   color: white;
 }
+tr.link-row:hover td.no-hover {
+  background-color: #FFFFFF;
+  cursor: default;
+}
+th.delete-header {
+  cursor: pointer;
+}
 pre {
   white-space: pre-wrap;
   padding: 5px 15px;

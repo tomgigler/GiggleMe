@@ -13,6 +13,7 @@ print "<iframe src='" . $db->get_user_timezone_url($_SESSION['user_id']) . "' fr
 print "<br><br><br>";
 print "<button id='new_message_button' onclick=\"location.href='message_page.php?action=create'\">New Message</button>\n";
 print "<button id='custom_channels_button' onclick=\"location.href='custom_channels.php'\" >Custom Channels</button>\n";
+print "<button id='delete_selected_button' onclick=\"deleteMessages()\" title=\"Delete selected messages\" >Delete</button>\n";
 print "<button onclick=\"location.href='logout.php'\" >Logout</button>\n";
 
 if(isset($_SESSION['message']))
@@ -31,7 +32,7 @@ print "<br>\n";
 
 if(count($messages)){
   print "<table border=1>\n";
-  print "  <tr><th colspan=8><b>Messages</b></th></tr>\n";
+  print "  <tr><th colspan=9><b>Messages</b></th></tr>\n";
   print "  <tr>\n";
   print "    <th>Message ID</th>\n";
   print "    <th>Server Name</th>\n";
@@ -41,6 +42,7 @@ if(count($messages)){
   print "    <th>Repeats</th>\n";
   print "    <th>Publish</th>\n";
   print "    <th>Description</th>\n";
+  print "    <th id='message-delete-all' class='delete-header' title='Select all' onclick='toggleAllCheckboxes(\"message-checkbox\")'>❌</th>\n";
   print "  </tr>\n";
   foreach($messages as $message) {
     if($message->message_type() != 'message') continue;
@@ -55,6 +57,7 @@ if(count($messages)){
     if($message->publish()) print "    <td>Yes</td>\n";
     else print "    <td/>\n";
     print "    <td>".htmlspecialchars($message->description)."</td>\n";
+    print "    <td class='no-hover' onclick='event.stopPropagation();'><input type='checkbox' class='delete-checkbox message-checkbox'></td>\n";
     print "  </tr>\n";
   }
   print "</table>\n";
@@ -63,13 +66,14 @@ if(count($messages)){
 
 if(count($messages)){
   print "<table border=1>\n";
-  print "  <tr><th colspan=5><b>Templates</b></th></tr>\n";
+  print "  <tr><th colspan=6><b>Templates</b></th></tr>\n";
   print "  <tr>\n";
   print "    <th>Template ID</th>\n";
   print "    <th>Server Name</th>\n";
   print "    <th>Channel</th>\n";
   print "    <th>Author</th>\n";
   print "    <th>Description</th>\n";
+  print "    <th class='delete-header' title='Select all' onclick='toggleAllCheckboxes(\"template-checkbox\")'>❌</th>\n";
   print "  </tr>\n";
   foreach($messages as $template) {
     if($template->message_type() != 'template') continue;
@@ -79,6 +83,7 @@ if(count($messages)){
     print "    <td>".htmlspecialchars($template->channel)."</td>\n";
     print "    <td>".htmlspecialchars($template->author)."</td>\n";
     print "    <td>".htmlspecialchars($template->description)."</td>\n";
+    print "    <td class='no-hover' onclick='event.stopPropagation();'><input type='checkbox' class='delete-checkbox template-checkbox'></td>\n";
     print "  </tr>\n";
   }
   print "</table>\n";
@@ -87,7 +92,7 @@ if(count($messages)){
 
 if(count($messages)){
   print "<table border=1>\n";
-  print "  <tr><th colspan=6><b>AutoReplies</b></th></tr>\n";
+  print "  <tr><th colspan=7><b>AutoReplies</b></th></tr>\n";
   print "  <tr>\n";
   print "    <th>AutoReply ID</th>\n";
   print "    <th>Server Name</th>\n";
@@ -95,6 +100,7 @@ if(count($messages)){
   print "    <th>Wildcard</th>\n";
   print "    <th>Author</th>\n";
   print "    <th>Description</th>\n";
+  print "    <th class='delete-header' title='Select all' onclick='toggleAllCheckboxes(\"autoreply-checkbox\")'>❌</th>\n";
   print "  </tr>\n";
   foreach($messages as $autoreply) {
     if($autoreply->message_type() != 'autoreply') continue;
@@ -108,6 +114,7 @@ if(count($messages)){
       print "    <td>False</td>\n";
     print "    <td>".htmlspecialchars($autoreply->author)."</td>\n";
     print "    <td>".htmlspecialchars($autoreply->description)."</td>\n";
+    print "    <td class='no-hover' onclick='event.stopPropagation();'><input type='checkbox' class='delete-checkbox autoreply-checkbox'></td>\n";
     print "  </tr>\n";
   }
   print "</table>\n";
@@ -129,3 +136,13 @@ if(!$db->get_user_guilds()){
 }
 
 ?>
+<script>
+// Attach event listeners to all checkboxes
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.delete-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateDeleteButtonState);
+  });
+
+  updateDeleteButtonState(); // initial state check
+});
+</script>
