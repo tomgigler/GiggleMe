@@ -83,7 +83,7 @@ if(count($messages)){
     print "    <td>".htmlspecialchars($template->channel)."</td>\n";
     print "    <td>".htmlspecialchars($template->author)."</td>\n";
     print "    <td>".htmlspecialchars($template->description)."</td>\n";
-    print "    <td class='no-hover' onclick='event.stopPropagation();'><input type='checkbox' class='delete-checkbox template-checkbox' data-id='$message->id'></td>\n";
+    print "    <td class='no-hover' onclick='event.stopPropagation();'><input type='checkbox' class='delete-checkbox template-checkbox' data-id='$template->id'></td>\n";
     print "  </tr>\n";
   }
   print "</table>\n";
@@ -114,7 +114,7 @@ if(count($messages)){
       print "    <td>False</td>\n";
     print "    <td>".htmlspecialchars($autoreply->author)."</td>\n";
     print "    <td>".htmlspecialchars($autoreply->description)."</td>\n";
-    print "    <td class='no-hover' onclick='event.stopPropagation();'><input type='checkbox' class='delete-checkbox autoreply-checkbox' data-id='$message->id'></td>\n";
+    print "    <td class='no-hover' onclick='event.stopPropagation();'><input type='checkbox' class='delete-checkbox autoreply-checkbox' data-id='$autoreply->id'></td>\n";
     print "  </tr>\n";
   }
   print "</table>\n";
