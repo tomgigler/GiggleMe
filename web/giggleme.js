@@ -144,19 +144,35 @@ function deleteMessage(msg_id, msg_type){
   });
 }
 
-function deleteMessages(){
-  if(!confirm("Delete all selected messages?")) return;
+function deleteMessages() {
+  if(!confirm("Delete all selected?  This cannot be undone!")) return;
 
   const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+  const idsToDelete = [];
 
   checkboxes.forEach(cb => {
-    const row = cb.closest('tr');
-    if (row) {
-      row.remove();
-    }
+    idsToDelete.push(cb.dataset.id);
   });
-  document.getElementById('delete_selected_button').disabled = true;
 
+  if (idsToDelete.length === 0) return;
+
+  const data = new FormData();
+  data.append('msg_ids', JSON.stringify(idsToDelete));
+
+  fetch('delete_messages.php', {
+    method: 'POST',
+    body: data
+  })
+  .then(response => {
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.text(); // or .json() if your PHP returns structured data
+  })
+  .then(() => {
+    location.href='home.php';
+  })
+  .catch(error => {
+    alert('Error deleting messages: ' + error.message);
+  });
 }
 
 function save_message(){
