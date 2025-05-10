@@ -1,3 +1,11 @@
+function toggleAllCheckboxes(groupClass) {
+  const checkboxes = document.querySelectorAll('.' + groupClass);
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+  checkboxes.forEach(cb => cb.checked = !allChecked);
+  updateDeleteButtonState()
+}
+
 function load_message_page(action, repeat_until){
   update_channel_select();
   update_from_template_select();
@@ -133,6 +141,37 @@ function deleteMessage(msg_id, msg_type){
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     location.href='home.php';
+  });
+}
+
+function deleteMessages() {
+  if(!confirm("Delete all selected?  This cannot be undone!")) return;
+
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+  const idsToDelete = [];
+
+  checkboxes.forEach(cb => {
+    idsToDelete.push(cb.dataset.id);
+  });
+
+  if (idsToDelete.length === 0) return;
+
+  const data = new FormData();
+  data.append('msg_ids', JSON.stringify(idsToDelete));
+
+  fetch('delete_messages.php', {
+    method: 'POST',
+    body: data
+  })
+  .then(response => {
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.text(); // or .json() if your PHP returns structured data
+  })
+  .then(() => {
+    location.href='home.php';
+  })
+  .catch(error => {
+    alert('Error deleting messages: ' + error.message);
   });
 }
 
@@ -447,4 +486,9 @@ function setInputFilter(textbox, inputFilter) {
       }
     });
   });
+}
+
+function updateDeleteButtonState() {
+  const anyChecked = document.querySelectorAll('.delete-checkbox:checked').length > 0;
+  document.getElementById('delete_selected_button').disabled = !anyChecked;
 }
