@@ -1335,7 +1335,10 @@ async def on_message(msg):
                             await msg.delete()
                         if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 4:
                             channel = discord.utils.get(msg.guild.channels, id=gigguild.guilds[msg.guild.id].approval_channel_id)
-                            await channel.send(f"The following message from {msg.author.mention} has been deleted from {msg.channel.mention}:\n{msg.content}")
+                            if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 2:
+                                await channel.send(f"The following message from {msg.author.mention} has been deleted from {msg.channel.mention}:\n{msg.content}")
+                            else:
+                                await channel.send(f"The following message from {msg.author.mention} has been posted in {msg.channel.mention}:\n{msg.content}")
 
 @client.event
 async def on_voice_state_update(member, before, after):
