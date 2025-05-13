@@ -29,8 +29,6 @@ pre {
 }
 /* The hero image */
 .hero-image {
-  background-image: url("images/giggleme-header.jpg");
-
   /* Set a specific height */
   height: 200px;
 
