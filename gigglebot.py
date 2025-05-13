@@ -1337,7 +1337,7 @@ async def on_message(msg):
                             channel = discord.utils.get(msg.guild.channels, id=gigguild.guilds[msg.guild.id].approval_channel_id)
                             if delayed_messages[message_id].special_handling and delayed_messages[message_id].special_handling & 2:
                                 await channel.send(f"The following message from {msg.author.mention} has been deleted from {msg.channel.mention}:\n{msg.content}")
-                            else
+                            else:
                                 await channel.send(f"The following message from {msg.author.mention} has been posted in {msg.channel.mention}:\n{msg.content}")
 
 @client.event
