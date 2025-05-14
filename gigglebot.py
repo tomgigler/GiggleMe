@@ -507,7 +507,11 @@ def replace_mentions(content, guild_id):
                     try:
                         mention_replace = discord.utils.get(guild.members,name=mention).mention
                     except:
-                        raise GigException(f"Cannot find role or user {mention}")
+                    # See if the "role" was a user id
+                        try:
+                            mention_replace = discord.utils.get(guild.members,id=mention).mention
+                        except:
+                            raise GigException(f"Cannot find role or user {mention}")
 
             content = re.sub(f"{{{re.escape(str_to_replace)}}}", mention_replace, content)
 
