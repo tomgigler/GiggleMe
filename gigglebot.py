@@ -509,7 +509,7 @@ def replace_mentions(content, guild_id):
                     except:
                     # See if the "role" was a user id
                         try:
-                            mention_replace = discord.utils.get(guild.members,id=mention).mention
+                            mention_replace = discord.utils.get(guild.members,id=int(mention)).mention
                         except:
                             raise GigException(f"Cannot find role or user {mention}")
 
