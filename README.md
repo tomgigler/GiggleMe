@@ -12,7 +12,7 @@ The bot is primarily written in Python and stores its persistent state in MySQL.
 
 A basic deployment requires:
 
-- Python 3
+- Python 3 (the current known-working deployment uses Python 3.6.9)
 - MySQL or a compatible MySQL server
 - a Discord application/bot
 - the Python Discord library used by the project
@@ -149,18 +149,28 @@ If a real `settings.py` containing credentials was ever committed to a public re
 
 ## 5. Install Python dependencies
 
-The project does not currently provide a pinned dependency file.
+The current production installation is known to work with:
 
-At minimum the bot requires the Discord Python library and the MySQL connector used by the database module. A typical environment will need:
+```text
+Python 3.6.9
+discord.py 1.7.3
+mysql-connector-python 8.0.22
+python-dateutil 2.8.1
+pytz 2020.1
+python-twitter 3.5
+```
+
+Those exact direct dependencies are pinned in `requirements.txt` so a new deployment can reproduce the environment before attempting any library or Python upgrades.
+
+Create a virtual environment and install them:
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-
-pip install discord.py mysql-connector-python
+python -m pip install -r requirements.txt
 ```
 
-Additional dependencies, if any, should be captured from a known working installation and added to a future `requirements.txt`.
+Python 3.6.9 and these package versions are the **known-working baseline**, not a recommendation that new development remain on them forever. Runtime and library modernization should be handled separately and tested as an intentional refactor.
 
 ## 6. Make the utility modules importable
 
@@ -289,6 +299,7 @@ GiggleMe/
 ├── restart-giggleme.sh   # existing restart helper
 ├── schema.sql            # MySQL schema and required seed data
 ├── settings.example.py   # safe template for local deployment settings
+├── requirements.txt      # pinned known-working Python dependencies
 ├── README.md
 └── LICENSE
 ```
@@ -302,7 +313,7 @@ Useful refactoring goals include:
 - replace `discord.Intents.all()` with the minimum required intents
 - split the large `on_message` command dispatcher into focused command handlers
 - consider moving secrets from Python settings into environment variables
-- add `requirements.txt`
+- modernize Python and third-party libraries from the known-working legacy baseline
 - add database migrations for future schema changes
 - normalize magic values and flags into named types/constants
 - add automated tests around scheduling and persistence before large structural changes
