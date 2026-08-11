@@ -1,11 +1,281 @@
 # GiggleMe
 
-GiggleMe is a Discord bot that schedules messages
+GiggleMe is a Discord bot for scheduling messages. Over time it has also grown support for repeating messages, templates, proposals and voting, automatic replies, time-zone handling, VIP/voice-channel behavior, and other server-specific features.
 
-Use [this link](https://discord.com/api/oauth2/authorize?client_id=748155237738479627&permissions=477248&scope=bot) to invite GiggleMe to your server
+The bot is primarily written in Python and stores its persistent state in MySQL. The repository also contains a PHP-based web interface that uses the same database.
 
-Type `~giggle help` to see the help
+> **Project status**
+>
+> GiggleMe grew organically around real users and their feature requests. Some parts of the implementation are more general than others, and some behaviors are intentionally specialized. Refactoring is ongoing, so preserving existing behavior is preferred over silently "cleaning up" unusual logic.
+
+## Quick start
+
+A basic deployment requires:
+
+- Python 3
+- MySQL or a compatible MySQL server
+- a Discord application/bot
+- the Python Discord library used by the project
+- the Python MySQL connector used by the project
+- a local `settings.py` containing deployment-specific settings and secrets
+
+For the optional web interface you will also need a PHP-capable web server.
+
+## 1. Clone the repository
+
+```bash
+git clone https://github.com/tomgigler/GiggleMe.git
+cd GiggleMe
+```
+
+## 2. Create the MySQL database
+
+The repository includes `schema.sql`, which creates the `giggleme` database, creates the tables used by the application, and installs the required timezone seed data.
+
+From a shell:
+
+```bash
+mysql -u root -p < schema.sql
+```
+
+Or from inside the MySQL client:
+
+```sql
+SOURCE /path/to/GiggleMe/schema.sql;
+```
+
+The schema contains these tables:
+
+- `channels`
+- `guilds`
+- `messages`
+- `mute_members`
+- `request_queue`
+- `timezones`
+- `user_guilds`
+- `users`
+- `vips`
+- `votes`
+
+The schema intentionally mirrors the existing production schema. It does not add foreign keys, new indexes, or charset changes that are not already present in the running application.
+
+### Create a dedicated MySQL user
+
+Using a dedicated account is recommended instead of running GiggleMe as MySQL `root`.
+
+Example:
+
+```sql
+CREATE USER 'giggleme'@'localhost' IDENTIFIED BY 'replace-with-a-strong-password';
+GRANT ALL PRIVILEGES ON giggleme.* TO 'giggleme'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Adjust the host and permissions to match your deployment.
+
+## 3. Create the Discord bot
+
+Create a Discord application and bot for your deployment, then invite that bot to the servers where you want to use GiggleMe.
+
+The current code creates the Discord client with:
+
+```python
+discord.Client(intents=discord.Intents.all())
+```
+
+That means a deployment must enable the gateway intents required by the current application in the Discord developer configuration. Reducing GiggleMe to the minimum required intent set is a planned cleanup and is preferable to requesting every intent indefinitely.
+
+Keep the bot token private. Do not commit it to Git.
+
+## 4. Create `settings.py`
+
+GiggleMe expects a local module named:
+
+```text
+settings.py
+```
+
+This file contains deployment-specific configuration and secrets and should not be committed to a public repository.
+
+The current bot code directly references at least:
+
+```python
+bot_owner_id = 123456789012345678
+```
+
+The database layer and bot startup also require the MySQL connection information and Discord bot token used by your installation.
+
+Because `settings.py` is deliberately not present in the public repository, copy the structure from an existing working installation or create a local configuration matching the names expected by the current database/startup modules.
+
+A future cleanup should add a committed `settings.example.py` so that new installations do not have to discover configuration names from source code.
+
+Before committing anything, verify that the real settings file is ignored:
+
+```bash
+git check-ignore settings.py
+```
+
+If `settings.py` was ever committed publicly with real credentials, deleting it in a later commit is not enough. Rotate those credentials.
+
+## 5. Install Python dependencies
+
+The project does not currently provide a pinned dependency file.
+
+At minimum the bot requires the Discord Python library and the MySQL connector used by the database module. A typical environment will need:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+
+pip install discord.py mysql-connector-python
+```
+
+Additional dependencies, if any, should be captured from a known working installation and added to a future `requirements.txt`.
+
+## 6. Make the utility modules importable
+
+`gigglebot.py` imports modules such as `gigdb`, `gigtz`, `giguser`, and `gigguild` directly, while those modules are stored under `util/`.
+
+When running from the repository root, make sure `util/` is on Python's module search path. On Linux/macOS:
+
+```bash
+export PYTHONPATH="$PWD/util${PYTHONPATH:+:$PYTHONPATH}"
+```
+
+Then start the bot using the startup method expected by your local `settings.py` and current source tree.
+
+If running directly:
+
+```bash
+python3 gigglebot.py
+```
+
+The repository also includes `restart-giggleme.sh`; deployments already using that script can continue to use it.
+
+## 7. Verify the bot
+
+Once connected to Discord, use:
+
+```text
+~giggle help
+```
+
+to display GiggleMe's built-in command help.
+
+A good initial smoke test is:
+
+1. Confirm the bot comes online.
+2. Run `~giggle help`.
+3. Set or verify your timezone.
+4. Schedule a test message a few minutes in the future.
+5. Confirm the message survives a bot restart and is delivered at the expected time.
+
+Persistent scheduled messages are loaded from MySQL when the bot starts.
+
+## How scheduling is stored
+
+The `messages` table is shared by several message-like features.
+
+The current application distinguishes message types partly through `delivery_time`:
+
+- `delivery_time >= 0`: scheduled message
+- `delivery_time = -1`: proposal
+- `delivery_time = -2`: auto-reply
+- other/null cases: template behavior
+
+This is existing application behavior and should not be changed casually because existing database rows depend on it.
+
+Scheduled messages can also contain repeat information, a repeat-until time, and `special_handling` flags used by particular delivery behaviors.
+
+## Web interface
+
+The repository contains a `web/` directory with a PHP-based interface.
+
+The web application and Python bot communicate through the same MySQL database. Changes made through the web interface can be placed in `request_queue`; the running bot polls that queue and updates its in-memory message state.
+
+A web deployment therefore needs:
+
+- PHP
+- access to the same MySQL database used by the bot
+- the web application's database configuration
+- appropriate web-server configuration and authentication for your environment
+
+The exact Apache/nginx/PHP deployment and authentication model are installation-specific and are not yet fully documented here.
+
+## Database notes
+
+The current production-derived schema contains ten tables and no MySQL triggers or scheduled MySQL events.
+
+Several relationships are maintained by application logic rather than MySQL foreign-key constraints. For example, guild, user, channel, template, and proposal IDs are related across tables without declared foreign keys.
+
+The schema also contains a historical mixture of `utf8mb4` and `latin1` tables. `schema.sql` preserves that behavior intentionally. Charset normalization should be performed as a deliberate migration, not folded into initial installation.
+
+The `timezones` table is seeded with stable numeric IDs:
+
+| ID | Name |
+|---:|---|
+| 1 | UTC |
+| 2 | US/Pacific |
+| 3 | US/Eastern |
+| 4 | US/Central |
+| 5 | US/Mountain |
+
+Those IDs are persisted in user records and should not be renumbered without a migration.
+
+## Running as a service
+
+For a permanent Linux deployment, run GiggleMe under a process manager such as `systemd` rather than relying on an interactive shell.
+
+The service should:
+
+- run as an unprivileged account
+- start in the GiggleMe repository/application directory
+- activate the intended Python virtual environment
+- include `util/` in `PYTHONPATH` if needed
+- have access to the local `settings.py`
+- restart on unexpected failure
+
+The repository's existing `restart-giggleme.sh` can also be used by installations that already depend on it.
+
+## Security
+
+Do not commit:
+
+- Discord bot tokens
+- MySQL passwords
+- OAuth/API secrets
+- production `settings.py`
+- private web credentials
+
+Use a dedicated MySQL account for GiggleMe and grant only the access required by the application.
+
+## Project layout
+
+```text
+GiggleMe/
+├── gigglebot.py          # main Discord bot
+├── util/                 # database, parsing, models, timezone and helper modules
+├── web/                  # PHP/JavaScript web interface
+├── restart-giggleme.sh   # existing restart helper
+├── schema.sql            # MySQL schema and required seed data
+├── README.md
+└── LICENSE
+```
+
+## Development notes
+
+GiggleMe has accumulated features incrementally over a long period of real-world use. Before removing or simplifying strange-looking behavior, trace where it is used. A branch that appears redundant may exist because one server or user requested a specific behavior.
+
+Useful refactoring goals include:
+
+- replace `discord.Intents.all()` with the minimum required intents
+- split the large `on_message` command dispatcher into focused command handlers
+- document and formalize `settings.py`
+- add `requirements.txt`
+- add database migrations for future schema changes
+- normalize magic values and flags into named types/constants
+- add automated tests around scheduling and persistence before large structural changes
 
 ## License
 
-[MIT License](/LICENSE)
+GiggleMe is released under the MIT License.
