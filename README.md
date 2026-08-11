@@ -89,33 +89,63 @@ Keep the bot token private. Do not commit it to Git.
 
 ## 4. Create `settings.py`
 
-GiggleMe expects a local module named:
+GiggleMe reads deployment-specific configuration from a local Python module named:
 
 ```text
 settings.py
 ```
 
-This file contains deployment-specific configuration and secrets and should not be committed to a public repository.
+A safe template is included in the repository as:
 
-The current bot code directly references at least:
-
-```python
-bot_owner_id = 123456789012345678
+```text
+settings.example.py
 ```
 
-The database layer and bot startup also require the MySQL connection information and Discord bot token used by your installation.
+Copy it:
 
-Because `settings.py` is deliberately not present in the public repository, copy the structure from an existing working installation or create a local configuration matching the names expected by the current database/startup modules.
+```bash
+cp settings.example.py settings.py
+```
 
-A future cleanup should add a committed `settings.example.py` so that new installations do not have to discover configuration names from source code.
+Then edit `settings.py` and supply values for:
 
-Before committing anything, verify that the real settings file is ignored:
+```python
+bot_token = "YOUR_DISCORD_BOT_TOKEN"
+bot_owner_id = 123456789012345678
+
+db_user = "giggleme"
+db_password = "YOUR_MYSQL_PASSWORD"
+database = "giggleme"
+
+twitter_consumer_key = "YOUR_TWITTER_CONSUMER_KEY"
+twitter_consumer_secret = "YOUR_TWITTER_CONSUMER_SECRET"
+```
+
+### Setting meanings
+
+- `bot_token` — Discord bot token for this GiggleMe instance.
+- `bot_owner_id` — Discord user ID of the bot owner.
+- `db_user` — MySQL account used by GiggleMe.
+- `db_password` — password for that MySQL account.
+- `database` — MySQL database name. The supplied `schema.sql` creates `giggleme`.
+- `twitter_consumer_key` — consumer/API key used by the Twitter/X-related integration.
+- `twitter_consumer_secret` — corresponding consumer/API secret.
+
+Keep `settings.py` private. Do not commit production credentials.
+
+Before committing anything, verify that Git ignores the real file:
 
 ```bash
 git check-ignore settings.py
 ```
 
-If `settings.py` was ever committed publicly with real credentials, deleting it in a later commit is not enough. Rotate those credentials.
+If that command does not print `settings.py`, add this to `.gitignore`:
+
+```gitignore
+settings.py
+```
+
+If a real `settings.py` containing credentials was ever committed to a public repository, deleting it from a later commit does not make those credentials private again. Rotate them.
 
 ## 5. Install Python dependencies
 
@@ -258,6 +288,7 @@ GiggleMe/
 ├── web/                  # PHP/JavaScript web interface
 ├── restart-giggleme.sh   # existing restart helper
 ├── schema.sql            # MySQL schema and required seed data
+├── settings.example.py   # safe template for local deployment settings
 ├── README.md
 └── LICENSE
 ```
@@ -270,7 +301,7 @@ Useful refactoring goals include:
 
 - replace `discord.Intents.all()` with the minimum required intents
 - split the large `on_message` command dispatcher into focused command handlers
-- document and formalize `settings.py`
+- consider moving secrets from Python settings into environment variables
 - add `requirements.txt`
 - add database migrations for future schema changes
 - normalize magic values and flags into named types/constants
