@@ -1,0 +1,24 @@
+# GiggleMe systemd service example
+#
+# Copy this file to /etc/systemd/system/giggleme.service and replace the
+# example user and paths below with values for your installation.
+
+[Unit]
+Description=GiggleMe Discord Bot
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+
+# CHANGE THESE VALUES FOR YOUR INSTALLATION.
+User=YOUR_LINUX_USER
+WorkingDirectory=/path/to/GiggleMe
+Environment="PYTHONPATH=/path/to/GiggleMe:/path/to/GiggleMe/util"
+ExecStart=/path/to/GiggleMe/venv/bin/python /path/to/GiggleMe/gigglebot.py
+
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
