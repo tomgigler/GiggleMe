@@ -12,8 +12,8 @@ The bot is primarily written in Python and stores persistent state in MySQL. The
 
 A basic bot deployment requires:
 
-- Python 3 (the current known-working deployment uses Python 3.6.9)
-- MySQL or a compatible MySQL server
+- Python 3.6.9 is the current known-working runtime; other Python versions have not yet been verified with the pinned legacy dependencies
+- MySQL or a compatible MySQL server running on the same host as the bot
 - a Discord application/bot
 - the Python packages listed in `requirements.txt`
 - a local `settings.py` containing deployment-specific settings and secrets
@@ -62,23 +62,27 @@ The supplied schema intentionally mirrors the existing production schema. It doe
 
 Using a dedicated account is recommended instead of running GiggleMe as MySQL `root`.
 
-Example:
+The current bot database layer connects to `localhost` directly; there is no `db_host` setting yet. A standard self-hosted deployment should therefore run MySQL on the same machine as the bot unless the database layer is changed.
+
+The bot's normal runtime database operations are reads and row-level inserts/updates/deletes, so the application account does not need broad administrative privileges:
 
 ```sql
 CREATE USER 'giggleme'@'localhost' IDENTIFIED BY 'replace-with-a-strong-password';
-GRANT ALL PRIVILEGES ON giggleme.* TO 'giggleme'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON giggleme.* TO 'giggleme'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Adjust the MySQL host and permissions to match your deployment.
+Use an administrative MySQL account only for initial schema creation or future schema migrations.
 
 ## 3. Create the Discord bot
 
 Create a Discord application and bot for your deployment, then invite that bot to the servers where you want to use GiggleMe.
 
-The current code creates the Discord client using all Discord intents. A self-hosted deployment must therefore enable the intents required by the current application in the Discord developer configuration.
+The current code creates the Discord client using `discord.Intents.all()`. It also reads normal message content and handles voice-state and reaction events, so Discord gateway intent configuration is a real runtime requirement rather than optional decoration.
 
-Reducing GiggleMe to the minimum required intent set is a planned cleanup and is preferable to requesting every intent indefinitely.
+The exact minimum intent set has not yet been documented. Until that cleanup is completed, a self-hosted deployment should preserve the intent configuration expected by the current bot/library combination rather than disabling intents experimentally.
+
+Reducing GiggleMe to the minimum required intent set is a planned cleanup and should be handled as a tested code change, not merely a documentation edit.
 
 Keep the bot token private. Do not commit it to Git.
 
@@ -123,6 +127,8 @@ twitter_consumer_secret = "YOUR_TWITTER_CONSUMER_SECRET"
 - `db_user` - MySQL account used by GiggleMe.
 - `db_password` - password for that MySQL account.
 - `database` - MySQL database name. The supplied `schema.sql` creates `giggleme`.
+
+There is currently no `db_host` setting. The Python database layer connects to MySQL on `localhost`.
 - `twitter_consumer_key` - consumer/API key used by the Twitter/X-related integration.
 - `twitter_consumer_secret` - corresponding consumer/API secret.
 
@@ -206,7 +212,9 @@ If you installed the dependencies into a virtual environment, activate it first 
 
 The repository also contains `restart-giggleme.sh`, which reflects the original production deployment. It sets `PYTHONPATH`, stops an existing `gigglebot.py` process, and starts a new one in the background with `python3`.
 
-That script remains useful for simple/manual deployments, but a service manager is strongly recommended for a permanent installation so the bot restarts automatically after a crash or server reboot.
+`restart-giggleme.sh` depends on the current working directory, so run it from the GiggleMe repository root.
+
+That script remains useful for simple/manual deployments before systemd is configured. Once GiggleMe is managed by systemd, stop using the original restart script and use `systemctl restart giggleme` instead. Mixing the two process-management methods can leave the running bot outside systemd's control.
 
 ## 7. Run GiggleMe with systemd (recommended)
 
@@ -302,7 +310,9 @@ The supplied unit uses `Restart=on-failure` with a ten-second delay. If `giggleb
 
 A systemd exit status of `203/EXEC` normally means the executable in `ExecStart=` could not be launched. Check that the Python path exists and is executable before chasing application-level problems.
 
-Once the systemd deployment has been tested, `restart-giggleme.sh` can optionally be simplified to call `systemctl restart giggleme` instead of locating and killing the Python process itself.
+Once the systemd deployment has been tested, use `systemctl` for starts, stops, and restarts. Do not continue using the original `restart-giggleme.sh` against a systemd-managed installation.
+
+If desired, `restart-giggleme.sh` can later be simplified into a wrapper around `systemctl restart giggleme`.
 
 ## 8. Verify the bot
 
@@ -317,10 +327,10 @@ to display GiggleMe's built-in command help.
 A useful initial smoke test is:
 
 1. Confirm the bot comes online.
-2. Run `~giggle help`.
+2. From a Discord account with administrator permission on the test server, run `~giggle help`. GiggleMe currently auto-registers server administrators when they first interact with the bot.
 3. Set or verify your timezone.
 4. Schedule a test message a few minutes in the future.
-5. Restart GiggleMe.
+5. Restart GiggleMe using the same process-management method you selected above.
 6. Confirm the scheduled message is reloaded from MySQL and delivered at the expected time.
 
 If using systemd, also test automatic recovery once during initial deployment by restarting the service and confirming it returns cleanly.
@@ -430,6 +440,7 @@ If the website works but the bot does not notice changes, check the bot logs and
 ### HTTPS
 
 If the site is reachable from the public Internet, terminate HTTPS at the web server or a trusted reverse proxy. Database credentials and any Discord authentication data must never be sent over an unencrypted public HTTP connection.
+
 ## How scheduling is stored
 
 The `messages` table is shared by several message-like features.
