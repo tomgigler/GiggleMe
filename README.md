@@ -155,9 +155,31 @@ pytz 2020.1
 python-twitter 3.5
 ```
 
-Those exact direct dependencies are pinned in `requirements.txt` so a new deployment can reproduce the environment before attempting any library or Python upgrades.
+Those exact direct dependencies are pinned in `requirements.txt` so a new deployment can reproduce the known-working environment before attempting any Python or library upgrades.
 
-Create a virtual environment and install them:
+### Existing production-style installation
+
+The original GiggleMe server runs the system Python directly rather than using a virtual environment. To reproduce that arrangement, install the dependencies for the same `python3` interpreter that will run the bot:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+Confirm the interpreter path:
+
+```bash
+command -v python3
+```
+
+On the original deployment this is:
+
+```text
+/usr/bin/python3
+```
+
+### Optional virtual environment
+
+A fresh installation may instead use a virtual environment:
 
 ```bash
 python3 -m venv venv
@@ -165,21 +187,24 @@ source venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-Python 3.6.9 and these package versions are the **known-working baseline**, not a recommendation that new development remain on them forever. Runtime and library modernization should be handled separately and tested as an intentional refactor.
+If you do this, the systemd `ExecStart=` line must point to `venv/bin/python` instead of `/usr/bin/python3`.
+
+Python 3.6.9 and the pinned package versions are the **known-working baseline**, not a recommendation that new development remain on them forever. Runtime and library modernization should be handled separately and tested as an intentional refactor.
 
 ## 6. Start the bot manually
 
 `gigglebot.py` imports modules stored in both the repository root and `util/`, so both locations must be on Python's module search path.
 
-From the repository root:
+From the repository root, using the system Python as the original deployment does:
 
 ```bash
 export PYTHONPATH="$PWD:$PWD/util${PYTHONPATH:+:$PYTHONPATH}"
-source venv/bin/activate
-python gigglebot.py
+python3 gigglebot.py
 ```
 
-The repository also contains `restart-giggleme.sh`, which reflects the original production deployment: it sets `PYTHONPATH`, stops an existing `gigglebot.py` process, and starts a new one in the background.
+If you installed the dependencies into a virtual environment, activate it first and run `python gigglebot.py` instead.
+
+The repository also contains `restart-giggleme.sh`, which reflects the original production deployment. It sets `PYTHONPATH`, stops an existing `gigglebot.py` process, and starts a new one in the background with `python3`.
 
 That script remains useful for simple/manual deployments, but a service manager is strongly recommended for a permanent installation so the bot restarts automatically after a crash or server reboot.
 
@@ -191,27 +216,49 @@ An example systemd unit is provided at:
 deploy/giggleme.service.example
 ```
 
-Copy it to the systemd service directory:
+The supplied example uses `/usr/bin/python3`, matching the original production deployment. It does **not** assume that a `venv` directory exists.
+
+First confirm the path to the Python interpreter that already runs GiggleMe successfully:
+
+```bash
+command -v python3
+```
+
+Copy the example unit to the systemd service directory and edit it:
 
 ```bash
 sudo cp deploy/giggleme.service.example /etc/systemd/system/giggleme.service
 sudo nano /etc/systemd/system/giggleme.service
 ```
 
-Before enabling it, edit these values in the service file:
+Before enabling it, edit these values:
 
 - `User=` - Linux account that owns/runs the GiggleMe installation.
 - `WorkingDirectory=` - absolute path to the cloned GiggleMe repository.
 - `Environment=PYTHONPATH=...` - the same absolute repository path plus its `util/` directory.
-- `ExecStart=` - absolute path to the virtual environment's Python executable and `gigglebot.py`.
+- `ExecStart=` - absolute path to the Python executable that has GiggleMe's dependencies installed, followed by the absolute path to `gigglebot.py`.
 
-For example, if GiggleMe is installed at `/home/tom/GiggleMe`, the relevant lines would look like:
+For a system-Python installation at `/home/tom/GiggleMe`:
 
 ```ini
 User=tom
 WorkingDirectory=/home/tom/GiggleMe
 Environment="PYTHONPATH=/home/tom/GiggleMe:/home/tom/GiggleMe/util"
+ExecStart=/usr/bin/python3 /home/tom/GiggleMe/gigglebot.py
+```
+
+For an installation using `/home/tom/GiggleMe/venv`, only the executable changes:
+
+```ini
 ExecStart=/home/tom/GiggleMe/venv/bin/python /home/tom/GiggleMe/gigglebot.py
+```
+
+Do not use the virtual-environment form unless that file actually exists. You can verify an executable before enabling the service:
+
+```bash
+ls -l /usr/bin/python3
+# or, if using a virtual environment:
+ls -l /home/tom/GiggleMe/venv/bin/python
 ```
 
 Reload systemd and enable the service:
@@ -251,7 +298,9 @@ Or inspect recent logs:
 journalctl -u giggleme --since "1 hour ago"
 ```
 
-The supplied unit uses `Restart=on-failure`, so an unexpected bot exit is automatically restarted while an intentional `systemctl stop giggleme` remains stopped.
+The supplied unit uses `Restart=on-failure` with a ten-second delay. If `gigglebot.py` exits unexpectedly, systemd starts it again. An intentional `systemctl stop giggleme` remains stopped.
+
+A systemd exit status of `203/EXEC` normally means the executable in `ExecStart=` could not be launched. Check that the Python path exists and is executable before chasing application-level problems.
 
 Once the systemd deployment has been tested, `restart-giggleme.sh` can optionally be simplified to call `systemctl restart giggleme` instead of locating and killing the Python process itself.
 
