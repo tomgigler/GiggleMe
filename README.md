@@ -325,53 +325,111 @@ A useful initial smoke test is:
 
 If using systemd, also test automatic recovery once during initial deployment by restarting the service and confirming it returns cleanly.
 
-## Optional web interface
+## 9. Optional: host the web interface
 
-The repository contains a PHP-based web interface under `web/`. It is not required to run the Discord bot, but it provides another way to work with GiggleMe data and scheduled messages.
+GiggleMe also includes a PHP/JavaScript web interface under `web/`. The bot does not require the website, but the website uses the same MySQL database and can make changes that the running bot notices through the `request_queue` table.
 
-The web interface and bot use the same MySQL database. The web side can write requests to `request_queue`, which the running bot polls so that changes made through the website can be reflected in the bot's in-memory state.
+### Important: expose only `web/`
 
-### Web hosting requirements
-
-At minimum, a web deployment needs:
-
-- a web server capable of running PHP
-- PHP with MySQL connectivity
-- network/database access to the same MySQL database used by the bot
-- a private configuration containing the database credentials required by the PHP code
-- HTTPS for any deployment exposed beyond a trusted local network
-
-The simplest layout is to expose the contents of `web/` from a PHP-enabled virtual host or subdirectory. Do **not** expose the repository root as the web document root; files such as `settings.py` contain secrets and must never be web-accessible.
-
-For example, the public document root should point at something equivalent to:
+The web server's public document root should be:
 
 ```text
 /path/to/GiggleMe/web
 ```
 
-not:
+Do **not** expose the repository root:
 
 ```text
 /path/to/GiggleMe
 ```
 
-### Web configuration status
+The repository root may contain `settings.py` and other private deployment files that must never be served over HTTP.
 
-The bot-side deployment configuration is now documented through `settings.example.py`, but the web side does not yet have a sanitized, documented configuration template in this deployment bundle.
+### Requirements
 
-Before considering the web deployment documentation complete, the files under `web/` should be traced for:
+The web host needs:
 
-- MySQL host/user/password/database settings
-- Discord/OAuth or other authentication settings, if any
-- callback/base URLs
-- writable directories, if any
-- required PHP extensions
-- web-server rewrite rules, if any
+- a PHP-capable web server
+- PHP with MySQL connectivity
+- access to the same MySQL database used by GiggleMe
+- a private web-side database configuration
+- HTTPS before exposing the site publicly
 
-Those values should then be moved into or represented by a committed example configuration while the real configuration remains ignored by Git.
+No special rewrite rules have been confirmed as required, so the supplied examples intentionally use a simple PHP document-root configuration rather than inventing application routing that the code may not need.
 
-Until that is done, treat the web interface as optional and review its local configuration before exposing it publicly. The bot itself can be deployed without it.
+### Apache example
 
+An example Apache virtual host is included at:
+
+```text
+deploy/apache-giggleme.conf.example
+```
+
+Copy it to the appropriate Apache site-config directory for your system, then edit:
+
+- `ServerName`
+- `DocumentRoot`
+- the matching `<Directory>` path
+
+The important part is that both paths point specifically to `GiggleMe/web`.
+
+After enabling the site, reload Apache using the normal method for your distribution.
+
+### nginx example
+
+An example nginx server block is included at:
+
+```text
+deploy/nginx-giggleme.conf.example
+```
+
+Edit:
+
+- `server_name`
+- `root`
+- the PHP-FPM socket in `fastcgi_pass`
+
+The PHP-FPM socket name varies by installed PHP version and distribution, so the example deliberately contains:
+
+```text
+/run/php/phpX.Y-fpm.sock
+```
+
+rather than pretending every Linux machine has the same PHP installation.
+
+### Web application configuration
+
+The bot-side configuration is documented through `settings.example.py`.
+
+The web-side source still needs one final configuration pass before this part of deployment can be considered fully reproducible. In particular, identify where the PHP application currently gets:
+
+- MySQL host
+- MySQL username
+- MySQL password
+- MySQL database name
+- any Discord/OAuth credentials, if used
+- any public/callback URL values, if used
+
+If any of those values are currently hard-coded or stored in a local untracked PHP file, preserve the real local file as private and add a sanitized `.example` equivalent to the repository.
+
+Do not invent new configuration names merely for documentation. The example file should mirror what the PHP code actually consumes.
+
+### Verify the web interface
+
+Once the site loads:
+
+1. Confirm PHP pages render without errors.
+2. Confirm the site can read from the GiggleMe database.
+3. Create or edit a harmless test scheduled message through the website.
+4. Confirm the expected row/change is written to MySQL.
+5. Confirm the running bot notices the web-side change through `request_queue`.
+6. Confirm the bot continues polling after the queue entry is processed.
+
+If the website works but the bot does not notice changes, check the bot logs and the contents of `request_queue` before treating it as a web-server problem.
+
+### HTTPS
+
+If the site is reachable from the public Internet, terminate HTTPS at the web server or a trusted reverse proxy. Database credentials and any Discord authentication data must never be sent over an unencrypted public HTTP connection.
 ## How scheduling is stored
 
 The `messages` table is shared by several message-like features.
@@ -431,7 +489,9 @@ GiggleMe/
 ├── util/                         # database, parsing, models, timezone and helper modules
 ├── web/                          # optional PHP/JavaScript web interface
 ├── deploy/
-│   └── giggleme.service.example # example systemd unit
+│   ├── giggleme.service.example       # example systemd unit
+│   ├── apache-giggleme.conf.example   # optional Apache web host
+│   └── nginx-giggleme.conf.example    # optional nginx web host
 ├── restart-giggleme.sh           # original restart helper
 ├── schema.sql                    # MySQL schema and required seed data
 ├── settings.example.py           # safe template for local deployment settings
@@ -447,7 +507,7 @@ GiggleMe has accumulated features incrementally over a long period of real-world
 Useful refactoring/deployment goals include:
 
 - replace `discord.Intents.all()` with the minimum required intents
-- document and sanitize the web interface configuration
+- add a sanitized example for the web application's own database/auth configuration
 - split the large `on_message` command dispatcher into focused command handlers
 - add database migrations for future schema changes
 - normalize magic values and flags into named types/constants

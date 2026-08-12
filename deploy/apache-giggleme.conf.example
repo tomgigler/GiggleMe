@@ -1,0 +1,21 @@
+# Apache virtual-host example for GiggleMe's optional web interface.
+#
+# Replace the example domain and paths before enabling.
+# Only the web/ directory is public. Do NOT use the repository root as
+# DocumentRoot because it may contain settings.py and other private files.
+
+<VirtualHost *:80>
+    ServerName giggleme.example.com
+
+    DocumentRoot /path/to/GiggleMe/web
+
+    <Directory /path/to/GiggleMe/web>
+        Options FollowSymLinks
+        AllowOverride None
+        Require all granted
+        DirectoryIndex index.php
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/giggleme-error.log
+    CustomLog ${APACHE_LOG_DIR}/giggleme-access.log combined
+</VirtualHost>

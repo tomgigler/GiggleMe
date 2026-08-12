@@ -1,0 +1,29 @@
+# nginx virtual-host example for GiggleMe's optional web interface.
+#
+# Replace the example domain, paths, and PHP-FPM socket before enabling.
+# Only the web/ directory is public. Do NOT use the repository root as
+# the web root because it may contain settings.py and other private files.
+
+server {
+    listen 80;
+    server_name giggleme.example.com;
+
+    root /path/to/GiggleMe/web;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+
+        # CHANGE THIS to the PHP-FPM socket used by your installation.
+        fastcgi_pass unix:/run/php/phpX.Y-fpm.sock;
+    }
+
+    location ~ /\. {
+        deny all;
+    }
+}
