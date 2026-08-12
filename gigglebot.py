@@ -27,8 +27,8 @@ delayed_messages = {}
 async def poll_message_table():
     while(True):
         await asyncio.sleep(5)
-        msg_id, action = gigdb.pop_request_queue()
         try:
+            msg_id, action = gigdb.pop_request_queue()
             if action == 'delete':
                 msg = delayed_messages.pop(msg_id, None)
                 if msg:
