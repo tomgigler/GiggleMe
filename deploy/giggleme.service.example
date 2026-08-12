@@ -2,10 +2,9 @@
 #
 # Copy this file to /etc/systemd/system/giggleme.service and replace the
 # example user and paths below with values for your installation.
+# This example assumes a Python virtual environment at .venv/ in the repo.
+# systemd runs .venv/bin/python directly; no activation command is required.
 #
-# This example uses /usr/bin/python3, matching the known-working production
-# deployment. If you intentionally use a virtual environment, change ExecStart
-# to that environment's python executable.
 
 [Unit]
 Description=GiggleMe Discord Bot
@@ -19,7 +18,7 @@ Type=simple
 User=YOUR_LINUX_USER
 WorkingDirectory=/path/to/GiggleMe
 Environment="PYTHONPATH=/path/to/GiggleMe:/path/to/GiggleMe/util"
-ExecStart=/usr/bin/python3 /path/to/GiggleMe/gigglebot.py
+ExecStart=/path/to/GiggleMe/.venv/bin/python /path/to/GiggleMe/gigglebot.py
 
 Restart=on-failure
 RestartSec=10

@@ -163,37 +163,28 @@ python-twitter 3.5
 
 Those exact direct dependencies are pinned in `requirements.txt` so a new deployment can reproduce the known-working environment before attempting any Python or library upgrades.
 
-### Existing production-style installation
+### Use a virtual environment
 
-The original GiggleMe server runs the system Python directly rather than using a virtual environment. To reproduce that arrangement, install the dependencies for the same `python3` interpreter that will run the bot:
+A Python virtual environment is recommended for GiggleMe so its dependencies are isolated from the system Python and from other applications on the server.
 
-```bash
-python3 -m pip install -r requirements.txt
-```
-
-Confirm the interpreter path:
+From the repository root:
 
 ```bash
-command -v python3
-```
-
-On the original deployment this is:
-
-```text
-/usr/bin/python3
-```
-
-### Optional virtual environment
-
-A fresh installation may instead use a virtual environment:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-If you do this, the systemd `ExecStart=` line must point to `venv/bin/python` instead of `/usr/bin/python3`.
+The virtual environment is local deployment state and should not be committed. The repository `.gitignore` excludes:
+
+```gitignore
+.venv/
+```
+
+After activation, `python` and `pip` refer to the executables inside `.venv`.
+
+The original production deployment used the system Python directly. That remains a useful historical reference, but new installations should prefer the virtual-environment setup above.
 
 Python 3.6.9 and the pinned package versions are the **known-working baseline**, not a recommendation that new development remain on them forever. Runtime and library modernization should be handled separately and tested as an intentional refactor.
 
@@ -201,20 +192,24 @@ Python 3.6.9 and the pinned package versions are the **known-working baseline**,
 
 `gigglebot.py` imports modules stored in both the repository root and `util/`, so both locations must be on Python's module search path.
 
-From the repository root, using the system Python as the original deployment does:
+From the repository root:
+
+```bash
+source .venv/bin/activate
+export PYTHONPATH="$PWD:$PWD/util${PYTHONPATH:+:$PYTHONPATH}"
+python gigglebot.py
+```
+
+You can also run the virtual environment's interpreter directly without activating it:
 
 ```bash
 export PYTHONPATH="$PWD:$PWD/util${PYTHONPATH:+:$PYTHONPATH}"
-python3 gigglebot.py
+.venv/bin/python gigglebot.py
 ```
 
-If you installed the dependencies into a virtual environment, activate it first and run `python gigglebot.py` instead.
+The repository also contains `restart-giggleme.sh`, which reflects the original production deployment and uses the system `python3`. For a virtual-environment installation, prefer the commands above or systemd rather than the legacy restart script.
 
-The repository also contains `restart-giggleme.sh`, which reflects the original production deployment. It sets `PYTHONPATH`, stops an existing `gigglebot.py` process, and starts a new one in the background with `python3`.
-
-`restart-giggleme.sh` depends on the current working directory, so run it from the GiggleMe repository root.
-
-That script remains useful for simple/manual deployments before systemd is configured. Once GiggleMe is managed by systemd, stop using the original restart script and use `systemctl restart giggleme` instead. Mixing the two process-management methods can leave the running bot outside systemd's control.
+Once GiggleMe is managed by systemd, use `systemctl restart giggleme` for restarts. Mixing the legacy script with systemd can leave the running bot outside systemd's control.
 
 ## 7. Run GiggleMe with systemd (recommended)
 
@@ -224,13 +219,7 @@ An example systemd unit is provided at:
 deploy/giggleme.service.example
 ```
 
-The supplied example uses `/usr/bin/python3`, matching the original production deployment. It does **not** assume that a `venv` directory exists.
-
-First confirm the path to the Python interpreter that already runs GiggleMe successfully:
-
-```bash
-command -v python3
-```
+The supplied example assumes GiggleMe's virtual environment is located at `.venv/` inside the repository. systemd does not need to activate the environment; it executes `.venv/bin/python` directly.
 
 Copy the example unit to the systemd service directory and edit it:
 
@@ -244,29 +233,21 @@ Before enabling it, edit these values:
 - `User=` - Linux account that owns/runs the GiggleMe installation.
 - `WorkingDirectory=` - absolute path to the cloned GiggleMe repository.
 - `Environment=PYTHONPATH=...` - the same absolute repository path plus its `util/` directory.
-- `ExecStart=` - absolute path to the Python executable that has GiggleMe's dependencies installed, followed by the absolute path to `gigglebot.py`.
+- `ExecStart=` - absolute path to `.venv/bin/python`, followed by the absolute path to `gigglebot.py`.
 
-For a system-Python installation at `/home/tom/GiggleMe`:
+For an installation at `/home/tom/GiggleMe`:
 
 ```ini
 User=tom
 WorkingDirectory=/home/tom/GiggleMe
 Environment="PYTHONPATH=/home/tom/GiggleMe:/home/tom/GiggleMe/util"
-ExecStart=/usr/bin/python3 /home/tom/GiggleMe/gigglebot.py
+ExecStart=/home/tom/GiggleMe/.venv/bin/python /home/tom/GiggleMe/gigglebot.py
 ```
 
-For an installation using `/home/tom/GiggleMe/venv`, only the executable changes:
-
-```ini
-ExecStart=/home/tom/GiggleMe/venv/bin/python /home/tom/GiggleMe/gigglebot.py
-```
-
-Do not use the virtual-environment form unless that file actually exists. You can verify an executable before enabling the service:
+Verify the virtual-environment interpreter exists before enabling the service:
 
 ```bash
-ls -l /usr/bin/python3
-# or, if using a virtual environment:
-ls -l /home/tom/GiggleMe/venv/bin/python
+ls -l /home/tom/GiggleMe/.venv/bin/python
 ```
 
 Reload systemd and enable the service:
