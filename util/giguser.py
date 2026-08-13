@@ -85,6 +85,22 @@ def save_user(user_id, name, guild_id, guild_name):
     else:
         gigguild.guilds[guild_id] = gigguild.Guild(guild_id, guild_name)
 
+def delete_user_guild(user_id, guild_id):
+    gigdb.delete_user_guild(user_id, guild_id)
+
+    if user_id not in user_guilds:
+        return
+
+    user_guilds[user_id] = [
+        existing_guild_id
+        for existing_guild_id in user_guilds[user_id]
+        if existing_guild_id != guild_id
+    ]
+
+    if not user_guilds[user_id]:
+        user_guilds.pop(user_id, None)
+
+
 def save_vip(vip):
     gigdb.save_vip(vip.vip_id, vip.guild_id, vip.template_id, vip.grace_period, vip.last_sent)
     vips[(vip.vip_id, vip.guild_id)] = vip

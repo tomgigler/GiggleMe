@@ -1,17 +1,16 @@
 #!/usr/bin/env python
-#!/usr/bin/env python
 import settings
 import mysql.connector
 
 def db_connect():
     return mysql.connector.connect(
-        host='localhost',
-        user=settings.db_user,
-        password=settings.db_password,
-        database=settings.database,
-        charset='utf8mb4',
-        collation='utf8mb4_general_ci'
-    )
+            host="localhost",
+            user=settings.db_user,
+            password=settings.db_password,
+            database=settings.database,
+            charset='utf8mb4',
+            collation='utf8mb4_general_ci'
+            )
 
 def db_execute_sql(sql, fetch, **kwargs):
     mydb = db_connect()
@@ -77,6 +76,14 @@ def save_user(user_id, name):
 def save_user_guild(user_id, guild_id, guild_name):
     db_execute_sql("INSERT INTO user_guilds ( user_id, guild_id, guild_name ) values (%s, %s, %s) ON DUPLICATE KEY UPDATE guild_name = %s",
             False, user_id=user_id, guild_id=guild_id, guild_name_1=guild_name, guild_name_2=guild_name)
+
+def delete_user_guild(user_id, guild_id):
+    db_execute_sql(
+        "DELETE FROM user_guilds WHERE user_id = %s AND guild_id = %s",
+        False,
+        user_id=user_id,
+        guild_id=guild_id
+    )
 
 def set_user_last_active(last_active, user_id):
     db_execute_sql("UPDATE users SET last_active = %s WHERE user = %s", False, last_active=last_active, user_id=user_id)

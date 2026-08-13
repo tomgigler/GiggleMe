@@ -33,6 +33,11 @@ giggle_group = app_commands.Group(
     description="GiggleMe commands"
 )
 
+user_group = app_commands.Group(
+    name="user",
+    description="Manage GiggleMe user permissions"
+)
+
 
 async def prepare_slash_interaction(interaction):
     guild = interaction.guild
@@ -260,6 +265,46 @@ def edit_slash_help_embed():
     return embed
 
 
+def user_permissions_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle user",
+        description="Manage who may use GiggleMe in a server.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Grant",
+        value=(
+            "`/giggle user grant user:<user>` grants GiggleMe permission "
+            "in the current server. The optional `server` field can target "
+            "another server GiggleMe belongs to."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Revoke",
+        value=(
+            "`/giggle user revoke user:<user>` removes that user's GiggleMe "
+            "permission for the selected server. User settings and scheduled "
+            "messages are not deleted."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Who can use these commands",
+        value="User permission management is restricted to the configured bot owner.",
+        inline=False
+    )
+    embed.add_field(
+        name="Administrators",
+        value=(
+            "Server administrators are automatically registered when they interact "
+            "with GiggleMe, so revoking an administrator is not a permanent block."
+        ),
+        inline=False
+    )
+    return embed
+
+
 def schedule_slash_help_embed():
     embed = discord.Embed(
         title="/giggle schedule",
@@ -357,6 +402,9 @@ def slash_help_embed(command=None):
     if command == "schedule":
         return schedule_slash_help_embed()
 
+    if command == "users":
+        return user_permissions_slash_help_embed()
+
     if command == "test":
         return discord.Embed(
             title="/giggle test",
@@ -381,6 +429,8 @@ def slash_help_embed(command=None):
             "`/giggle edit-sent` - edit a Discord message already sent by GiggleMe\n"
             "`/giggle edit` - edit a stored GiggleMe item\n"
             "`/giggle schedule` - schedule a message for delivery\n"
+            "`/giggle user grant` - grant a user permission to use GiggleMe\n"
+            "`/giggle user revoke` - revoke a user's GiggleMe permission\n"
             "`/giggle test` - verify slash-command plumbing"
         ),
         inline=False
@@ -416,6 +466,8 @@ MIGRATED_HELP_TOPICS = {
     "edit-sent": "edit-sent",
     "edit": "edit",
     "schedule": "schedule",
+    "adduser": "users",
+    "users": "users",
     "test": "test",
     "help": None
 }
@@ -667,6 +719,201 @@ async def reject_message_autocomplete_sentinel(interaction, value):
 
     await interaction.response.send_message(message)
     return True
+
+
+def user_permission_server_autocomplete(interaction, current):
+    current = current.casefold().strip()
+    choices = []
+
+    guilds = sorted(
+        client.guilds,
+        key=lambda guild: (
+            0 if interaction.guild and guild.id == interaction.guild.id else 1,
+            guild.name.casefold()
+        )
+    )
+
+    for guild in guilds:
+        searchable = f"{guild.name} {guild.id}".casefold()
+        if current and current not in searchable:
+            continue
+
+        label = guild.name
+        if interaction.guild and guild.id == interaction.guild.id:
+            label += " (current server)"
+
+        choices.append(
+            app_commands.Choice(
+                name=label[:100],
+                value=str(guild.id)
+            )
+        )
+
+        if len(choices) == 25:
+            break
+
+    return choices
+
+
+async def resolve_user_permission_server(interaction, server):
+    if not server:
+        return interaction.guild
+
+    try:
+        guild_id = int(server)
+    except (TypeError, ValueError):
+        await interaction.response.send_message(
+            f"Server `{server}` is not a valid server ID."
+        )
+        return None
+
+    guild = client.get_guild(guild_id)
+    if guild is None:
+        await interaction.response.send_message(
+            f"GiggleMe is not connected to server `{server}`."
+        )
+        return None
+
+    return guild
+
+
+async def prepare_user_permission_command(interaction):
+    if not await prepare_slash_interaction(interaction):
+        return False
+
+    if interaction.user.id != settings.bot_owner_id:
+        await interaction.response.send_message(
+            "Only the configured GiggleMe bot owner can manage user permissions.",
+            ephemeral=True
+        )
+        return False
+
+    return True
+
+
+@user_group.command(name="grant", description="Grant a user permission to use GiggleMe")
+@app_commands.guild_only()
+@app_commands.describe(
+    user="User to authorize",
+    server="Server to authorize the user in; defaults to this server"
+)
+async def slash_user_grant(
+    interaction: discord.Interaction,
+    user: discord.User,
+    server: Optional[str] = None
+):
+    if not await prepare_user_permission_command(interaction):
+        return
+
+    target_guild = await resolve_user_permission_server(interaction, server)
+    if target_guild is None:
+        return
+
+    existing_guilds = giguser.user_guilds.get(user.id, [])
+    if target_guild.id in existing_guilds:
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                description=(
+                    f"{user.mention} already has permission to use GiggleMe "
+                    f"in **{target_guild.name}**."
+                ),
+                color=0x00ff00
+            )
+        )
+        return
+
+    giguser.save_user(
+        user.id,
+        user.name,
+        target_guild.id,
+        target_guild.name
+    )
+
+    await interaction.response.send_message(
+        embed=discord.Embed(
+            description=(
+                f"Permissions granted for {user.mention} "
+                f"in **{target_guild.name}**."
+            ),
+            color=0x00ff00
+        )
+    )
+
+
+@slash_user_grant.autocomplete("server")
+async def slash_user_grant_server_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+):
+    return user_permission_server_autocomplete(interaction, current)
+
+
+@user_group.command(name="revoke", description="Revoke a user's permission to use GiggleMe")
+@app_commands.guild_only()
+@app_commands.describe(
+    user="User whose authorization should be removed",
+    server="Server to revoke the user from; defaults to this server"
+)
+async def slash_user_revoke(
+    interaction: discord.Interaction,
+    user: discord.User,
+    server: Optional[str] = None
+):
+    if not await prepare_user_permission_command(interaction):
+        return
+
+    target_guild = await resolve_user_permission_server(interaction, server)
+    if target_guild is None:
+        return
+
+    if user.id == settings.bot_owner_id:
+        await interaction.response.send_message(
+            "The configured GiggleMe bot owner's permission cannot be revoked."
+        )
+        return
+
+    existing_guilds = giguser.user_guilds.get(user.id, [])
+    if target_guild.id not in existing_guilds:
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                description=(
+                    f"{user.mention} does not currently have GiggleMe permission "
+                    f"in **{target_guild.name}**."
+                ),
+                color=0xff0000
+            )
+        )
+        return
+
+    giguser.delete_user_guild(user.id, target_guild.id)
+
+    description = (
+        f"Permissions revoked for {user.mention} "
+        f"in **{target_guild.name}**."
+    )
+
+    member = target_guild.get_member(user.id)
+    if member and member.guild_permissions.administrator:
+        description += (
+            "\n\n**Note:** This user is a server administrator. "
+            "Administrators are automatically authorized again when they "
+            "interact with GiggleMe."
+        )
+
+    await interaction.response.send_message(
+        embed=discord.Embed(
+            description=description,
+            color=0x00ff00
+        )
+    )
+
+
+@slash_user_revoke.autocomplete("server")
+async def slash_user_revoke_server_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+):
+    return user_permission_server_autocomplete(interaction, current)
 
 
 @giggle_group.command(name="test", description="Test GiggleMe slash commands")
@@ -1344,12 +1591,14 @@ async def slash_schedule_template_autocomplete(
     app_commands.Choice(name="Edit sent", value="edit-sent"),
     app_commands.Choice(name="Edit", value="edit"),
     app_commands.Choice(name="Schedule", value="schedule"),
+    app_commands.Choice(name="User permissions", value="users"),
     app_commands.Choice(name="Test", value="test")
 ])
 async def slash_help(interaction: discord.Interaction, command: Optional[str] = None):
     await interaction.response.send_message(embed=slash_help_embed(command))
 
 
+giggle_group.add_command(user_group)
 tree.add_command(giggle_group)
 
 delayed_messages = {}
@@ -2603,12 +2852,7 @@ async def on_message(msg):
 
                 match = re.match(r'^~g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
                 if match and msg.author.id == settings.bot_owner_id:
-                    if match.group(3):
-                        guild_id = int(match.group(3))
-                    else:
-                        guild_id = msg.guild.id
-                    giguser.save_user(int(match.group(2)), client.get_user(int(match.group(2))).name, int(guild_id), client.get_guild(guild_id).name)
-                    await msg.channel.send(f"Permissions granted for {client.get_user(int(match.group(2))).mention} in {client.get_guild(guild_id).name}")
+                    await msg.channel.send(embed=user_permissions_slash_help_embed())
                     return
 
                 await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
@@ -2715,6 +2959,9 @@ async def on_raw_reaction_remove(payload):
 
 @client.event
 async def on_guild_join(guild):
+    tree.copy_global_to(guild=guild)
+    await tree.sync(guild=guild)
+
     user = client.get_user(settings.bot_owner_id)
     await user.send(f"{client.user.mention} joined {guild.name} {guild.id}")
 

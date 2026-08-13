@@ -34,6 +34,8 @@ def show_help(command):
 > The following commands may be used to manage scheduled messages:
 > 
 > `list`, `show`, `send`, `edit`, `modify`, `cancel`, `timezone`, `timezones`, `time-format`, `help`
+>
+> Bot-owner command: `adduser`
 > 
 > To see help for one of the above commands:
 > 
@@ -154,6 +156,15 @@ def show_help(command):
 > 
 > Display a list of available time zones"""
 
+    if command == "adduser":
+        return """> `~giggle adduser <user-id> <guild-id>`
+> 
+> Grant a user permission to use GiggleMe.
+> 
+> **<guild-id>** is optional. If omitted, permission is granted for the current server.
+> 
+> This command is restricted to the configured bot owner."""
+
     if command == "help":
         return """> `~giggle help <command>`
 > 
@@ -236,4 +247,4 @@ def show_help(command):
 > 
 > `description="<description>"` A brief description of the auto-reply"""
 
-    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `proposals`"
+    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `proposals`, `adduser`"
