@@ -38,6 +38,11 @@ user_group = app_commands.Group(
     description="Manage GiggleMe user permissions"
 )
 
+template_group = app_commands.Group(
+    name="template",
+    description="Create and manage GiggleMe templates"
+)
+
 
 async def prepare_slash_interaction(interaction):
     guild = interaction.guild
@@ -265,6 +270,46 @@ def edit_slash_help_embed():
     return embed
 
 
+def template_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle template create",
+        description="Create a reusable GiggleMe message template.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Required",
+        value="`content` - the message body to store in the template",
+        inline=False
+    )
+    embed.add_field(
+        name="Options",
+        value=(
+            "`channel` - default delivery channel when the template is used; "
+            "defaults to the current channel\n"
+            "`description` - short description used when listing templates"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Using templates",
+        value=(
+            "Use `/giggle schedule` and select the template with `from_template`. "
+            "If you do not specify a channel or description when scheduling, "
+            "the template's stored values are used."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Managing templates",
+        value=(
+            "Templates also work with `/giggle list`, `/giggle show`, "
+            "`/giggle edit`, and `/giggle cancel`."
+        ),
+        inline=False
+    )
+    return embed
+
+
 def user_permissions_slash_help_embed():
     embed = discord.Embed(
         title="/giggle user",
@@ -339,6 +384,14 @@ def schedule_slash_help_embed():
         ),
         inline=False
     )
+    embed.add_field(
+        name="Templates",
+        value=(
+            "Create reusable message bodies with `/giggle template create`, "
+            "then select them with `from_template`."
+        ),
+        inline=False
+    )
     return embed
 
 
@@ -402,6 +455,9 @@ def slash_help_embed(command=None):
     if command == "schedule":
         return schedule_slash_help_embed()
 
+    if command == "templates":
+        return template_slash_help_embed()
+
     if command == "users":
         return user_permissions_slash_help_embed()
 
@@ -429,6 +485,7 @@ def slash_help_embed(command=None):
             "`/giggle edit-sent` - edit a Discord message already sent by GiggleMe\n"
             "`/giggle edit` - edit a stored GiggleMe item\n"
             "`/giggle schedule` - schedule a message for delivery\n"
+            "`/giggle template create` - create a reusable message template\n"
             "`/giggle user grant` - grant a user permission to use GiggleMe\n"
             "`/giggle user revoke` - revoke a user's GiggleMe permission\n"
             "`/giggle test` - verify slash-command plumbing"
@@ -466,6 +523,8 @@ MIGRATED_HELP_TOPICS = {
     "edit-sent": "edit-sent",
     "edit": "edit",
     "schedule": "schedule",
+    "template": "templates",
+    "templates": "templates",
     "adduser": "users",
     "users": "users",
     "test": "test",
@@ -1472,6 +1531,70 @@ async def slash_edit_message_autocomplete(interaction: discord.Interaction, curr
     )
 
 
+@template_group.command(
+    name="create",
+    description="Create a reusable GiggleMe message template"
+)
+@app_commands.guild_only()
+@app_commands.describe(
+    content="Message body to store in the template",
+    channel="Default delivery channel; defaults to this channel",
+    description="Short description used when listing the template"
+)
+async def slash_template_create(
+    interaction: discord.Interaction,
+    content: str,
+    channel: Optional[str] = None,
+    description: Optional[str] = None
+):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    if channel == AUTOCOMPLETE_NO_CHANNELS:
+        await interaction.response.send_message(
+            "GiggleMe does not currently have permission to deliver messages "
+            "to any text channel in this server."
+        )
+        return
+
+    await interaction.response.defer()
+
+    params = {
+        "guild": interaction.guild,
+        "request_channel": interaction.channel,
+        "request_message_id": interaction.id,
+        "author_id": interaction.user.id,
+        "delay": "template",
+        "content": content,
+        "channel": channel,
+        "desc": description
+    }
+
+    try:
+        await process_delay_message(params)
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description="Template creation completed.",
+                color=0x00ff00
+            )
+        )
+    except GigException as e:
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description=slash_error_text(e, "Templates"),
+                color=0xff0000
+            )
+        )
+
+
+@slash_template_create.autocomplete("channel")
+async def slash_template_create_channel_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+):
+    return schedule_channel_autocomplete(interaction, current)
+
+
 @giggle_group.command(
     name="schedule",
     description="Schedule a message for future delivery"
@@ -1591,6 +1714,7 @@ async def slash_schedule_template_autocomplete(
     app_commands.Choice(name="Edit sent", value="edit-sent"),
     app_commands.Choice(name="Edit", value="edit"),
     app_commands.Choice(name="Schedule", value="schedule"),
+    app_commands.Choice(name="Templates", value="templates"),
     app_commands.Choice(name="User permissions", value="users"),
     app_commands.Choice(name="Test", value="test")
 ])
@@ -1598,6 +1722,7 @@ async def slash_help(interaction: discord.Interaction, command: Optional[str] = 
     await interaction.response.send_message(embed=slash_help_embed(command))
 
 
+giggle_group.add_command(template_group)
 giggle_group.add_command(user_group)
 tree.add_command(giggle_group)
 
@@ -2796,9 +2921,15 @@ async def on_message(msg):
                     await msg.channel.send(embed=edit_slash_help_embed())
                     return
 
-                # Keep the classic unnamed scheduling syntax working for now.
-                # raw+ output still uses it as executable recreation syntax.
-                match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+|template)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
+                match = re.match(r'~g(iggle)? +template( +[^\n]+)?( *\n(.*))?$', msg.content, re.DOTALL)
+                if match:
+                    await msg.channel.send(embed=template_slash_help_embed())
+                    return
+
+                # Keep classic unnamed scheduling working for now because raw+
+                # still emits executable recreation syntax for scheduled messages.
+                # Template creation itself has moved to /giggle template create.
+                match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
                     await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
                     return
@@ -2937,7 +3068,7 @@ async def on_ready():
             await tree.sync(guild=guild)
         slash_commands_synced = True
 
-    await client.change_presence(activity=discord.Game('~giggle help'))
+    await client.change_presence(activity=discord.Game('/giggle help'))
 
 @client.event
 async def on_raw_reaction_add(payload):

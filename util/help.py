@@ -26,10 +26,9 @@ def show_help(command):
 > 
 > `set-channel-name=<True|False>`:  If True, set the channel name to <message> instead of posting message in channel
 > 
-> To create a template:
+> Template creation has moved to the slash-command interface:
 > 
-> `~giggle template channel=<channel> desc="<brief description>"`
-> `<message>`
+> `/giggle template create`
 > 
 > The following commands may be used to manage scheduled messages:
 > 
@@ -156,6 +155,13 @@ def show_help(command):
 > 
 > Display a list of available time zones"""
 
+    if command == "template" or command == "templates":
+        return """> Template creation has moved to the slash-command interface.
+> 
+> Use `/giggle template create` to create a reusable message template.
+> 
+> Existing templates may still be managed with the appropriate GiggleMe commands."""
+
     if command == "adduser":
         return """> `~giggle adduser <user-id> <guild-id>`
 > 
@@ -247,4 +253,4 @@ def show_help(command):
 > 
 > `description="<description>"` A brief description of the auto-reply"""
 
-    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `proposals`, `adduser`"
+    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `proposals`, `template`, `adduser`"
