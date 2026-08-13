@@ -297,6 +297,38 @@ def schedule_slash_help_embed():
     return embed
 
 
+def slash_error_text(error, help_topic=None):
+    text = str(error)
+
+    # Some classic command engines include their own "~giggle help" footer.
+    # Keep the error itself, but never send a slash-command user back to the
+    # classic prefix-command interface.
+    legacy_help_pattern = (
+        r"\n*\s*To see help type:\s*\n*\s*"
+        r"`~giggle help(?: [^`]*)?`\s*"
+    )
+
+    text, replacements = re.subn(
+        legacy_help_pattern,
+        "",
+        text,
+        flags=re.IGNORECASE
+    )
+
+    text = text.rstrip()
+
+    if replacements:
+        if help_topic:
+            text += (
+                f"\n\nFor help, use `/giggle help` and choose "
+                f"**{help_topic}**."
+            )
+        else:
+            text += "\n\nFor help, use `/giggle help`."
+
+    return text
+
+
 def slash_help_embed(command=None):
     if command == "timezone":
         return timezone_slash_help_embed()
@@ -744,7 +776,7 @@ async def slash_list(
         )
     except GigException as e:
         await interaction.edit_original_response(
-            embed=discord.Embed(description=str(e), color=0xff0000)
+            embed=discord.Embed(description=slash_error_text(e, "List"), color=0xff0000)
         )
 
 
@@ -803,7 +835,7 @@ async def slash_show(
         )
     except GigException as e:
         await interaction.edit_original_response(
-            embed=discord.Embed(description=str(e), color=0xff0000)
+            embed=discord.Embed(description=slash_error_text(e, "Show"), color=0xff0000)
         )
 
 
@@ -869,7 +901,7 @@ async def slash_send(interaction: discord.Interaction, message: str):
         )
     except GigException as e:
         await interaction.edit_original_response(
-            embed=discord.Embed(description=str(e), color=0xff0000)
+            embed=discord.Embed(description=slash_error_text(e, "Send"), color=0xff0000)
         )
 
 
@@ -935,7 +967,7 @@ async def slash_cancel(interaction: discord.Interaction, message: str):
         )
     except GigException as e:
         await interaction.edit_original_response(
-            embed=discord.Embed(description=str(e), color=0xff0000)
+            embed=discord.Embed(description=slash_error_text(e, "Cancel"), color=0xff0000)
         )
 
 
@@ -1006,7 +1038,7 @@ async def slash_edit_sent(
         )
     except GigException as e:
         await interaction.edit_original_response(
-            embed=discord.Embed(description=str(e), color=0xff0000)
+            embed=discord.Embed(description=slash_error_text(e, "Edit sent"), color=0xff0000)
         )
 
 
@@ -1108,7 +1140,7 @@ async def slash_edit(
         )
     except GigException as e:
         await interaction.edit_original_response(
-            embed=discord.Embed(description=str(e), color=0xff0000)
+            embed=discord.Embed(description=slash_error_text(e, "Edit"), color=0xff0000)
         )
 
 
@@ -1207,7 +1239,7 @@ async def slash_schedule(
         )
     except GigException as e:
         await interaction.edit_original_response(
-            embed=discord.Embed(description=str(e), color=0xff0000)
+            embed=discord.Embed(description=slash_error_text(e, "Schedule"), color=0xff0000)
         )
 
 
