@@ -1,9 +1,7 @@
 -- GiggleMe database schema
--- Reconstructed from the running MySQL database on 2026-08-11.
---
--- This file intentionally reproduces the existing schema rather than
--- "cleaning it up." Foreign keys, additional indexes, charset changes,
--- and other schema refactoring should be handled as deliberate migrations.
+-- Baseline schema for GiggleMe.
+-- Existing deployments may require a migration when columns or tables are
+-- intentionally retired.
 
 CREATE DATABASE IF NOT EXISTS `giggleme`
     DEFAULT CHARACTER SET utf8mb4;
@@ -25,9 +23,7 @@ CREATE TABLE IF NOT EXISTS `channels` (
 CREATE TABLE IF NOT EXISTS `guilds` (
   `id` bigint(20) NOT NULL,
   `guild_name` varchar(200) DEFAULT NULL,
-  `proposal_channel_id` bigint(20) DEFAULT NULL,
   `approval_channel_id` bigint(20) DEFAULT NULL,
-  `delivery_channel_id` bigint(20) DEFAULT NULL,
   `plan_level` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -94,11 +90,6 @@ CREATE TABLE IF NOT EXISTS `vips` (
   PRIMARY KEY (`vip_id`,`guild_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-CREATE TABLE IF NOT EXISTS `votes` (
-  `proposal_id` varchar(20) DEFAULT NULL,
-  `user_id` bigint(20) DEFAULT NULL,
-  `vote` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- Required timezone seed data.
 --

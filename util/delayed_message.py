@@ -7,7 +7,6 @@ import gigdb
 import giguser
 import gigtz
 import gigchannel
-from gigvotes import votes
 
 class DelayedMessage:
     def __init__(self, id, guild_id, delivery_channel_id, author_id, content, description):
@@ -147,24 +146,6 @@ class Template(DelayedMessage):
     async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
         output = self.get_show_header(client, show_id, guild_id, show_content)
         output += f"> **Description:**  {self.description}\n"
-        return output
-
-class Proposal(DelayedMessage):
-    def __init__(self, id, guild_id, delivery_channel_id, author_id, approval_message_id, content, description, required_approvals, update_db=True):
-        super().__init__(id, guild_id, delivery_channel_id, author_id, content, description)
-        self.approval_message_id = approval_message_id
-        self.required_approvals = required_approvals
-        if update_db:
-            self.update_db()
-
-    def update_db(self):
-        gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, -1, self.author_id, None, self.approval_message_id, self.content, self.description, None, None)
-
-    async def get_show_output(self, client, raw=None, show_id=False, guild_id=None, show_content=False, timezone=None, format_24=False):
-        output = self.get_show_header(client, show_id, guild_id, show_content)
-        output += f"> **Description:**  {self.description}\n"
-        output += f"> **Required Approvals:**  {votes.get_required_approvals(self.id)}\n"
-        output += f"> **Current Approvals:**  {votes.vote_count(self.id)}\n"
         return output
 
 class AutoReply(DelayedMessage):

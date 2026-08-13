@@ -35,8 +35,6 @@ def get_all(table):
 def get_message(msg_id):
     return db_execute_sql("SELECT * FROM messages WHERE id = %s", True, msg_id=msg_id)[0]
 
-def get_votes(proposal_id):
-    return db_execute_sql("SELECT * FROM votes WHERE proposal_id = %s", True, proposal_id=proposal_id)
 
 def update_message(message_id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until, special_handling):
     db_execute_sql("INSERT INTO messages values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE guild_id = %s, delivery_channel_id = %s, "
@@ -48,14 +46,6 @@ def update_message(message_id, guild_id, delivery_channel_id, delivery_time, aut
 def delete_message(message_id):
     db_execute_sql("DELETE FROM messages WHERE id=%s", False, message_id=message_id)
 
-def delete_proposal_votes(proposal_id):
-    db_execute_sql("DELETE FROM votes WHERE proposal_id = %s", False, proposal_id=proposal_id)
-
-def replace_vote(proposal_id, user_id, vote):
-    db_execute_sql("INSERT INTO votes (proposal_id, user_id, vote) VALUES(%s, %s, %s) ON DUPLICATE KEY UPDATE vote=%s", False, proposal_id=proposal_id, user_id=user_id, vote_1=vote, vote_2=vote)
-            
-def remove_vote(proposal_id, user_id):
-    db_execute_sql("DELETE FROM votes WHERE proposal_id = %s and user_id = %s", False, proposal_id=proposal_id, user_id=user_id)
 
 def get_timezones():
     return db_execute_sql("SELECT * FROM timezones ORDER BY name", True)
@@ -97,13 +87,26 @@ def set_user_format_24(format_24, user_id):
 def set_user_timezone(tz_id, name, user_id):
     db_execute_sql("UPDATE users SET timezone = %s, name = %s WHERE user = %s", False, tz_id=tz_id, name=name, user_id=user_id)
 
-def save_guild(id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id, plan_level):
-    db_execute_sql("INSERT INTO guilds ( id, guild_name, proposal_channel_id, approval_channel_id, delivery_channel_id, plan_level ) "
-            "values (%s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE guild_name = %s, proposal_channel_id = %s, approval_channel_id = %s, "
-            "delivery_channel_id = %s, plan_level = %s", False, id=id, guild_name=guild_name, proposal_channel_id=proposal_channel_id,
-            approval_channel_id=approval_channel_id, delivery_channel_id=delivery_channel_id, plan_level=plan_level, guild_name_2=guild_name,
-            proposal_channel_id_2=proposal_channel_id, approval_channel_id_2=approval_channel_id, delivery_channel_id_2=delivery_channel_id,
-            plan_level_2=plan_level)
+def get_guilds():
+    return db_execute_sql(
+        "SELECT id, guild_name, approval_channel_id, plan_level FROM guilds",
+        True
+    )
+
+def save_guild(id, guild_name, approval_channel_id, plan_level):
+    db_execute_sql(
+        "INSERT INTO guilds (id, guild_name, approval_channel_id, plan_level) "
+        "VALUES (%s, %s, %s, %s) "
+        "ON DUPLICATE KEY UPDATE guild_name = %s, approval_channel_id = %s, plan_level = %s",
+        False,
+        id=id,
+        guild_name_1=guild_name,
+        approval_channel_id_1=approval_channel_id,
+        plan_level_1=plan_level,
+        guild_name_2=guild_name,
+        approval_channel_id_2=approval_channel_id,
+        plan_level_2=plan_level
+    )
 
 def save_channel(id, guild_id, name, channel_type, token_key, token_secret, user_id, screen_name):
     db_execute_sql("INSERT INTO channels ( id, guild_id, name, channel_type, token_key, token_secret, user_id, screen_name) values (%s, %s, %s, %s, %s, %s, %s, %s) "

@@ -1,6 +1,6 @@
 # GiggleMe
 
-GiggleMe is a Discord bot for scheduling messages. Over time it has also grown support for repeating messages, templates, proposals and voting, automatic replies, time-zone handling, VIP/voice-channel behavior, and other server-specific features.
+GiggleMe is a Discord bot for scheduling messages. Over time it has also grown support for repeating messages, templates, automatic replies, time-zone handling, VIP/voice-channel behavior, and other server-specific features.
 
 The bot is primarily written in Python and stores persistent state in MySQL. The repository also contains an optional PHP-based web interface that uses the same database.
 
@@ -54,9 +54,8 @@ The schema contains these tables:
 - `user_guilds`
 - `users`
 - `vips`
-- `votes`
 
-The supplied schema intentionally mirrors the existing production schema. It does not add foreign keys, new indexes, or charset changes that are not already present in the running application.
+The supplied schema is the current GiggleMe baseline. Existing installations may require deliberate database migrations before their tables match it.
 
 ### Create a dedicated MySQL user
 
@@ -78,7 +77,7 @@ Use an administrative MySQL account only for initial schema creation or future s
 
 Create a Discord application and bot for your deployment, then invite that bot to the servers where you want to use GiggleMe.
 
-The current code creates the Discord client using `discord.Intents.all()`. It also reads normal message content and handles voice-state and reaction events, so Discord gateway intent configuration is a real runtime requirement rather than optional decoration.
+The current code creates the Discord client using `discord.Intents.all()`. It also reads normal message content and handles voice-state events, so Discord gateway intent configuration is a real runtime requirement rather than optional decoration.
 
 The exact minimum intent set has not yet been documented. Until that cleanup is completed, a self-hosted deployment should preserve the intent configuration expected by the current bot/library combination rather than disabling intents experimentally.
 
@@ -429,7 +428,6 @@ The `messages` table is shared by several message-like features.
 The current application distinguishes message types partly through `delivery_time`:
 
 - `delivery_time >= 0`: scheduled message
-- `delivery_time = -1`: proposal
 - `delivery_time = -2`: auto-reply
 - other/null cases: template behavior
 
@@ -439,9 +437,9 @@ Scheduled messages can also contain repeat information, a repeat-until time, and
 
 ## Database notes
 
-The production-derived schema contains ten tables and no MySQL triggers or scheduled MySQL events.
+The schema contains nine tables and no MySQL triggers or scheduled MySQL events.
 
-Several relationships are maintained by application logic rather than MySQL foreign-key constraints. Guild, user, channel, template, and proposal IDs are related across tables without declared foreign keys.
+Several relationships are maintained by application logic rather than MySQL foreign-key constraints. Guild, user, channel, and template IDs are related across tables without declared foreign keys.
 
 The schema also contains a historical mixture of `utf8mb4` and `latin1` tables. `schema.sql` preserves that behavior intentionally. Charset normalization should be performed as a deliberate migration, not folded into initial installation.
 

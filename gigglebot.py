@@ -17,9 +17,8 @@ import gigdb
 import giguser
 import gigguild
 import gigchannel
-from delayed_message import Message, Template, Proposal, AutoReply
+from delayed_message import Message, Template, AutoReply
 from gigparse import parse_args, GigParseException
-from gigvotes import votes
 
 class GigException(Exception):
     pass
@@ -133,7 +132,7 @@ def list_slash_help_embed():
     embed.add_field(
         name="Options",
         value=(
-            "`category` chooses scheduled messages, repeats, templates, proposals, or auto-replies.\n"
+            "`category` chooses scheduled messages, repeats, templates, or auto-replies.\n"
             "`count` limits the result to the next N items where supported.\n"
             "`scope:All servers` is available only to the bot owner."
         ),
@@ -145,7 +144,7 @@ def list_slash_help_embed():
 def show_slash_help_embed():
     embed = discord.Embed(
         title="/giggle show",
-        description="Show a scheduled message, template, proposal, or other stored item.",
+        description="Show a scheduled message, template, auto-reply, or other stored item.",
         color=0x00ff00
     )
     embed.add_field(
@@ -1078,7 +1077,6 @@ async def slash_time_format(interaction: discord.Interaction, format: Optional[s
         app_commands.Choice(name="Scheduled messages", value="scheduled"),
         app_commands.Choice(name="Repeating messages", value="repeats"),
         app_commands.Choice(name="Templates", value="templates"),
-        app_commands.Choice(name="Proposals", value="proposals"),
         app_commands.Choice(name="Auto-replies", value="auto-replies")
     ],
     scope=[
@@ -1103,9 +1101,9 @@ async def slash_list(
 
     message_type = None if category in (None, "scheduled") else category
 
-    if count is not None and message_type in ("templates", "proposals"):
+    if count is not None and message_type == "templates":
         await interaction.response.send_message(
-            "Count is not available when listing templates or proposals."
+            "Count is not available when listing templates."
         )
         return
 
@@ -1246,7 +1244,7 @@ async def slash_send(interaction: discord.Interaction, message: str):
     resolved_message = await resolve_slash_message_reference(
         interaction,
         message,
-        allowed_types=(Message, Proposal),
+        allowed_types=(Message,),
         allow_last=True
     )
     if resolved_message is None:
@@ -1282,7 +1280,7 @@ async def slash_send_message_autocomplete(interaction: discord.Interaction, curr
     if interaction.guild is not None and get_last_stored_message_id(
         interaction.user.id,
         interaction.guild.id,
-        (Message, Proposal)
+        (Message,)
     ):
         special_choices.append(
             ("last", "last - your most recently scheduled message")
@@ -1291,7 +1289,7 @@ async def slash_send_message_autocomplete(interaction: discord.Interaction, curr
     return stored_message_autocomplete(
         interaction,
         current,
-        allowed_types=(Message, Proposal),
+        allowed_types=(Message,),
         special_choices=special_choices
     )
 
@@ -1764,15 +1762,10 @@ async def poll_message_table():
                     giguser.users[delayed_messages[msg_id].author_id].set_last_message(msg_id)
                     asyncio.get_event_loop().create_task(schedule_delay_message(delayed_messages[msg_id]))
 
-                elif delivery_time and delivery_time == -1:
-                    votes.load_proposal_votes(msg_id)
-                    delayed_messages[msg_id] = Proposal(id=msg_id, guild_id=row[1], delivery_channel_id=row[2],
-                            author_id=row[4], approval_message_id=row[6], content=row[7], description=row[8],
-                            required_approvals=votes.get_required_approvals(msg_id), update_db=False)
-                elif delivery_time and delivery_time == -2:
+                elif delivery_time == -2:
                     delayed_messages[msg_id] = AutoReply(id=msg_id, guild_id=row[1], delivery_channel_id=row[2], author_id=row[4], trigger=row[5],
                             content=row[7], description=row[8], special_handling=row[10], update_db=False)
-                else:
+                elif delivery_time is None:
                     delayed_messages[msg_id] = Template(id=msg_id, guild_id=row[1], delivery_channel_id=row[2],
                             author_id=row[4], content=row[7], description=row[8], update_db=False)
 
@@ -1832,15 +1825,10 @@ def load_from_db(delayed_messages):
                     description=row[8], repeat_until=row[9], special_handling=row[10], update_db=False)
             loop.create_task(schedule_delay_message(delayed_messages[message_id]))
 
-        elif delivery_time and delivery_time == -1:
-            votes.load_proposal_votes(message_id)
-            delayed_messages[message_id] = Proposal(id=message_id, guild_id=row[1], delivery_channel_id=row[2],
-                    author_id=row[4], approval_message_id=row[6], content=row[7], description=row[8],
-                    required_approvals=votes.get_required_approvals(message_id), update_db=False)
-        elif delivery_time and delivery_time == -2:
+        elif delivery_time == -2:
             delayed_messages[message_id] = AutoReply(id=message_id, guild_id=row[1], delivery_channel_id=row[2], author_id=row[4], trigger=row[5],
                     content=row[7], description=row[8], special_handling=row[10], update_db=False)
-        else:
+        elif delivery_time is None:
             delayed_messages[message_id] = Template(id=message_id, guild_id=row[1], delivery_channel_id=row[2],
                     author_id=row[4], content=row[7], description=row[8], update_db=False)
 
@@ -1888,8 +1876,6 @@ async def process_delay_message(params):
     repeat = params.pop('repeat', None)
     description = params.pop('desc', None)
     from_template = params.pop('from_template', None)
-    propose_in_channel_name = params.pop('propose_in_channel', None)
-    required_approvals = params.pop('required_approvals', None)
     duration = params.pop('duration', None)
     pin_message = params.pop('pin', None)
     set_topic = params.pop('set-topic', None)
@@ -1934,20 +1920,6 @@ async def process_delay_message(params):
         channel = request_channel.name
     delivery_channel = get_channel_by_name_or_id(guild, channel)
 
-    # get propose_in_channel
-    if propose_in_channel_name:
-        if delay == 'proposal':
-            delivery_time = -1
-            propose_in_channel = get_channel_by_name_or_id(guild, propose_in_channel_name)
-        else:
-            raise GigException(f"Parameter **propose_in_channel** may only be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
-        if repeat is not None:
-            raise GigException(f"Parameter **repeat** may not be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
-        if duration is not None:
-            raise GigException(f"Parameter **duration** may not be used with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
-    elif delay == 'proposal':
-        raise GigException(f"Parameter **propose_in_channel** is required with proposals\n\nTo see help type:\n\n`~giggle help proposal`")
-
     # validate repeat string
     repeat_output = ""
     if repeat:
@@ -1961,27 +1933,14 @@ async def process_delay_message(params):
         elif match.group(5):
             repeat_output = f" and will repeat every {match.group(5)} hours"
 
-    # get required_approvals
-    if required_approvals:
-        if delay == 'proposal':
-            if not re.match(r'\d+$', required_approvals) or int(required_approvals) == 0:
-                raise GigException(f"Invalid value for **required_approvals**.  Must be a positive integer greater than 0\n\n"
-                        "To see help type:\n\n`~giggle help proposal`")
-        else:
-            raise GigException(f"Invalid command.  Parameter **required_approvals** may only be used with proposals"
-                    "\n\nTo see help type:\n\n`~giggle help proposal`")
-    else:
-        required_approvals = '1'
-
-    if delay == 'template' or delay == 'proposal':
+    if delay == 'template':
         if pin_message is not None:
-            raise GigException(f"The **pin** option may not be used when creating a {delay}")
+            raise GigException("The **pin** option may not be used when creating a template")
         if set_topic is not None:
-            raise GigException(f"The **set-topic** option may not be used when creating a {delay}")
+            raise GigException("The **set-topic** option may not be used when creating a template")
         if set_channel_name is not None:
-            raise GigException(f"The **set-channel-name** option may not be used when creating a {delay}")
-        if delay == 'template':
-            delivery_time = None
+            raise GigException("The **set-channel-name** option may not be used when creating a template")
+        delivery_time = None
 
     elif re.match(r'\d+$', delay):
         if delay == '0':
@@ -2071,24 +2030,17 @@ async def process_delay_message(params):
         newMessage = Message(id=None, guild_id=guild.id, delivery_channel_id=delivery_channel.id,
                 delivery_time=delivery_time, author_id=author_id, repeat=repeat, last_repeat_message=None,
                 content=content, description=description, repeat_until=repeat_until, special_handling=special_handling)
-    elif delivery_time and delivery_time == -1:
-        newMessage = Proposal(id=None, guild_id=guild.id, delivery_channel_id=delivery_channel.id,
-                author_id=author_id, approval_message_id=None, content=content, description=description,
-                required_approvals=int(required_approvals))
     else:
         newMessage = Template(id=None, guild_id=guild.id, delivery_channel_id=delivery_channel.id,
                 author_id=author_id, content=content, description=description)
 
     delayed_messages[newMessage.id] = newMessage
 
-    if type(newMessage) is Template or type(newMessage) is Proposal:
+    if type(newMessage) is Template:
         if request_channel:
-            if delay == 'template':
-                embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
-                embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
-                await request_channel.send(embed=embed)
-            else:
-                await propose_message(newMessage, propose_in_channel, request_channel)
+            embed=discord.Embed(description=f"Your template has been created", color=0x00ff00)
+            embed.add_field(name="Template ID", value=f"{newMessage.id}", inline=True)
+            await request_channel.send(embed=embed)
         return
     elif delivery_time == 0:
         if request_channel:
@@ -2111,61 +2063,6 @@ async def process_delay_message(params):
     # handler waiting for the delivery coroutine to finish; register it as a
     # background task and return once the message has been scheduled.
     asyncio.create_task(schedule_delay_message(newMessage))
-
-async def propose_message(msg, propose_in_channel, request_channel):
-    votes.vote(msg.id, -1, int(msg.required_approvals))
-    output = "> **A MESSAGE HAS BEEN PROPOSED**\n"
-    output += f"> **Author:** {msg.get_author(client).name}\n"
-    output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
-    output += "> **Current approvals:** 0\n"
-    output += f"> **Required approvals:** {msg.required_approvals}\n"
-    output += msg.content
-    approval_message = await propose_in_channel.send(output)
-    await approval_message.add_reaction('☑️')
-    delayed_messages[msg.id].approval_message_id = approval_message.id
-    delayed_messages[msg.id].update_db()
-    embed=discord.Embed(description=f"Your message has been proposed in {propose_in_channel.mention}\n\nIt will be delivered to {msg.get_delivery_channel(client).mention} when it is approved", color=0x00ff00)
-    embed.add_field(name="Proposal ID", value=f"{msg.id}", inline=True)
-    await request_channel.send(embed=embed)
-
-async def process_proposal_reaction(user_id, guild_id, channel_id, message_id, msg_id, vote=None, cancel=False):
-    if user_id == client.user.id:
-        return
-    msg = delayed_messages[msg_id]
-    if vote is not None:
-        votes.vote(msg_id, user_id, vote)
-    else:
-        votes.remove_proposal(msg_id)
-    if not cancel:
-        votes.vote(msg_id, -1, msg.required_approvals)
-        total_approvals = votes.vote_count(msg_id)
-    output = f"> **Author:** {msg.get_author(client).name}\n"
-    output += f"> **Channel:** {msg.get_delivery_channel(client).mention}\n"
-
-    if cancel:
-        output = "> **THIS PROPOSAL HAS BEEN CANCELED**\n" + output
-    elif total_approvals < msg.required_approvals:
-        output = "> **A MESSAGE HAS BEEN PROPOSED**\n" + output
-        output += f"> **Current approvals:** {total_approvals}\n"
-        output += f"> **Required approvals:** {msg.required_approvals}\n"
-    else:
-        timezone = None
-        format_24 = None
-        if msg.author_id in giguser.users:
-            timezone = giguser.users[msg.author_id].timezone
-            format_24 = giguser.users[msg.author_id].format_24
-        output = "> **MESSAGE APPROVED AND SENT**\n" + output
-        output += f"> **Sent:** {gigtz.display_localized_time(time(), timezone, format_24)}\n"
-        output += f"> **Total approvals:** {msg.required_approvals}\n"
-        msg.approval_message_id = None
-        msg.delivery_time = 0
-        msg.update_db()
-        votes.remove_proposal(msg_id)
-        await schedule_delay_message(msg)
-
-    output += msg.content
-    message = await get_message_by_id(guild_id, channel_id, message_id)
-    await message.edit(content=output)
 
 def replace_generic_emojis(content, guild_id):
     guild = discord.utils.get(client.guilds, id=int(guild_id))
@@ -2372,8 +2269,6 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
     total = 0
     if message_type == 'templates' or message_type == 'template' or message_type == 'tmp':
         message_type = 'templates'
-    elif message_type == 'proposals' or message_type == 'proposal' or message_type == 'p':
-        message_type = 'proposals'
     elif message_type == 'auto-repl' or message_type == 'auto' or message_type == 'a':
         message_type = 'auto-replies'
     elif message_type == 'repeats' or message_type == 'repeat':
@@ -2392,8 +2287,8 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
     if max_count == 0:
         raise GigException("Value for next must be greater than 0")
 
-    if (message_type == 'templates' or message_type == 'proposals') and max_count:
-        raise GigException("**next** not valid with Templates and Proposals")
+    if message_type == 'templates' and max_count:
+        raise GigException("**next** not valid with Templates")
     if message_type is None:
         output = "> **====================**\n>  **Scheduled Messages**\n> **====================**\n"
     else:
@@ -2403,9 +2298,6 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
     for msg_id in delayed_messages:
         if message_type == 'templates':
             if type(delayed_messages[msg_id]) is Template:
-                sorted_messages[msg_id] = delayed_messages[msg_id]
-        elif message_type == 'proposals':
-            if type(delayed_messages[msg_id]) is Proposal:
                 sorted_messages[msg_id] = delayed_messages[msg_id]
         elif message_type == 'auto-replies':
             if type(delayed_messages[msg_id]) is AutoReply:
@@ -2418,7 +2310,7 @@ async def list_delay_messages(channel, author_id, next_or_all, message_type=None
                 else:
                     sorted_messages[msg_id] = delayed_messages[msg_id]
 
-    if message_type != 'templates' and message_type != 'proposals' and message_type != 'auto-replies':
+    if message_type != 'templates' and message_type != 'auto-replies':
         sorted_messages = {k: v for k, v in sorted(sorted_messages.items(), key=lambda item: item[1].delivery_time)}
 
     for msg_id in sorted_messages:
@@ -2494,8 +2386,6 @@ async def send_delay_message(channel, author, msg_num):
         if type(msg) is Template or type(msg) is AutoReply:
             raise GigException(f"**{message_id}** is a(n) **{type(msg).__name__}** and cannot be sent")
         prompt = f"Send message {message_id} now?"
-        if type(msg) is Proposal:
-            prompt = f"Send proposed message {message_id} now?"
         if not await confirm_request(channel, author.id, prompt, 15, client):
             return
 
@@ -2665,10 +2555,6 @@ async def edit_delay_message(params):
         else:
             msg.update_db()
 
-        if type(msg) == Proposal:
-            # We need to update the proposal
-            await process_proposal_reaction(None, msg.guild_id, None, msg.approval_message_id, msg.id)
-
         await discord_message.channel.send(embed=embed)
 
     else:
@@ -2720,8 +2606,6 @@ async def cancel_delayed_message(channel, author, msg_num):
         if not await confirm_request(channel, author.id, f"Delete {type(delayed_messages[msg_num]).__name__.lower()} {msg_num}", 15, client):
             return
 
-        if type(delayed_messages[msg_num]) is Proposal:
-            await process_proposal_reaction(None, channel.guild.id, None, delayed_messages[msg_num].approval_message_id, msg_num, None, True)
         await channel.send(embed=discord.Embed(description=f"{type(delayed_messages[msg_num]).__name__} deleted", color=0x00ff00))
         delayed_messages.pop(msg_num).delete_from_db()
     else:
@@ -2770,21 +2654,11 @@ async def list_vips(msg, list_all):
 
 async def show_guild_config(msg):
     output = f"**Config Settings**"
-    output += "\n**proposal_channel**:  "
-    try:
-        output += get_channel_by_name_or_id(msg.guild, str(gigguild.guilds[msg.guild.id].proposal_channel_id)).mention
-    except:
-        output += str(gigguild.guilds[msg.guild.id].proposal_channel_id)
     output += "\n**approval_channel**:  "
     try:
         output += get_channel_by_name_or_id(msg.guild, str(gigguild.guilds[msg.guild.id].approval_channel_id)).mention
     except:
         output += str(gigguild.guilds[msg.guild.id].approval_channel_id)
-    output += "\n**delivery_channel**:  "
-    try:
-        output += get_channel_by_name_or_id(msg.guild, str(gigguild.guilds[msg.guild.id].delivery_channel_id)).mention
-    except:
-        output += str(gigguild.guilds[msg.guild.id].delivery_channel_id)
     output += "\n**Plan Level**:  "
     if not gigguild.guilds[msg.guild.id].plan_level:
         output += "Free"
@@ -2796,26 +2670,16 @@ async def show_guild_config(msg):
 
 async def set_guild_config(params):
     msg = params.pop('msg')
-    proposal_channel_param = params.pop('proposal_channel', None)
     approval_channel_param = params.pop('approval_channel', None)
-    delivery_channel_param = params.pop('delivery_channel', None)
 
     if params:
         raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
 
     output = ""
-    if proposal_channel_param:
-        proposal_channel = get_channel_by_name_or_id(msg.guild, proposal_channel_param)
-        gigguild.guilds[msg.guild.id].set_proposal_channel_id(proposal_channel.id)
-        output += f"**proposal_channel** set to **{proposal_channel.mention}**\n"
     if approval_channel_param:
         approval_channel = get_channel_by_name_or_id(msg.guild, approval_channel_param)
         gigguild.guilds[msg.guild.id].set_approval_channel_id(approval_channel.id)
         output += f"**approval_channel** set to **{approval_channel.mention}**\n"
-    if delivery_channel_param:
-        delivery_channel = get_channel_by_name_or_id(msg.guild, delivery_channel_param)
-        gigguild.guilds[msg.guild.id].set_delivery_channel_id(delivery_channel.id)
-        output += f"**delivery_channel** set to **{delivery_channel.mention}**\n"
 
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
@@ -2906,7 +2770,7 @@ async def on_message(msg):
                     await parse_args(create_auto_reply, {'message_channel': msg.channel, 'guild_id': msg.guild.id, 'author_id': msg.author.id, 'trigger': match.group(5), 'reply': match.group(7)}, match.group(6))
                     return
 
-                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)|a(uto(-replies)?)?)?)? *$', msg.content)
+                match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|a(uto(-replies)?)?)?)? *$', msg.content)
                 if match:
                     await msg.channel.send(embed=list_slash_help_embed())
                     return
@@ -2957,11 +2821,6 @@ async def on_message(msg):
                 match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
                 if match:
                     await msg.channel.send(help.show_help(match.group(4)))
-                    return
-
-                match = re.match(r'~g(iggle)? +p(ropose)?( +([^\n]+))?(\n(.+))?$', msg.content, re.DOTALL)
-                if match:
-                    await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': 'proposal', 'content': match.group(6)}, match.group(4))
                     return
 
                 match = re.match(r'~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
@@ -3018,10 +2877,6 @@ async def on_message(msg):
                     await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} hit an unhandled exception in the {msg.guild.name} server\n\n`{format_exc()}`")
         else:
             await msg.channel.send(embed=discord.Embed(description=f"You do not have premission to interact with me on this server\n\nDM {client.user.mention} to request permission", color=0xff0000))
-
-    elif msg.guild.id in gigguild.guilds and msg.channel.id == gigguild.guilds[msg.guild.id].proposal_channel_id and gigguild.guilds[msg.guild.id].delivery_channel_id and gigguild.guilds[msg.guild.id].approval_channel_id:
-        await process_delay_message({'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': time(), 'author_id': msg.author.id, 'delay': 'proposal',
-            'content': msg.content, 'channel': gigguild.guilds[msg.guild.id].delivery_channel_id, 'desc': f"Proposal from {msg.author.name}", 'propose_in_channel': gigguild.guilds[msg.guild.id].approval_channel_id})
 
     else:
         for message_id in delayed_messages:
@@ -3084,23 +2939,6 @@ async def on_ready():
         slash_commands_synced = True
 
     await client.change_presence(activity=discord.Game('/giggle help'))
-
-@client.event
-async def on_raw_reaction_add(payload):
-    if payload.emoji.name == '☑️':
-        for msg_id in delayed_messages:
-            if type(delayed_messages[msg_id]) is Proposal and payload.message_id == delayed_messages[msg_id].approval_message_id:
-                await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, True)
-                return
-
-
-@client.event
-async def on_raw_reaction_remove(payload):
-    if payload.emoji.name == '☑️':
-        for msg_id in delayed_messages:
-            if type(delayed_messages[msg_id]) is Proposal and payload.message_id == delayed_messages[msg_id].approval_message_id:
-                await process_proposal_reaction(payload.user_id, payload.guild_id, payload.channel_id, payload.message_id, msg_id, False)
-                return
 
 @client.event
 async def on_guild_join(guild):
