@@ -260,6 +260,43 @@ def edit_slash_help_embed():
     return embed
 
 
+def schedule_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle schedule",
+        description="Schedule a message for future delivery.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Required",
+        value=(
+            "`time` - minutes from now or a date/time such as `08-14 09:30`\n"
+            "`content` - message body, unless `from_template` is used"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Options",
+        value=(
+            "`channel` - destination channel; defaults to the current channel\n"
+            "`repeat` - minutes:N, hours:N, daily, weekly, or monthly\n"
+            "`duration` - minutes:N, hours:N, or days:N for repeating messages\n"
+            "`description` - short description used when listing messages\n"
+            "`from_template` - create the body from a stored template\n"
+            "`pin`, `publish`, `set_topic`, `set_channel_name` - delivery behavior"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Time",
+        value=(
+            "The time uses your configured GiggleMe time zone. A number means "
+            "that many minutes from now; `0` sends immediately."
+        ),
+        inline=False
+    )
+    return embed
+
+
 def slash_help_embed(command=None):
     if command == "timezone":
         return timezone_slash_help_embed()
@@ -285,6 +322,9 @@ def slash_help_embed(command=None):
     if command == "edit":
         return edit_slash_help_embed()
 
+    if command == "schedule":
+        return schedule_slash_help_embed()
+
     if command == "test":
         return discord.Embed(
             title="/giggle test",
@@ -308,6 +348,7 @@ def slash_help_embed(command=None):
             "`/giggle cancel` - cancel a stored message\n"
             "`/giggle edit-sent` - edit a Discord message already sent by GiggleMe\n"
             "`/giggle edit` - edit a stored GiggleMe item\n"
+            "`/giggle schedule` - schedule a message for delivery\n"
             "`/giggle test` - verify slash-command plumbing"
         ),
         inline=False
@@ -342,9 +383,108 @@ MIGRATED_HELP_TOPICS = {
     "modify": "edit-sent",
     "edit-sent": "edit-sent",
     "edit": "edit",
+    "schedule": "schedule",
     "test": "test",
     "help": None
 }
+
+
+AUTOCOMPLETE_NONE = "__giggle_none__"
+AUTOCOMPLETE_NO_MATCH = "__giggle_no_match__"
+
+
+def stored_message_autocomplete(
+    interaction,
+    current,
+    *,
+    allowed_types=None,
+    special_choices=None
+):
+    """Build autocomplete choices for GiggleMe stored-message IDs."""
+    current = current.casefold().strip()
+    special_choices = special_choices or []
+
+    if interaction.guild is None:
+        return [
+            app_commands.Choice(
+                name="No stored messages available",
+                value=AUTOCOMPLETE_NONE
+            )
+        ]
+
+    items = []
+    for msg_id, msg in delayed_messages.items():
+        if msg.guild_id != interaction.guild.id:
+            continue
+        if allowed_types is not None and not isinstance(msg, allowed_types):
+            continue
+        items.append((msg_id, msg))
+
+    if not items:
+        return [
+            app_commands.Choice(
+                name="No stored messages available for this command",
+                value=AUTOCOMPLETE_NONE
+            )
+        ]
+
+    choices = []
+
+    for value, label in special_choices:
+        if not current or current in value.casefold() or current in label.casefold():
+            choices.append(
+                app_commands.Choice(
+                    name=label[:100],
+                    value=value
+                )
+            )
+
+    for msg_id, msg in items:
+        kind = type(msg).__name__
+        detail = getattr(msg, "description", None) or getattr(msg, "content", None) or ""
+        detail = re.sub(r"\s+", " ", detail).strip()
+
+        label = f"{msg_id} [{kind}]"
+        if detail:
+            label += f" - {detail}"
+
+        if current and current not in msg_id.casefold() and current not in label.casefold():
+            continue
+
+        choices.append(
+            app_commands.Choice(
+                name=label[:100],
+                value=msg_id
+            )
+        )
+
+        if len(choices) == 25:
+            break
+
+    if choices:
+        return choices[:25]
+
+    typed = current[:70] if current else ""
+    name = f'No stored messages match "{typed}"' if typed else "No stored messages available"
+    return [
+        app_commands.Choice(
+            name=name[:100],
+            value=AUTOCOMPLETE_NO_MATCH
+        )
+    ]
+
+
+async def reject_message_autocomplete_sentinel(interaction, value):
+    if value not in (AUTOCOMPLETE_NONE, AUTOCOMPLETE_NO_MATCH):
+        return False
+
+    if value == AUTOCOMPLETE_NONE:
+        message = "There are no stored messages available for this command."
+    else:
+        message = "No stored messages match that selection."
+
+    await interaction.response.send_message(message, ephemeral=True)
+    return True
 
 
 @giggle_group.command(name="test", description="Test GiggleMe slash commands")
@@ -536,6 +676,11 @@ async def slash_show(
     if not await prepare_slash_interaction(interaction):
         return
 
+    message = message.strip().casefold()
+
+    if await reject_message_autocomplete_sentinel(interaction, message):
+        return
+
     selected_format = None if format is None else format.value
     raw = None if selected_format in (None, "normal") else selected_format
 
@@ -553,11 +698,30 @@ async def slash_show(
         await interaction.delete_original_response()
 
 
+
+
+@slash_show.autocomplete("message")
+async def slash_show_message_autocomplete(interaction: discord.Interaction, current: str):
+    return stored_message_autocomplete(
+        interaction,
+        current,
+        special_choices=[
+            ("last", "last - your most recently scheduled message"),
+            ("next", "next - the next scheduled message")
+        ]
+    )
+
+
 @giggle_group.command(name="send", description="Send a scheduled message immediately")
 @app_commands.guild_only()
 @app_commands.describe(message="Message ID, or last")
 async def slash_send(interaction: discord.Interaction, message: str):
     if not await prepare_slash_interaction(interaction):
+        return
+
+    message = message.strip().casefold()
+
+    if await reject_message_autocomplete_sentinel(interaction, message):
         return
 
     await interaction.response.defer()
@@ -577,11 +741,30 @@ async def slash_send(interaction: discord.Interaction, message: str):
         await interaction.delete_original_response()
 
 
+
+
+@slash_send.autocomplete("message")
+async def slash_send_message_autocomplete(interaction: discord.Interaction, current: str):
+    return stored_message_autocomplete(
+        interaction,
+        current,
+        allowed_types=(Message, Proposal),
+        special_choices=[
+            ("last", "last - your most recently scheduled message")
+        ]
+    )
+
+
 @giggle_group.command(name="cancel", description="Cancel a stored GiggleMe message")
 @app_commands.guild_only()
 @app_commands.describe(message="Message ID, last, next, or all")
 async def slash_cancel(interaction: discord.Interaction, message: str):
     if not await prepare_slash_interaction(interaction):
+        return
+
+    message = message.strip().casefold()
+
+    if await reject_message_autocomplete_sentinel(interaction, message):
         return
 
     await interaction.response.defer()
@@ -599,6 +782,21 @@ async def slash_cancel(interaction: discord.Interaction, message: str):
         )
     finally:
         await interaction.delete_original_response()
+
+
+
+
+@slash_cancel.autocomplete("message")
+async def slash_cancel_message_autocomplete(interaction: discord.Interaction, current: str):
+    return stored_message_autocomplete(
+        interaction,
+        current,
+        special_choices=[
+            ("last", "last - your most recently scheduled message"),
+            ("next", "next - the next scheduled message"),
+            ("all", "all - all scheduled messages authored by you")
+        ]
+    )
 
 
 @giggle_group.command(
@@ -668,6 +866,9 @@ async def slash_edit(
     if not await prepare_slash_interaction(interaction):
         return
 
+    if await reject_message_autocomplete_sentinel(interaction, message):
+        return
+
     await interaction.response.defer(ephemeral=True)
 
     message_id = message.strip()
@@ -733,44 +934,103 @@ async def slash_edit(
 
 
 @slash_edit.autocomplete("message")
-async def slash_edit_message_autocomplete(
+async def slash_edit_message_autocomplete(interaction: discord.Interaction, current: str):
+    return stored_message_autocomplete(
+        interaction,
+        current,
+        special_choices=[
+            ("last", "last - your most recently scheduled message")
+        ]
+    )
+
+
+@giggle_group.command(
+    name="schedule",
+    description="Schedule a message for future delivery"
+)
+@app_commands.guild_only()
+@app_commands.describe(
+    time="Minutes from now, 0 for now, or a date/time",
+    content="Message body; omit when using from_template",
+    channel="Destination channel name, mention, or ID; defaults to this channel",
+    repeat="minutes:N, hours:N, daily, weekly, or monthly",
+    description="Short description used when listing the message",
+    from_template="Stored template ID to use as the message body",
+    duration="Repeat duration: minutes:N, hours:N, or days:N",
+    pin="Pin the delivered message",
+    publish="Publish the delivered message",
+    set_topic="Set the channel topic instead of posting a message",
+    set_channel_name="Set the channel name instead of posting a message"
+)
+async def slash_schedule(
+    interaction: discord.Interaction,
+    time: str,
+    content: Optional[str] = None,
+    channel: Optional[str] = None,
+    repeat: Optional[str] = None,
+    description: Optional[str] = None,
+    from_template: Optional[str] = None,
+    duration: Optional[str] = None,
+    pin: Optional[bool] = None,
+    publish: Optional[bool] = None,
+    set_topic: Optional[bool] = None,
+    set_channel_name: Optional[bool] = None
+):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    if from_template:
+        from_template = from_template.strip().casefold()
+
+    if from_template and await reject_message_autocomplete_sentinel(
+        interaction,
+        from_template
+    ):
+        return
+
+    await interaction.response.defer(ephemeral=True)
+
+    params = {
+        "guild": interaction.guild,
+        "request_channel": interaction.channel,
+        "request_message_id": interaction.id,
+        "author_id": interaction.user.id,
+        "delay": time,
+        "content": content,
+        "channel": channel,
+        "repeat": repeat,
+        "desc": description,
+        "from_template": from_template,
+        "duration": duration,
+        "pin": None if pin is None else str(pin).lower(),
+        "publish": None if publish is None else str(publish).lower(),
+        "set-topic": None if set_topic is None else str(set_topic).lower(),
+        "set-channel-name": (
+            None if set_channel_name is None else str(set_channel_name).lower()
+        )
+    }
+
+    try:
+        await process_delay_message(params)
+    except GigException as e:
+        await interaction.followup.send(
+            embed=discord.Embed(description=str(e), color=0xff0000),
+            ephemeral=True
+        )
+    finally:
+        await interaction.delete_original_response()
+
+
+@slash_schedule.autocomplete("from_template")
+async def slash_schedule_template_autocomplete(
     interaction: discord.Interaction,
     current: str
 ):
-    current = current.casefold()
-    choices = []
-
-    if "last".startswith(current):
-        choices.append(
-            app_commands.Choice(
-                name="last - your most recently scheduled message",
-                value="last"
-            )
-        )
-
-    for msg_id, msg in delayed_messages.items():
-        if interaction.guild is not None and msg.guild_id != interaction.guild.id:
-            continue
-
-        description = getattr(msg, "description", None)
-        label = msg_id
-        if description:
-            label = f"{msg_id} - {description}"
-
-        if current and current not in msg_id.casefold() and current not in label.casefold():
-            continue
-
-        choices.append(
-            app_commands.Choice(
-                name=label[:100],
-                value=msg_id
-            )
-        )
-
-        if len(choices) == 25:
-            break
-
-    return choices
+    return stored_message_autocomplete(
+        interaction,
+        current,
+        allowed_types=(Template,)
+    )
 
 
 @giggle_group.command(name="help", description="Show help for GiggleMe slash commands")
@@ -784,6 +1044,7 @@ async def slash_edit_message_autocomplete(
     app_commands.Choice(name="Cancel", value="cancel"),
     app_commands.Choice(name="Edit sent", value="edit-sent"),
     app_commands.Choice(name="Edit", value="edit"),
+    app_commands.Choice(name="Schedule", value="schedule"),
     app_commands.Choice(name="Test", value="test")
 ])
 async def slash_help(interaction: discord.Interaction, command: Optional[str] = None):
@@ -1978,6 +2239,8 @@ async def on_message(msg):
                     await msg.channel.send(embed=edit_slash_help_embed())
                     return
 
+                # Keep the classic unnamed scheduling syntax working for now.
+                # raw+ output still uses it as executable recreation syntax.
                 match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+|template)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
                     await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
