@@ -3,3 +3,6 @@ settings.py
 settings.php
 images
 /index.php
+
+# Python virtual environment
+.venv/
