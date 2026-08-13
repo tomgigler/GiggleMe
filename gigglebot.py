@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import discord
+from discord import app_commands
 import re
 import asyncio
 import settings
@@ -22,6 +23,15 @@ class GigException(Exception):
     pass
 
 client = discord.Client(intents=discord.Intents.all())
+tree = app_commands.CommandTree(client)
+slash_commands_synced = False
+
+
+@tree.command(name="giggle", description="Test GiggleMe slash commands")
+async def slash_giggle(interaction: discord.Interaction):
+    await interaction.response.send_message("Good job. You used a slash command.")
+
+
 delayed_messages = {}
 
 async def poll_message_table():
@@ -1353,6 +1363,14 @@ async def on_voice_state_update(member, before, after):
 
 @client.event
 async def on_ready():
+    global slash_commands_synced
+
+    if not slash_commands_synced:
+        for guild in client.guilds:
+            tree.copy_global_to(guild=guild)
+            await tree.sync(guild=guild)
+        slash_commands_synced = True
+
     await client.change_presence(activity=discord.Game('~giggle help'))
 
 @client.event
