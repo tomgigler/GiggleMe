@@ -153,6 +153,28 @@ def show_slash_help_embed():
     return embed
 
 
+def send_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle send",
+        description="Send a scheduled message immediately.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Message",
+        value=(
+            "Supply a message ID, or use `last` for the most recently scheduled "
+            "message associated with your account."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Confirmation",
+        value="GiggleMe will ask for confirmation before sending the message.",
+        inline=False
+    )
+    return embed
+
+
 def slash_help_embed(command=None):
     if command == "timezone":
         return timezone_slash_help_embed()
@@ -165,6 +187,9 @@ def slash_help_embed(command=None):
 
     if command == "show":
         return show_slash_help_embed()
+
+    if command == "send":
+        return send_slash_help_embed()
 
     if command == "test":
         return discord.Embed(
@@ -185,6 +210,7 @@ def slash_help_embed(command=None):
             "`/giggle time-format` - view or change 12/24-hour display\n"
             "`/giggle list` - list stored messages and related items\n"
             "`/giggle show` - show a stored item\n"
+            "`/giggle send` - send a scheduled message immediately\n"
             "`/giggle test` - verify slash-command plumbing"
         ),
         inline=False
@@ -210,6 +236,7 @@ MIGRATED_HELP_TOPICS = {
     "list": "list",
     "ls": "list",
     "show": "show",
+    "send": "send",
     "test": "test",
     "help": None
 }
@@ -419,6 +446,30 @@ async def slash_show(
         await interaction.delete_original_response()
 
 
+@giggle_group.command(name="send", description="Send a scheduled message immediately")
+@app_commands.guild_only()
+@app_commands.describe(message="Message ID, or last")
+async def slash_send(interaction: discord.Interaction, message: str):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    await interaction.response.defer()
+
+    try:
+        await send_delay_message(
+            interaction.channel,
+            interaction.user,
+            message
+        )
+    except GigException as e:
+        await interaction.followup.send(
+            embed=discord.Embed(description=str(e), color=0xff0000),
+            ephemeral=True
+        )
+    finally:
+        await interaction.delete_original_response()
+
+
 @giggle_group.command(name="help", description="Show help for GiggleMe slash commands")
 @app_commands.describe(command="Slash command to show help for")
 @app_commands.choices(command=[
@@ -426,6 +477,7 @@ async def slash_show(
     app_commands.Choice(name="Time format", value="time-format"),
     app_commands.Choice(name="List", value="list"),
     app_commands.Choice(name="Show", value="show"),
+    app_commands.Choice(name="Send", value="send"),
     app_commands.Choice(name="Test", value="test")
 ])
 async def slash_help(interaction: discord.Interaction, command: Optional[str] = None):
@@ -1607,7 +1659,7 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +send +(\S+) *$', msg.content)
                 if match:
-                    await send_delay_message(msg.channel, msg.author, match.group(2))
+                    await msg.channel.send(embed=send_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +modify +(\d+) *\n(.*)$', msg.content)
