@@ -1418,7 +1418,7 @@ async def slash_edit_sent(
 @app_commands.describe(
     message="GiggleMe message ID, or last",
     time="New delivery time or minutes from now",
-    channel="Destination channel name, mention, or ID",
+    channel="Destination channel; suggestions include channels GiggleMe can send to",
     repeat="minutes:N, hours:N, daily, weekly, monthly, or none",
     description="New stored description",
     content="New message content",
@@ -1442,6 +1442,13 @@ async def slash_edit(
         return
 
     if await reject_message_autocomplete_sentinel(interaction, message):
+        return
+
+    if channel == AUTOCOMPLETE_NO_CHANNELS:
+        await interaction.response.send_message(
+            "GiggleMe does not currently have permission to deliver messages "
+            "to any text channel in this server."
+        )
         return
 
     message_id = await resolve_slash_message_reference(
@@ -1529,6 +1536,14 @@ async def slash_edit_message_autocomplete(interaction: discord.Interaction, curr
         current,
         special_choices=special_choices
     )
+
+
+@slash_edit.autocomplete("channel")
+async def slash_edit_channel_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+):
+    return schedule_channel_autocomplete(interaction, current)
 
 
 @template_group.command(
@@ -3072,8 +3087,6 @@ async def on_ready():
 
 @client.event
 async def on_raw_reaction_add(payload):
-    # Confirmation prompts now use Discord buttons. Reaction events remain
-    # here only for proposal approval voting.
     if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
             if type(delayed_messages[msg_id]) is Proposal and payload.message_id == delayed_messages[msg_id].approval_message_id:
