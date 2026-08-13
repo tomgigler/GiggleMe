@@ -426,12 +426,13 @@ async def slash_list(
 async def slash_show(
     interaction: discord.Interaction,
     message: str,
-    format: Optional[str] = None
+    format: Optional[app_commands.Choice[str]] = None
 ):
     if not await prepare_slash_interaction(interaction):
         return
 
-    raw = None if format in (None, "normal") else format
+    selected_format = None if format is None else format.value
+    raw = None if selected_format in (None, "normal") else selected_format
 
     await interaction.response.defer()
 
