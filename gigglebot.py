@@ -197,6 +197,28 @@ def cancel_slash_help_embed():
     return embed
 
 
+def edit_sent_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle edit-sent",
+        description="Edit the content of a Discord message previously sent by GiggleMe.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Message ID",
+        value=(
+            "Use the Discord message ID of a message that GiggleMe has already sent. "
+            "This is different from a GiggleMe scheduled-message ID."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Content",
+        value="Supply the replacement message content.",
+        inline=False
+    )
+    return embed
+
+
 def slash_help_embed(command=None):
     if command == "timezone":
         return timezone_slash_help_embed()
@@ -215,6 +237,9 @@ def slash_help_embed(command=None):
 
     if command == "cancel":
         return cancel_slash_help_embed()
+
+    if command == "edit-sent":
+        return edit_sent_slash_help_embed()
 
     if command == "test":
         return discord.Embed(
@@ -237,6 +262,7 @@ def slash_help_embed(command=None):
             "`/giggle show` - show a stored item\n"
             "`/giggle send` - send a scheduled message immediately\n"
             "`/giggle cancel` - cancel a stored message\n"
+            "`/giggle edit-sent` - edit a Discord message already sent by GiggleMe\n"
             "`/giggle test` - verify slash-command plumbing"
         ),
         inline=False
@@ -268,6 +294,8 @@ MIGRATED_HELP_TOPICS = {
     "remove": "cancel",
     "clear": "cancel",
     "rm": "cancel",
+    "modify": "edit-sent",
+    "edit-sent": "edit-sent",
     "test": "test",
     "help": None
 }
@@ -526,6 +554,42 @@ async def slash_cancel(interaction: discord.Interaction, message: str):
         await interaction.delete_original_response()
 
 
+@giggle_group.command(
+    name="edit-sent",
+    description="Edit a Discord message previously sent by GiggleMe"
+)
+@app_commands.guild_only()
+@app_commands.describe(
+    message_id="Discord message ID of the GiggleMe message to edit",
+    content="Replacement message content"
+)
+async def slash_edit_sent(
+    interaction: discord.Interaction,
+    message_id: str,
+    content: str
+):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    await interaction.response.defer(ephemeral=True)
+
+    try:
+        await modify_message(
+            interaction.guild.id,
+            message_id,
+            content
+        )
+        await interaction.followup.send(
+            "Message edited.",
+            ephemeral=True
+        )
+    except GigException as e:
+        await interaction.followup.send(
+            embed=discord.Embed(description=str(e), color=0xff0000),
+            ephemeral=True
+        )
+
+
 @giggle_group.command(name="help", description="Show help for GiggleMe slash commands")
 @app_commands.describe(command="Slash command to show help for")
 @app_commands.choices(command=[
@@ -535,6 +599,7 @@ async def slash_cancel(interaction: discord.Interaction, message: str):
     app_commands.Choice(name="Show", value="show"),
     app_commands.Choice(name="Send", value="send"),
     app_commands.Choice(name="Cancel", value="cancel"),
+    app_commands.Choice(name="Edit sent", value="edit-sent"),
     app_commands.Choice(name="Test", value="test")
 ])
 async def slash_help(interaction: discord.Interaction, command: Optional[str] = None):
@@ -1721,7 +1786,7 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +modify +(\d+) *\n(.*)$', msg.content)
                 if match:
-                    await modify_message(msg.guild.id, match.group(2), match.group(3))
+                    await msg.channel.send(embed=edit_sent_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
