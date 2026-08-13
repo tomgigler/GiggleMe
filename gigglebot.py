@@ -1685,16 +1685,7 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
                 if match:
-                    topic = match.group(4)
-
-                    if topic is None:
-                        await msg.channel.send(embed=slash_help_embed())
-                    elif topic in MIGRATED_HELP_TOPICS:
-                        await msg.channel.send(
-                            embed=slash_help_embed(MIGRATED_HELP_TOPICS[topic])
-                        )
-                    else:
-                        await msg.channel.send(help.show_help(topic))
+                    await msg.channel.send(help.show_help(match.group(4)))
                     return
 
                 match = re.match(r'~g(iggle)? +p(ropose)?( +([^\n]+))?(\n(.+))?$', msg.content, re.DOTALL)
