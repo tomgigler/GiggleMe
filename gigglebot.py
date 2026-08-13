@@ -1641,7 +1641,10 @@ async def process_delay_message(params):
     if author_id:
         giguser.users[author_id].set_last_message(newMessage.id)
 
-    await schedule_delay_message(newMessage)
+    # Delivery may be minutes, hours, or days away. Do not keep the command
+    # handler waiting for the delivery coroutine to finish; register it as a
+    # background task and return once the message has been scheduled.
+    asyncio.create_task(schedule_delay_message(newMessage))
 
 async def propose_message(msg, propose_in_channel, request_channel):
     votes.vote(msg.id, -1, int(msg.required_approvals))
