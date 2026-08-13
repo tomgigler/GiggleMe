@@ -11,7 +11,7 @@ from traceback import format_exc
 from typing import Optional
 from types import SimpleNamespace
 import help
-from confirm import confirm_request, process_reaction
+from confirm import confirm_request
 import gigtz
 import gigdb
 import giguser
@@ -3072,7 +3072,8 @@ async def on_ready():
 
 @client.event
 async def on_raw_reaction_add(payload):
-    process_reaction(payload)
+    # Confirmation prompts now use Discord buttons. Reaction events remain
+    # here only for proposal approval voting.
     if payload.emoji.name == '☑️':
         for msg_id in delayed_messages:
             if type(delayed_messages[msg_id]) is Proposal and payload.message_id == delayed_messages[msg_id].approval_message_id:
