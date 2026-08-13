@@ -1,15 +1,17 @@
 #!/usr/bin/env python
+#!/usr/bin/env python
 import settings
 import mysql.connector
 
 def db_connect():
     return mysql.connector.connect(
-            host="localhost",
-            user=settings.db_user,
-            password=settings.db_password,
-            database=settings.database,
-            charset='utf8mb4'
-            )
+        host='localhost',
+        user=settings.db_user,
+        password=settings.db_password,
+        database=settings.database,
+        charset='utf8mb4',
+        collation='utf8mb4_general_ci'
+    )
 
 def db_execute_sql(sql, fetch, **kwargs):
     mydb = db_connect()

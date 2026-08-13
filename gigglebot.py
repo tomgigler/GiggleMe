@@ -1378,12 +1378,17 @@ async def on_guild_join(guild):
     user = client.get_user(settings.bot_owner_id)
     await user.send(f"{client.user.mention} joined {guild.name} {guild.id}")
 
-gigtz.load_timezones()
-giguser.load_users()
-gigguild.load_guilds()
-gigchannel.load_channels()
-load_from_db(delayed_messages)
+async def main():
+    gigtz.load_timezones()
+    giguser.load_users()
+    gigguild.load_guilds()
+    gigchannel.load_channels()
+    load_from_db(delayed_messages)
 
-asyncio.get_event_loop().create_task(poll_message_table())
+    asyncio.create_task(poll_message_table())
 
-client.run(settings.bot_token)
+    async with client:
+        await client.start(settings.bot_token)
+
+
+asyncio.run(main())
