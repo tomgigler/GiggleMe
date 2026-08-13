@@ -153,6 +153,68 @@ def show_slash_help_embed():
     return embed
 
 
+def slash_help_embed(command=None):
+    if command == "timezone":
+        return timezone_slash_help_embed()
+
+    if command == "time-format":
+        return time_format_slash_help_embed()
+
+    if command == "list":
+        return list_slash_help_embed()
+
+    if command == "show":
+        return show_slash_help_embed()
+
+    if command == "test":
+        return discord.Embed(
+            title="/giggle test",
+            description="Verify that GiggleMe slash commands are working.",
+            color=0x00ff00
+        )
+
+    embed = discord.Embed(
+        title="GiggleMe Slash Commands",
+        description="Use `/giggle help` with a command option for more information.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Available slash commands",
+        value=(
+            "`/giggle timezone` - view or change your time zone\n"
+            "`/giggle time-format` - view or change 12/24-hour display\n"
+            "`/giggle list` - list stored messages and related items\n"
+            "`/giggle show` - show a stored item\n"
+            "`/giggle test` - verify slash-command plumbing"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Still using legacy commands",
+        value=(
+            "Commands that have not yet been migrated continue to use the "
+            "`~giggle` syntax while the migration is in progress."
+        ),
+        inline=False
+    )
+    return embed
+
+
+MIGRATED_HELP_TOPICS = {
+    "timezone": "timezone",
+    "timezones": "timezone",
+    "tz": "timezone",
+    "tzs": "timezone",
+    "time-format": "time-format",
+    "tf": "time-format",
+    "list": "list",
+    "ls": "list",
+    "show": "show",
+    "test": "test",
+    "help": None
+}
+
+
 @giggle_group.command(name="test", description="Test GiggleMe slash commands")
 async def slash_test(interaction: discord.Interaction):
     await interaction.response.send_message("Good job. You used a slash command.")
@@ -355,6 +417,19 @@ async def slash_show(
         )
     finally:
         await interaction.delete_original_response()
+
+
+@giggle_group.command(name="help", description="Show help for GiggleMe slash commands")
+@app_commands.describe(command="Slash command to show help for")
+@app_commands.choices(command=[
+    app_commands.Choice(name="Timezone", value="timezone"),
+    app_commands.Choice(name="Time format", value="time-format"),
+    app_commands.Choice(name="List", value="list"),
+    app_commands.Choice(name="Show", value="show"),
+    app_commands.Choice(name="Test", value="test")
+])
+async def slash_help(interaction: discord.Interaction, command: Optional[str] = None):
+    await interaction.response.send_message(embed=slash_help_embed(command))
 
 
 tree.add_command(giggle_group)
@@ -1557,7 +1632,16 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
                 if match:
-                    await msg.channel.send(help.show_help(match.group(4)))
+                    topic = match.group(4)
+
+                    if topic is None:
+                        await msg.channel.send(embed=slash_help_embed())
+                    elif topic in MIGRATED_HELP_TOPICS:
+                        await msg.channel.send(
+                            embed=slash_help_embed(MIGRATED_HELP_TOPICS[topic])
+                        )
+                    else:
+                        await msg.channel.send(help.show_help(topic))
                     return
 
                 match = re.match(r'~g(iggle)? +p(ropose)?( +([^\n]+))?(\n(.+))?$', msg.content, re.DOTALL)
