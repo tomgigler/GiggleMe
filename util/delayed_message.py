@@ -90,13 +90,13 @@ class Message(DelayedMessage):
                 command += f" repeat={self.repeat}"
             if self.repeat_until:
                 command += f" duration={int((self.repeat_until-self.delivery_time)/60)}"
-            if self.special_handling & 8:
+            if self.special_handling and self.special_handling & 8:
                 command += f" pin=true"
-            if self.special_handling & 16:
+            if self.special_handling and self.special_handling & 16:
                 command += f" set-topic=true"
-            if self.special_handling & 32:
+            if self.special_handling and self.special_handling & 32:
                 command += f" set-channel-name=true"
-            if self.special_handling & 64:
+            if self.special_handling and self.special_handling & 64:
                 command += f" publish=true"
             if self.description:
                 command += f" desc=\"{self.description}\""
