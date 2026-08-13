@@ -104,6 +104,55 @@ def time_format_slash_help_embed():
     return embed
 
 
+def list_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle list",
+        description="List scheduled messages and other stored GiggleMe items.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Examples",
+        value=(
+            "`/giggle list` - list scheduled messages\n"
+            "`/giggle list category:Repeating messages` - list repeating messages\n"
+            "`/giggle list count:3` - show the next three scheduled messages"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Options",
+        value=(
+            "`category` chooses scheduled messages, repeats, templates, proposals, or auto-replies.\n"
+            "`count` limits the result to the next N items where supported.\n"
+            "`scope:All servers` is available only to the bot owner."
+        ),
+        inline=False
+    )
+    return embed
+
+
+def show_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle show",
+        description="Show a scheduled message, template, proposal, or other stored item.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Message",
+        value=(
+            "Supply a message ID, or use `last` for your most recently scheduled "
+            "message or `next` for the next scheduled message."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Format",
+        value="Choose normal, raw Markdown, or raw+ to include recreation syntax.",
+        inline=False
+    )
+    return embed
+
+
 @giggle_group.command(name="test", description="Test GiggleMe slash commands")
 async def slash_test(interaction: discord.Interaction):
     await interaction.response.send_message("Good job. You used a slash command.")
@@ -194,6 +243,118 @@ async def slash_time_format(interaction: discord.Interaction, format: Optional[s
     await interaction.response.send_message(
         embed=discord.Embed(description=output, color=0x00ff00)
     )
+
+
+@giggle_group.command(name="list", description="List scheduled messages and stored GiggleMe items")
+@app_commands.guild_only()
+@app_commands.describe(
+    category="Type of item to list",
+    count="Show only the next N items",
+    scope="List this server, or all servers if you are the bot owner"
+)
+@app_commands.choices(
+    category=[
+        app_commands.Choice(name="Scheduled messages", value="scheduled"),
+        app_commands.Choice(name="Repeating messages", value="repeats"),
+        app_commands.Choice(name="Templates", value="templates"),
+        app_commands.Choice(name="Proposals", value="proposals"),
+        app_commands.Choice(name="Auto-replies", value="auto-replies")
+    ],
+    scope=[
+        app_commands.Choice(name="This server", value="server"),
+        app_commands.Choice(name="All servers", value="all")
+    ]
+)
+async def slash_list(
+    interaction: discord.Interaction,
+    category: Optional[str] = None,
+    count: Optional[int] = None,
+    scope: Optional[str] = None
+):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    if count is not None and count <= 0:
+        await interaction.response.send_message(
+            "Count must be greater than 0.",
+            ephemeral=True
+        )
+        return
+
+    message_type = None if category in (None, "scheduled") else category
+
+    if count is not None and message_type in ("templates", "proposals"):
+        await interaction.response.send_message(
+            "Count is not available when listing templates or proposals.",
+            ephemeral=True
+        )
+        return
+
+    if scope == "all" and interaction.user.id != settings.bot_owner_id:
+        await interaction.response.send_message(
+            "Only the bot owner can list items from all servers.",
+            ephemeral=True
+        )
+        return
+
+    if scope == "all" and count is not None:
+        await interaction.response.send_message(
+            "Count cannot be combined with the All servers scope.",
+            ephemeral=True
+        )
+        return
+
+    next_or_all = None
+    if scope == "all":
+        next_or_all = "all"
+    elif count is not None:
+        next_or_all = f"next {count}"
+
+    await interaction.response.defer()
+
+    try:
+        await list_delay_messages(
+            interaction.channel,
+            interaction.user.id,
+            next_or_all,
+            message_type
+        )
+    finally:
+        await interaction.delete_original_response()
+
+
+@giggle_group.command(name="show", description="Show a stored GiggleMe message or template")
+@app_commands.guild_only()
+@app_commands.describe(
+    message="Message ID, last, or next",
+    format="How to display the message"
+)
+@app_commands.choices(format=[
+    app_commands.Choice(name="Normal", value="normal"),
+    app_commands.Choice(name="Raw Markdown", value="raw"),
+    app_commands.Choice(name="Raw + recreation syntax", value="raw+")
+])
+async def slash_show(
+    interaction: discord.Interaction,
+    message: str,
+    format: Optional[str] = None
+):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    raw = None if format in (None, "normal") else format
+
+    await interaction.response.defer()
+
+    try:
+        await show_delayed_message(
+            interaction.channel,
+            interaction.user.id,
+            message,
+            raw
+        )
+    finally:
+        await interaction.delete_original_response()
 
 
 tree.add_command(giggle_group)
@@ -1356,12 +1517,12 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|p(roposals?)|a(uto(-replies)?)?)?)? *$', msg.content)
                 if match:
-                    await list_delay_messages(msg.channel, msg.author.id, match.group(4), match.group(9))
+                    await msg.channel.send(embed=list_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +show( +(raw\+?))?( +(\S+)|next) *$', msg.content)
                 if match:
-                    await show_delayed_message(msg.channel, msg.author.id, match.group(5), match.group(3))
+                    await msg.channel.send(embed=show_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +(cancel|delete|remove|clear|rm) +(\S+) *$', msg.content)
