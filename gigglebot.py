@@ -9,6 +9,7 @@ from time import time
 from operator import attrgetter
 from traceback import format_exc
 from typing import Optional
+from types import SimpleNamespace
 import help
 from confirm import confirm_request, process_reaction
 import gigtz
@@ -219,6 +220,46 @@ def edit_sent_slash_help_embed():
     return embed
 
 
+def edit_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle edit",
+        description="Edit a stored GiggleMe message or related item.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Message",
+        value=(
+            "Select a stored GiggleMe message ID, or use `last` for your most "
+            "recently scheduled message. These are GiggleMe's 8-character IDs, "
+            "not Discord message IDs."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Editable fields",
+        value=(
+            "`time` - new delivery time or minutes from now\n"
+            "`channel` - destination channel name, mention, or ID\n"
+            "`repeat` - minutes:N, hours:N, daily, weekly, monthly, or none\n"
+            "`description` - stored description\n"
+            "`content` - message content\n"
+            "`duration` - minutes:N, hours:N, days:N, or none\n"
+            "`pin` - enable or disable pinning\n"
+            "`publish` - enable or disable publishing"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Note",
+        value=(
+            "Not every field applies to every stored item type. GiggleMe keeps the "
+            "same validation rules as the classic edit command."
+        ),
+        inline=False
+    )
+    return embed
+
+
 def slash_help_embed(command=None):
     if command == "timezone":
         return timezone_slash_help_embed()
@@ -240,6 +281,9 @@ def slash_help_embed(command=None):
 
     if command == "edit-sent":
         return edit_sent_slash_help_embed()
+
+    if command == "edit":
+        return edit_slash_help_embed()
 
     if command == "test":
         return discord.Embed(
@@ -263,6 +307,7 @@ def slash_help_embed(command=None):
             "`/giggle send` - send a scheduled message immediately\n"
             "`/giggle cancel` - cancel a stored message\n"
             "`/giggle edit-sent` - edit a Discord message already sent by GiggleMe\n"
+            "`/giggle edit` - edit a stored GiggleMe item\n"
             "`/giggle test` - verify slash-command plumbing"
         ),
         inline=False
@@ -296,6 +341,7 @@ MIGRATED_HELP_TOPICS = {
     "rm": "cancel",
     "modify": "edit-sent",
     "edit-sent": "edit-sent",
+    "edit": "edit",
     "test": "test",
     "help": None
 }
@@ -590,6 +636,142 @@ async def slash_edit_sent(
         )
 
 
+@giggle_group.command(
+    name="edit",
+    description="Edit a stored GiggleMe message or related item"
+)
+@app_commands.guild_only()
+@app_commands.describe(
+    message="GiggleMe message ID, or last",
+    time="New delivery time or minutes from now",
+    channel="Destination channel name, mention, or ID",
+    repeat="minutes:N, hours:N, daily, weekly, monthly, or none",
+    description="New stored description",
+    content="New message content",
+    duration="minutes:N, hours:N, days:N, or none",
+    pin="Enable or disable pinning",
+    publish="Enable or disable publishing"
+)
+async def slash_edit(
+    interaction: discord.Interaction,
+    message: str,
+    time: Optional[str] = None,
+    channel: Optional[str] = None,
+    repeat: Optional[str] = None,
+    description: Optional[str] = None,
+    content: Optional[str] = None,
+    duration: Optional[str] = None,
+    pin: Optional[bool] = None,
+    publish: Optional[bool] = None
+):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    await interaction.response.defer(ephemeral=True)
+
+    message_id = message.strip()
+
+    if message_id.casefold() == "last":
+        message_id = giguser.users[interaction.user.id].last_message_id
+    else:
+        # GiggleMe-generated IDs are lowercase MD5 fragments, but accepting
+        # pasted uppercase IDs costs nothing and removes a needless trap.
+        message_id = message_id.casefold()
+
+    if not message_id or message_id not in delayed_messages:
+        if message.strip().isdigit() and len(message.strip()) >= 17:
+            detail = (
+                "That looks like a Discord message ID. `/giggle edit` uses the "
+                "8-character GiggleMe ID shown by `/giggle list` and `/giggle show`. "
+                "Use `/giggle edit-sent` for Discord message IDs."
+            )
+        else:
+            detail = (
+                f"GiggleMe message `{message.strip()}` was not found. "
+                "Use `/giggle list` to find the stored message ID."
+            )
+
+        await interaction.followup.send(
+            embed=discord.Embed(description=detail, color=0xff0000),
+            ephemeral=True
+        )
+        await interaction.delete_original_response()
+        return
+
+    # edit_delay_message() predates interactions and only relies on these
+    # three Message attributes. Keep the existing engine intact while the
+    # slash layer supplies its inputs explicitly.
+    discord_message = SimpleNamespace(
+        channel=interaction.channel,
+        author=interaction.user,
+        guild=interaction.guild
+    )
+
+    params = {
+        "discord_message": discord_message,
+        "message_id": message_id,
+        "delay": time,
+        "channel": channel,
+        "repeat": repeat,
+        "desc": description,
+        "content": content,
+        "duration": duration,
+        "pin": None if pin is None else str(pin).lower(),
+        "publish": None if publish is None else str(publish).lower()
+    }
+
+    try:
+        await edit_delay_message(params)
+    except GigException as e:
+        await interaction.followup.send(
+            embed=discord.Embed(description=str(e), color=0xff0000),
+            ephemeral=True
+        )
+    finally:
+        await interaction.delete_original_response()
+
+
+@slash_edit.autocomplete("message")
+async def slash_edit_message_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+):
+    current = current.casefold()
+    choices = []
+
+    if "last".startswith(current):
+        choices.append(
+            app_commands.Choice(
+                name="last - your most recently scheduled message",
+                value="last"
+            )
+        )
+
+    for msg_id, msg in delayed_messages.items():
+        if interaction.guild is not None and msg.guild_id != interaction.guild.id:
+            continue
+
+        description = getattr(msg, "description", None)
+        label = msg_id
+        if description:
+            label = f"{msg_id} - {description}"
+
+        if current and current not in msg_id.casefold() and current not in label.casefold():
+            continue
+
+        choices.append(
+            app_commands.Choice(
+                name=label[:100],
+                value=msg_id
+            )
+        )
+
+        if len(choices) == 25:
+            break
+
+    return choices
+
+
 @giggle_group.command(name="help", description="Show help for GiggleMe slash commands")
 @app_commands.describe(command="Slash command to show help for")
 @app_commands.choices(command=[
@@ -600,6 +782,7 @@ async def slash_edit_sent(
     app_commands.Choice(name="Send", value="send"),
     app_commands.Choice(name="Cancel", value="cancel"),
     app_commands.Choice(name="Edit sent", value="edit-sent"),
+    app_commands.Choice(name="Edit", value="edit"),
     app_commands.Choice(name="Test", value="test")
 ])
 async def slash_help(interaction: discord.Interaction, command: Optional[str] = None):
@@ -1791,7 +1974,7 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    await parse_args(edit_delay_message, {'discord_message': msg, 'message_id': match.group(2), 'delay': match.group(4), 'content': match.group(12)}, match.group(10))
+                    await msg.channel.send(embed=edit_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+|template)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
