@@ -85,6 +85,25 @@ def timezone_slash_help_embed():
     return embed
 
 
+def time_format_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle time-format",
+        description="View or change your GiggleMe time display format.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="View your time format",
+        value="Use `/giggle time-format` without selecting a format.",
+        inline=False
+    )
+    embed.add_field(
+        name="Change your time format",
+        value="Use `/giggle time-format` and select either `12` or `24`.",
+        inline=False
+    )
+    return embed
+
+
 @giggle_group.command(name="test", description="Test GiggleMe slash commands")
 async def slash_test(interaction: discord.Interaction):
     await interaction.response.send_message("Good job. You used a slash command.")
@@ -149,6 +168,32 @@ async def slash_timezone_autocomplete(interaction: discord.Interaction, current:
         app_commands.Choice(name=name, value=name)
         for name in names[:25]
     ]
+
+
+@giggle_group.command(name="time-format", description="View or change your GiggleMe time display format")
+@app_commands.guild_only()
+@app_commands.describe(format="Time display format; leave blank to show your current setting")
+@app_commands.choices(format=[
+    app_commands.Choice(name="12-hour", value="12"),
+    app_commands.Choice(name="24-hour", value="24")
+])
+async def slash_time_format(interaction: discord.Interaction, format: Optional[str] = None):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    user = giguser.users[interaction.user.id]
+
+    if format is not None:
+        user.set_time_format(format)
+        output = f"Your time display format has been set to {format}-hour"
+    elif user.format_24:
+        output = "Your time display format is 24-hour"
+    else:
+        output = "Your time display format is 12-hour"
+
+    await interaction.response.send_message(
+        embed=discord.Embed(description=output, color=0x00ff00)
+    )
 
 
 tree.add_command(giggle_group)
@@ -1346,13 +1391,7 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +(time-format|tf)( +(12|24))? *$', msg.content)
                 if match:
-                    if match.group(4):
-                        giguser.users[msg.author.id].set_time_format(match.group(4))
-                        await msg.channel.send(embed=discord.Embed(description=f"Your time display format has been set to {match.group(4)}-hour", color=0x00ff00))
-                    elif giguser.users[msg.author.id].format_24:
-                        await msg.channel.send(embed=discord.Embed(description="Your time display format is 24-hour", color=0x00ff00))
-                    else:
-                        await msg.channel.send(embed=discord.Embed(description=f"Your time display format is 12-hour", color=0x00ff00))
+                    await msg.channel.send(embed=time_format_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
