@@ -8,6 +8,7 @@ from datetime import datetime
 from time import time
 from operator import attrgetter
 from traceback import format_exc
+from typing import Optional
 import help
 from confirm import confirm_request, process_reaction
 import gigtz
@@ -26,11 +27,131 @@ client = discord.Client(intents=discord.Intents.all())
 tree = app_commands.CommandTree(client)
 slash_commands_synced = False
 
+giggle_group = app_commands.Group(
+    name="giggle",
+    description="GiggleMe commands"
+)
 
-@tree.command(name="giggle", description="Test GiggleMe slash commands")
-async def slash_giggle(interaction: discord.Interaction):
+
+async def prepare_slash_interaction(interaction):
+    guild = interaction.guild
+    member = interaction.user
+
+    if guild is None or not isinstance(member, discord.Member):
+        await interaction.response.send_message(
+            "This GiggleMe command must be used in a server.",
+            ephemeral=True
+        )
+        return False
+
+    if member.id not in giguser.user_guilds.keys() or guild.id not in giguser.user_guilds[member.id]:
+        if member.guild_permissions.administrator:
+            giguser.save_user(member.id, member.name, guild.id, guild.name)
+
+    if member.id not in giguser.user_guilds.keys() or guild.id not in giguser.user_guilds[member.id]:
+        await interaction.response.send_message(
+            "You are not registered to use GiggleMe in this server.",
+            ephemeral=True
+        )
+        return False
+
+    if time() - giguser.users[member.id].last_active > 3600 and member.id != settings.bot_owner_id:
+        owner = client.get_user(settings.bot_owner_id)
+        if owner:
+            await owner.send(
+                f"{member.mention} is interacting with {client.user.mention} in the {guild.name} server"
+            )
+        giguser.users[member.id].set_last_active(time())
+
+    return True
+
+
+def timezone_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle timezone",
+        description="View or change your GiggleMe time zone.",
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="View your time zone",
+        value="Use `/giggle timezone` without selecting a time zone.",
+        inline=False
+    )
+    embed.add_field(
+        name="Change your time zone",
+        value="Use `/giggle timezone` and select the `timezone` option.",
+        inline=False
+    )
+    return embed
+
+
+@giggle_group.command(name="test", description="Test GiggleMe slash commands")
+async def slash_test(interaction: discord.Interaction):
     await interaction.response.send_message("Good job. You used a slash command.")
 
+
+@giggle_group.command(name="timezone", description="View or change your GiggleMe time zone")
+@app_commands.guild_only()
+@app_commands.describe(timezone="Time zone to use; leave blank to show your current setting")
+async def slash_timezone(interaction: discord.Interaction, timezone: Optional[str] = None):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    user = giguser.users[interaction.user.id]
+
+    if timezone is None:
+        if user.timezone:
+            output = (
+                "Your time zone is currently set to:  "
+                f"**{gigtz.timezones[user.timezone].name}**"
+            )
+        else:
+            output = "Your time zone is not currently set"
+
+        await interaction.response.send_message(
+            embed=discord.Embed(description=output, color=0x00ff00)
+        )
+        return
+
+    available_timezones = {
+        tz.name for tz in gigtz.timezones.values()
+    }
+
+    if timezone not in available_timezones:
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                description=(
+                    f"Time zone **{timezone}** not found\n"
+                    "Use `/giggle timezone` and select one of the available time zones."
+                ),
+                color=0xff0000
+            ),
+            ephemeral=True
+        )
+        return
+
+    output, color = user.set_timezone(timezone)
+    await interaction.response.send_message(
+        embed=discord.Embed(description=output, color=color)
+    )
+
+
+@slash_timezone.autocomplete("timezone")
+async def slash_timezone_autocomplete(interaction: discord.Interaction, current: str):
+    current = current.casefold()
+
+    names = sorted(
+        tz.name for tz in gigtz.timezones.values()
+        if current in tz.name.casefold()
+    )
+
+    return [
+        app_commands.Choice(name=name, value=name)
+        for name in names[:25]
+    ]
+
+
+tree.add_command(giggle_group)
 
 delayed_messages = {}
 
@@ -1246,14 +1367,11 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
                 if match:
-                    if match[4]:
-                        await set_user_timezone(msg.channel, msg.author, match[4])
-                    else:
-                        await show_user_timezone(msg.channel, msg.author.id)
+                    await msg.channel.send(embed=timezone_slash_help_embed())
                     return
 
                 if re.match(r'~g(iggle)? +(timezones|tzs) *$', msg.content):
-                    await msg.channel.send(embed=discord.Embed(description=gigtz.display_timezones(client.user.mention), color=0x00ff00))
+                    await msg.channel.send(embed=timezone_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +vip +list( +(all))? *$', msg.content)
