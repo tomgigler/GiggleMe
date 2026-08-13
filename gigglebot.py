@@ -423,6 +423,7 @@ MIGRATED_HELP_TOPICS = {
 
 AUTOCOMPLETE_NONE = "__giggle_none__"
 AUTOCOMPLETE_NO_MATCH = "__giggle_no_match__"
+AUTOCOMPLETE_NO_CHANNELS = "__giggle_no_channels__"
 
 
 def get_last_stored_message_id(author_id, guild_id, allowed_types=None):
@@ -511,6 +512,67 @@ async def resolve_slash_message_reference(
         return msg_id
 
     return value
+
+
+def schedule_channel_autocomplete(interaction, current):
+    """Return text channels where GiggleMe can deliver a normal message."""
+    if interaction.guild is None:
+        return []
+
+    bot_member = interaction.guild.me
+    if bot_member is None and client.user is not None:
+        bot_member = interaction.guild.get_member(client.user.id)
+
+    if bot_member is None:
+        return []
+
+    current = current.casefold().strip()
+    choices = []
+
+    channels = sorted(
+        interaction.guild.text_channels,
+        key=lambda ch: (ch.position, ch.name.casefold())
+    )
+
+    for channel in channels:
+        permissions = channel.permissions_for(bot_member)
+
+        if not permissions.view_channel or not permissions.send_messages:
+            continue
+
+        category = channel.category.name if channel.category else None
+        label = f"#{channel.name}"
+        if category:
+            label += f" — {category}"
+
+        searchable = f"{channel.name} {category or ''} {channel.id}".casefold()
+        if current and current not in searchable:
+            continue
+
+        choices.append(
+            app_commands.Choice(
+                name=label[:100],
+                value=str(channel.id)
+            )
+        )
+
+        if len(choices) == 25:
+            break
+
+    if choices:
+        return choices
+
+    if current:
+        label = f'No deliverable channels match "{current[:60]}"'
+    else:
+        label = "No channels available for message delivery"
+
+    return [
+        app_commands.Choice(
+            name=label[:100],
+            value=AUTOCOMPLETE_NO_CHANNELS
+        )
+    ]
 
 
 def stored_message_autocomplete(
@@ -1171,7 +1233,7 @@ async def slash_edit_message_autocomplete(interaction: discord.Interaction, curr
 @app_commands.describe(
     time="Minutes from now, 0 for now, or a date/time",
     content="Message body; omit when using from_template",
-    channel="Destination channel name, mention, or ID; defaults to this channel",
+    channel="Destination channel; suggestions include channels GiggleMe can send to",
     repeat="minutes:N, hours:N, daily, weekly, or monthly",
     description="Short description used when listing the message",
     from_template="Stored template ID to use as the message body",
@@ -1205,6 +1267,13 @@ async def slash_schedule(
         interaction,
         from_template
     ):
+        return
+
+    if channel == AUTOCOMPLETE_NO_CHANNELS:
+        await interaction.response.send_message(
+            "GiggleMe does not currently have permission to deliver messages "
+            "to any text channel in this server."
+        )
         return
 
     await interaction.response.defer()
@@ -1241,6 +1310,14 @@ async def slash_schedule(
         await interaction.edit_original_response(
             embed=discord.Embed(description=slash_error_text(e, "Schedule"), color=0xff0000)
         )
+
+
+@slash_schedule.autocomplete("channel")
+async def slash_schedule_channel_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+):
+    return schedule_channel_autocomplete(interaction, current)
 
 
 @slash_schedule.autocomplete("from_template")
