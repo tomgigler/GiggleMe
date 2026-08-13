@@ -546,7 +546,8 @@ async def slash_show(
             interaction.channel,
             interaction.user.id,
             message,
-            raw
+            raw,
+            always_show_id=True
         )
     finally:
         await interaction.delete_original_response()
@@ -1499,8 +1500,8 @@ async def set_user_timezone(channel, author, tz):
     output, color = giguser.users[author.id].set_timezone(tz)
     await channel.send(embed=discord.Embed(description=output, color=color))
 
-async def show_delayed_message(channel, author_id, msg_num, raw):
-    show_id = False
+async def show_delayed_message(channel, author_id, msg_num, raw, always_show_id=False):
+    show_id = always_show_id
     if msg_num == 'last':
         if author_id in giguser.users:
             msg_num = giguser.users[author_id].last_message_id
