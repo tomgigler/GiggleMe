@@ -393,6 +393,97 @@ AUTOCOMPLETE_NONE = "__giggle_none__"
 AUTOCOMPLETE_NO_MATCH = "__giggle_no_match__"
 
 
+def get_last_stored_message_id(author_id, guild_id, allowed_types=None):
+    if author_id not in giguser.users:
+        return None
+
+    msg_id = giguser.users[author_id].last_message_id
+    if not msg_id or msg_id not in delayed_messages:
+        return None
+
+    msg = delayed_messages[msg_id]
+
+    if msg.guild_id != guild_id:
+        return None
+
+    if allowed_types is not None and not isinstance(msg, allowed_types):
+        return None
+
+    return msg_id
+
+
+def get_next_scheduled_message_id(guild_id):
+    messages = [
+        msg for msg in delayed_messages.values()
+        if isinstance(msg, Message)
+        and msg.guild_id == guild_id
+        and msg.delivery_time is not None
+        and msg.delivery_time >= 0
+    ]
+
+    if not messages:
+        return None
+
+    return min(messages, key=lambda msg: msg.delivery_time).id
+
+
+async def resolve_slash_message_reference(
+    interaction,
+    value,
+    *,
+    allowed_types=None,
+    allow_last=False,
+    allow_next=False
+):
+    value = value.strip().casefold()
+
+    if value == "last":
+        if not allow_last:
+            return None
+
+        msg_id = get_last_stored_message_id(
+            interaction.user.id,
+            interaction.guild.id,
+            allowed_types
+        )
+
+        if msg_id is None:
+            await interaction.response.send_message(
+                "Your most recently scheduled message is no longer stored.",
+                ephemeral=True
+            )
+            return None
+
+        return msg_id
+
+    if value == "next":
+        if not allow_next:
+            return None
+
+        msg_id = get_next_scheduled_message_id(interaction.guild.id)
+
+        if msg_id is None:
+            await interaction.response.send_message(
+                "There is no scheduled message available as `next`.",
+                ephemeral=True
+            )
+            return None
+
+        if allowed_types is not None and not isinstance(
+            delayed_messages[msg_id],
+            allowed_types
+        ):
+            await interaction.response.send_message(
+                "There is no scheduled message available for this command.",
+                ephemeral=True
+            )
+            return None
+
+        return msg_id
+
+    return value
+
+
 def stored_message_autocomplete(
     interaction,
     current,
@@ -681,6 +772,16 @@ async def slash_show(
     if await reject_message_autocomplete_sentinel(interaction, message):
         return
 
+    resolved_message = await resolve_slash_message_reference(
+        interaction,
+        message,
+        allow_last=True,
+        allow_next=True
+    )
+    if resolved_message is None:
+        return
+    message = resolved_message
+
     selected_format = None if format is None else format.value
     raw = None if selected_format in (None, "normal") else selected_format
 
@@ -702,13 +803,23 @@ async def slash_show(
 
 @slash_show.autocomplete("message")
 async def slash_show_message_autocomplete(interaction: discord.Interaction, current: str):
+    special_choices = []
+
+    if interaction.guild is not None:
+        if get_last_stored_message_id(interaction.user.id, interaction.guild.id):
+            special_choices.append(
+                ("last", "last - your most recently scheduled message")
+            )
+
+        if get_next_scheduled_message_id(interaction.guild.id):
+            special_choices.append(
+                ("next", "next - the next scheduled message")
+            )
+
     return stored_message_autocomplete(
         interaction,
         current,
-        special_choices=[
-            ("last", "last - your most recently scheduled message"),
-            ("next", "next - the next scheduled message")
-        ]
+        special_choices=special_choices
     )
 
 
@@ -723,6 +834,16 @@ async def slash_send(interaction: discord.Interaction, message: str):
 
     if await reject_message_autocomplete_sentinel(interaction, message):
         return
+
+    resolved_message = await resolve_slash_message_reference(
+        interaction,
+        message,
+        allowed_types=(Message, Proposal),
+        allow_last=True
+    )
+    if resolved_message is None:
+        return
+    message = resolved_message
 
     await interaction.response.defer()
 
@@ -745,13 +866,22 @@ async def slash_send(interaction: discord.Interaction, message: str):
 
 @slash_send.autocomplete("message")
 async def slash_send_message_autocomplete(interaction: discord.Interaction, current: str):
+    special_choices = []
+
+    if interaction.guild is not None and get_last_stored_message_id(
+        interaction.user.id,
+        interaction.guild.id,
+        (Message, Proposal)
+    ):
+        special_choices.append(
+            ("last", "last - your most recently scheduled message")
+        )
+
     return stored_message_autocomplete(
         interaction,
         current,
         allowed_types=(Message, Proposal),
-        special_choices=[
-            ("last", "last - your most recently scheduled message")
-        ]
+        special_choices=special_choices
     )
 
 
@@ -766,6 +896,17 @@ async def slash_cancel(interaction: discord.Interaction, message: str):
 
     if await reject_message_autocomplete_sentinel(interaction, message):
         return
+
+    if message != "all":
+        resolved_message = await resolve_slash_message_reference(
+            interaction,
+            message,
+            allow_last=True,
+            allow_next=True
+        )
+        if resolved_message is None:
+            return
+        message = resolved_message
 
     await interaction.response.defer()
 
@@ -788,14 +929,33 @@ async def slash_cancel(interaction: discord.Interaction, message: str):
 
 @slash_cancel.autocomplete("message")
 async def slash_cancel_message_autocomplete(interaction: discord.Interaction, current: str):
+    special_choices = []
+
+    if interaction.guild is not None:
+        if get_last_stored_message_id(interaction.user.id, interaction.guild.id):
+            special_choices.append(
+                ("last", "last - your most recently scheduled message")
+            )
+
+        if get_next_scheduled_message_id(interaction.guild.id):
+            special_choices.append(
+                ("next", "next - the next scheduled message")
+            )
+
+        if any(
+            isinstance(msg, Message)
+            and msg.guild_id == interaction.guild.id
+            and msg.author_id == interaction.user.id
+            for msg in delayed_messages.values()
+        ):
+            special_choices.append(
+                ("all", "all - all scheduled messages authored by you")
+            )
+
     return stored_message_autocomplete(
         interaction,
         current,
-        special_choices=[
-            ("last", "last - your most recently scheduled message"),
-            ("next", "next - the next scheduled message"),
-            ("all", "all - all scheduled messages authored by you")
-        ]
+        special_choices=special_choices
     )
 
 
@@ -869,16 +1029,19 @@ async def slash_edit(
     if await reject_message_autocomplete_sentinel(interaction, message):
         return
 
+    message_id = await resolve_slash_message_reference(
+        interaction,
+        message,
+        allow_last=True
+    )
+    if message_id is None:
+        return
+
     await interaction.response.defer(ephemeral=True)
 
-    message_id = message.strip()
-
-    if message_id.casefold() == "last":
-        message_id = giguser.users[interaction.user.id].last_message_id
-    else:
-        # GiggleMe-generated IDs are lowercase MD5 fragments, but accepting
-        # pasted uppercase IDs costs nothing and removes a needless trap.
-        message_id = message_id.casefold()
+    # GiggleMe-generated IDs are lowercase MD5 fragments, but accepting
+    # pasted uppercase IDs costs nothing and removes a needless trap.
+    message_id = message_id.casefold()
 
     if not message_id or message_id not in delayed_messages:
         if message.strip().isdigit() and len(message.strip()) >= 17:
@@ -935,12 +1098,20 @@ async def slash_edit(
 
 @slash_edit.autocomplete("message")
 async def slash_edit_message_autocomplete(interaction: discord.Interaction, current: str):
+    special_choices = []
+
+    if interaction.guild is not None and get_last_stored_message_id(
+        interaction.user.id,
+        interaction.guild.id
+    ):
+        special_choices.append(
+            ("last", "last - your most recently scheduled message")
+        )
+
     return stored_message_autocomplete(
         interaction,
         current,
-        special_choices=[
-            ("last", "last - your most recently scheduled message")
-        ]
+        special_choices=special_choices
     )
 
 
@@ -1784,7 +1955,13 @@ async def show_delayed_message(channel, author_id, msg_num, raw, always_show_id=
             content = replace_generic_emojis(content, delayed_messages[msg_num].guild_id)
         await channel.send(content)
     else:
-        await channel.send(embed=discord.Embed(description=f"Message {msg_num} not found", color=0xff0000))
+        if msg_num == "last":
+            description = "Your most recently scheduled message is no longer stored"
+        elif msg_num == "next":
+            description = "There is no scheduled message available as next"
+        else:
+            description = f"Message {msg_num} not found"
+        await channel.send(embed=discord.Embed(description=description, color=0xff0000))
 
 async def send_delay_message(channel, author, msg_num):
     if msg_num == 'last':
