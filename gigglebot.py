@@ -449,8 +449,7 @@ async def resolve_slash_message_reference(
 
         if msg_id is None:
             await interaction.response.send_message(
-                "Your most recently scheduled message is no longer stored.",
-                ephemeral=True
+                "Your most recently scheduled message is no longer stored."
             )
             return None
 
@@ -464,8 +463,7 @@ async def resolve_slash_message_reference(
 
         if msg_id is None:
             await interaction.response.send_message(
-                "There is no scheduled message available as `next`.",
-                ephemeral=True
+                "There is no scheduled message available as `next`."
             )
             return None
 
@@ -474,8 +472,7 @@ async def resolve_slash_message_reference(
             allowed_types
         ):
             await interaction.response.send_message(
-                "There is no scheduled message available for this command.",
-                ephemeral=True
+                "There is no scheduled message available for this command."
             )
             return None
 
@@ -574,7 +571,7 @@ async def reject_message_autocomplete_sentinel(interaction, value):
     else:
         message = "No stored messages match that selection."
 
-    await interaction.response.send_message(message, ephemeral=True)
+    await interaction.response.send_message(message)
     return True
 
 
@@ -618,8 +615,7 @@ async def slash_timezone(interaction: discord.Interaction, timezone: Optional[st
                     "Use `/giggle timezone` and select one of the available time zones."
                 ),
                 color=0xff0000
-            ),
-            ephemeral=True
+            )
         )
         return
 
@@ -701,8 +697,7 @@ async def slash_list(
 
     if count is not None and count <= 0:
         await interaction.response.send_message(
-            "Count must be greater than 0.",
-            ephemeral=True
+            "Count must be greater than 0."
         )
         return
 
@@ -710,22 +705,19 @@ async def slash_list(
 
     if count is not None and message_type in ("templates", "proposals"):
         await interaction.response.send_message(
-            "Count is not available when listing templates or proposals.",
-            ephemeral=True
+            "Count is not available when listing templates or proposals."
         )
         return
 
     if scope == "all" and interaction.user.id != settings.bot_owner_id:
         await interaction.response.send_message(
-            "Only the bot owner can list items from all servers.",
-            ephemeral=True
+            "Only the bot owner can list items from all servers."
         )
         return
 
     if scope == "all" and count is not None:
         await interaction.response.send_message(
-            "Count cannot be combined with the All servers scope.",
-            ephemeral=True
+            "Count cannot be combined with the All servers scope."
         )
         return
 
@@ -744,8 +736,16 @@ async def slash_list(
             next_or_all,
             message_type
         )
-    finally:
-        await interaction.delete_original_response()
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description="List results shown below.",
+                color=0x00ff00
+            )
+        )
+    except GigException as e:
+        await interaction.edit_original_response(
+            embed=discord.Embed(description=str(e), color=0xff0000)
+        )
 
 
 @giggle_group.command(name="show", description="Show a stored GiggleMe message or template")
@@ -795,8 +795,16 @@ async def slash_show(
             raw,
             always_show_id=True
         )
-    finally:
-        await interaction.delete_original_response()
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description=f"Showing GiggleMe message **{message}**.",
+                color=0x00ff00
+            )
+        )
+    except GigException as e:
+        await interaction.edit_original_response(
+            embed=discord.Embed(description=str(e), color=0xff0000)
+        )
 
 
 
@@ -853,13 +861,16 @@ async def slash_send(interaction: discord.Interaction, message: str):
             interaction.user,
             message
         )
-    except GigException as e:
-        await interaction.followup.send(
-            embed=discord.Embed(description=str(e), color=0xff0000),
-            ephemeral=True
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description=f"Send request completed for message **{message}**.",
+                color=0x00ff00
+            )
         )
-    finally:
-        await interaction.delete_original_response()
+    except GigException as e:
+        await interaction.edit_original_response(
+            embed=discord.Embed(description=str(e), color=0xff0000)
+        )
 
 
 
@@ -916,13 +927,16 @@ async def slash_cancel(interaction: discord.Interaction, message: str):
             interaction.user,
             message
         )
-    except GigException as e:
-        await interaction.followup.send(
-            embed=discord.Embed(description=str(e), color=0xff0000),
-            ephemeral=True
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description=f"Cancel request completed for **{message}**.",
+                color=0x00ff00
+            )
         )
-    finally:
-        await interaction.delete_original_response()
+    except GigException as e:
+        await interaction.edit_original_response(
+            embed=discord.Embed(description=str(e), color=0xff0000)
+        )
 
 
 
@@ -976,7 +990,7 @@ async def slash_edit_sent(
     if not await prepare_slash_interaction(interaction):
         return
 
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
 
     try:
         await modify_message(
@@ -984,14 +998,15 @@ async def slash_edit_sent(
             message_id,
             content
         )
-        await interaction.followup.send(
-            "Message edited.",
-            ephemeral=True
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description=f"Discord message **{message_id}** edited.",
+                color=0x00ff00
+            )
         )
     except GigException as e:
-        await interaction.followup.send(
-            embed=discord.Embed(description=str(e), color=0xff0000),
-            ephemeral=True
+        await interaction.edit_original_response(
+            embed=discord.Embed(description=str(e), color=0xff0000)
         )
 
 
@@ -1037,7 +1052,7 @@ async def slash_edit(
     if message_id is None:
         return
 
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
 
     # GiggleMe-generated IDs are lowercase MD5 fragments, but accepting
     # pasted uppercase IDs costs nothing and removes a needless trap.
@@ -1056,11 +1071,9 @@ async def slash_edit(
                 "Use `/giggle list` to find the stored message ID."
             )
 
-        await interaction.followup.send(
-            embed=discord.Embed(description=detail, color=0xff0000),
-            ephemeral=True
+        await interaction.edit_original_response(
+            embed=discord.Embed(description=detail, color=0xff0000)
         )
-        await interaction.delete_original_response()
         return
 
     # edit_delay_message() predates interactions and only relies on these
@@ -1087,13 +1100,16 @@ async def slash_edit(
 
     try:
         await edit_delay_message(params)
-    except GigException as e:
-        await interaction.followup.send(
-            embed=discord.Embed(description=str(e), color=0xff0000),
-            ephemeral=True
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description=f"Edit request completed for message **{message_id}**.",
+                color=0x00ff00
+            )
         )
-    finally:
-        await interaction.delete_original_response()
+    except GigException as e:
+        await interaction.edit_original_response(
+            embed=discord.Embed(description=str(e), color=0xff0000)
+        )
 
 
 @slash_edit.autocomplete("message")
@@ -1159,7 +1175,7 @@ async def slash_schedule(
     ):
         return
 
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
 
     params = {
         "guild": interaction.guild,
@@ -1183,13 +1199,16 @@ async def slash_schedule(
 
     try:
         await process_delay_message(params)
-    except GigException as e:
-        await interaction.followup.send(
-            embed=discord.Embed(description=str(e), color=0xff0000),
-            ephemeral=True
+        await interaction.edit_original_response(
+            embed=discord.Embed(
+                description="Schedule request completed.",
+                color=0x00ff00
+            )
         )
-    finally:
-        await interaction.delete_original_response()
+    except GigException as e:
+        await interaction.edit_original_response(
+            embed=discord.Embed(description=str(e), color=0xff0000)
+        )
 
 
 @slash_schedule.autocomplete("from_template")
