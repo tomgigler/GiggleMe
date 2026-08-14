@@ -1,0 +1,34 @@
+GiggleMe legacy help smoke test
+================================
+
+From the repository root:
+
+  .venv/bin/python apply-legacy-help.py
+  git diff -- gigglebot.py
+
+Restart GiggleTest and test /giggle legacy with:
+
+  ~giggle help
+  ~g help
+  help
+  ?
+  ~giggle help time
+  help channel
+  help repeat
+  help duration
+  help desc
+  help from_template
+  help pin
+  help set-topic
+  help set-channel-name
+  help publish
+  help raw+
+
+Expected:
+- General help shows syntax, a complete example, option names, and the
+  available drill-down topics.
+- Each topic returns focused help.
+- Unknown topics return general help plus an Unknown help topic field.
+- Normal legacy scheduling still works unchanged.
+
+Do not commit this transformer or checklist. Commit only gigglebot.py.
