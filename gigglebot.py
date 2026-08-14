@@ -276,14 +276,6 @@ def edit_slash_help_embed():
         ),
         inline=False
     )
-    embed.add_field(
-        name="Note",
-        value=(
-            "Not every field applies to every stored item type. GiggleMe keeps the "
-            "same validation rules as the classic edit command."
-        ),
-        inline=False
-    )
     return embed
 
 
