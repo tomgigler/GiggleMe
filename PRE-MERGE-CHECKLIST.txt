@@ -1,0 +1,66 @@
+GiggleMe pre-merge live checklist
+==================================
+
+After applying finalize-slash-migration.patch:
+
+1. Restart GiggleTest cleanly.
+
+2. Confirm /giggle appears in the Discord command picker and includes:
+   timezone
+   time-format
+   list
+   show
+   send
+   cancel
+   edit-sent
+   edit
+   schedule
+   template create
+   user grant / revoke
+   vip list / add / remove
+   help
+   test
+
+3. Run /giggle help and verify the help surface looks complete.
+
+4. Basic stored-message smoke test:
+   - create a template
+   - schedule a message from it
+   - list it
+   - show it in Normal and Raw Markdown
+   - edit it, including channel autocomplete
+   - cancel it
+   - exercise confirmation buttons
+
+5. Authorization smoke test:
+   - /giggle user grant
+   - verify user_guilds row appears
+   - /giggle user revoke
+   - verify user_guilds row disappears
+
+6. VIP smoke test:
+   - /giggle vip list
+   - add a VIP using template autocomplete
+   - remove the VIP using VIP autocomplete
+
+7. Classic scheduling retirement:
+   Try an old command such as:
+
+       ~giggle 5
+       old scheduler test
+
+   Verify it shows /giggle schedule help and DOES NOT create a stored message.
+
+8. Temporary classic holdouts:
+   - ~giggle help still responds
+   - an existing Auto Reply still triggers normally
+
+9. Restart GiggleTest again.
+   Verify the full /giggle command tree is still present after the clean restart.
+
+10. With a scheduled message pending across that restart, confirm it reloads
+    from MySQL and is delivered normally.
+
+Optional new-guild registration test:
+If a disposable test server is available, invite GiggleTest and confirm the
+/giggle command tree appears there. on_guild_join() now performs copy/sync.

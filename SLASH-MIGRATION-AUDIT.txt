@@ -1,0 +1,38 @@
+GiggleMe slash migration source audit
+=====================================
+
+Automated/static checks performed against the reconstructed current slash branch
+after applying finalize-slash-migration.patch.
+
+PASS  raw+ references: 0
+PASS  proposal/propose runtime/source/doc references: 0
+      Historical proposal-removal migration SQL is intentionally excluded.
+PASS  on_raw_reaction handlers: 0
+PASS  command_localized_time references: 0
+PASS  classic unnamed scheduling no longer executes process_delay_message()
+PASS  classic unnamed scheduling matcher sends schedule_slash_help_embed()
+PASS  /giggle show exposes only Normal and Raw Markdown formats
+PASS  on_ready() copies/syncs the command tree for existing guilds
+PASS  on_guild_join() copies/syncs the command tree for newly joined guilds
+PASS  Python syntax compilation for modified Python files
+PASS  git diff --check
+
+Expected classic-prefix leftovers
+---------------------------------
+These are intentional until the Message Content cleanup branch:
+
+* ~giggle help
+  Classic help remains operational temporarily.
+
+* ~giggle auto-reply / ~giggle autoreply
+  Auto Replies remain operational and require MESSAGE_CONTENT.
+
+* ~giggle set
+  The remaining guild configuration is used by Auto Replies.
+
+* Prefix patterns for migrated commands
+  These no longer execute the migrated operation. They exist only to direct
+  users to the corresponding slash-command help.
+
+The later privileged-intent cleanup should remove Auto Replies, classic help,
+and the remaining prefix-command/migration-shim parser together.

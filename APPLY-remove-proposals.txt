@@ -1,0 +1,16 @@
+GiggleMe proposal removal bundle
+
+Preferred source-code application:
+
+  git apply --check remove-proposals.patch
+  git apply remove-proposals.patch
+
+The patch removes proposal code, help, schema definitions, web classification,
+and deletes util/gigvotes.py.
+
+After the code has been tested successfully, the optional one-time database
+cleanup can remove the old proposal rows/table/columns from an existing DB:
+
+  mysql -u <admin-user> -p < remove-proposals.sql
+
+Do not run the SQL cleanup before testing the source-code change.

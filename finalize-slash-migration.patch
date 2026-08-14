@@ -1,0 +1,244 @@
+diff --git a/README.md b/README.md
+index 7acbc48..0efbc68 100644
+--- a/README.md
++++ b/README.md
+@@ -315,22 +315,31 @@ If desired, `restart-giggleme.sh` can later be simplified into a wrapper around
+ 
+ ## 8. Verify the bot
+ 
+-Once connected to Discord, use:
++GiggleMe's primary command interface is Discord slash commands. Start with:
+ 
+ ```text
+-~giggle help
++/giggle help
+ ```
+ 
+-to display GiggleMe's built-in command help.
++Classic time-based scheduling syntax is no longer executable. If a user enters an old command such as `~giggle 5`, GiggleMe recognizes the scheduling pattern only to direct the user to `/giggle schedule` help.
+ 
+-A useful initial smoke test is:
++Two classic-prefix paths intentionally remain for now: `~giggle help` and Auto Replies. Both are tied to the remaining privileged Message Content work and are planned to disappear when that intent is removed.
+ 
+-1. Confirm the bot comes online.
+-2. From a Discord account with administrator permission on the test server, run `~giggle help`. GiggleMe currently auto-registers server administrators when they first interact with the bot.
+-3. Set or verify your timezone.
+-4. Schedule a test message a few minutes in the future.
+-5. Restart GiggleMe using the same process-management method you selected above.
+-6. Confirm the scheduled message is reloaded from MySQL and delivered at the expected time.
++A useful smoke test is:
++
++1. Confirm the bot comes online and `/giggle` appears in the command picker.
++2. Run `/giggle help` and confirm the expected command groups are present.
++3. Set or verify your timezone and time format.
++4. Create a template, then schedule a message from it a few minutes in the future.
++5. List, show, edit, and cancel stored messages, including channel autocomplete where applicable.
++6. Exercise send/cancel confirmation buttons.
++7. Grant and revoke a user's GiggleMe authorization and confirm the `user_guilds` row changes as expected.
++8. List, add, and remove a VIP.
++9. Enter an old classic scheduling command and confirm it returns slash scheduling help without creating a message.
++10. Restart GiggleMe and confirm the full `/giggle` command tree is still registered.
++11. Confirm a scheduled message survives the restart and is delivered at the expected time.
++
++The command tree is synchronized for existing guilds during `on_ready()` and for newly joined guilds during `on_guild_join()`.
+ 
+ If using systemd, also test automatic recovery once during initial deployment by restarting the service and confirming it returns cleanly.
+ 
+diff --git a/gigglebot.py b/gigglebot.py
+index 73e992a..f77c8ae 100644
+--- a/gigglebot.py
++++ b/gigglebot.py
+@@ -162,7 +162,7 @@ def show_slash_help_embed():
+     )
+     embed.add_field(
+         name="Format",
+-        value="Choose normal, raw Markdown, or raw+ to include recreation syntax.",
++        value="Choose normal output or raw Markdown.",
+         inline=False
+     )
+     return embed
+@@ -534,10 +534,11 @@ def slash_help_embed(command=None):
+         inline=False
+     )
+     embed.add_field(
+-        name="Still using legacy commands",
++        name="Temporary classic-prefix features",
+         value=(
+-            "Commands that have not yet been migrated continue to use the "
+-            "`~giggle` syntax while the migration is in progress."
++            "Classic help and Auto Replies remain temporarily because they still "
++            "depend on the privileged Message Content path. Normal GiggleMe "
++            "scheduling and management use slash commands."
+         ),
+         inline=False
+     )
+@@ -1436,8 +1437,7 @@ async def slash_list(
+ )
+ @app_commands.choices(format=[
+     app_commands.Choice(name="Normal", value="normal"),
+-    app_commands.Choice(name="Raw Markdown", value="raw"),
+-    app_commands.Choice(name="Raw + recreation syntax", value="raw+")
++    app_commands.Choice(name="Raw Markdown", value="raw")
+ ])
+ async def slash_show(
+     interaction: discord.Interaction,
+@@ -3009,7 +3009,7 @@ async def on_message(msg):
+                     await msg.channel.send(embed=list_slash_help_embed())
+                     return
+ 
+-                match = re.match(r'~g(iggle)? +show( +(raw\+?))?( +(\S+)|next) *$', msg.content)
++                match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)|next) *$', msg.content)
+                 if match:
+                     await msg.channel.send(embed=show_slash_help_embed())
+                     return
+@@ -3039,12 +3039,11 @@ async def on_message(msg):
+                     await msg.channel.send(embed=template_slash_help_embed())
+                     return
+ 
+-                # Keep classic unnamed scheduling working for now because raw+
+-                # still emits executable recreation syntax for scheduled messages.
+-                # Template creation itself has moved to /giggle template create.
++                # Classic unnamed scheduling is retired. Keep recognizing the
++                # old syntax long enough to direct users to the slash interface.
+                 match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
+                 if match:
+-                    await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
++                    await msg.channel.send(embed=schedule_slash_help_embed())
+                     return
+ 
+                 match = re.match(r'~g(iggle)? +(time-format|tf)( +(12|24))? *$', msg.content)
+diff --git a/util/delayed_message.py b/util/delayed_message.py
+index aaa9acc..2a874c9 100644
+--- a/util/delayed_message.py
++++ b/util/delayed_message.py
+@@ -62,12 +62,9 @@ class DelayedMessage:
+         return output
+ 
+     def get_show_content(self, raw=False, timezone=None):
+-        if raw == "raw+":
+-            return self.content + "\n```"
+-        elif raw:
++        if raw:
+             return "```\n" + self.content + "\n```"
+-        else:
+-            return self.content
++        return self.content
+ 
+ class Message(DelayedMessage):
+     def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until, special_handling, update_db=True):
+@@ -80,29 +77,6 @@ class Message(DelayedMessage):
+         if update_db:
+             self.update_db()
+ 
+-    def get_show_content(self, raw=False, timezone=None):
+-        command = ""
+-        if raw == "raw+":
+-            command = f"~giggle {gigtz.command_localized_time(self.delivery_time, timezone)}"
+-            command += f" channel={self.delivery_channel_id}"
+-            if self.repeat:
+-                command += f" repeat={self.repeat}"
+-            if self.repeat_until:
+-                command += f" duration={int((self.repeat_until-self.delivery_time)/60)}"
+-            if self.special_handling and self.special_handling & 8:
+-                command += f" pin=true"
+-            if self.special_handling and self.special_handling & 16:
+-                command += f" set-topic=true"
+-            if self.special_handling and self.special_handling & 32:
+-                command += f" set-channel-name=true"
+-            if self.special_handling and self.special_handling & 64:
+-                command += f" publish=true"
+-            if self.description:
+-                command += f" desc=\"{self.description}\""
+-            return "```\n" + command + "\n" + super().get_show_content(raw, timezone)
+-        else:
+-            return super().get_show_content(raw, timezone)
+-
+     def update_db(self):
+         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until, self.special_handling)
+ 
+diff --git a/util/gigtz.py b/util/gigtz.py
+index 603078f..a85f071 100644
+--- a/util/gigtz.py
++++ b/util/gigtz.py
+@@ -42,12 +42,6 @@ def display_localized_time(time, tz_id, format_24):
+     else:
+         return datetime.fromtimestamp(time).astimezone(tz).strftime('%-I:%M:%S %p %a %b %d, %Y %Z')
+ 
+-def command_localized_time(time, tz_id):
+-    if tz_id is None:
+-        tz_id = 1
+-    tz = timezone(timezones[tz_id].name)
+-    return datetime.fromtimestamp(time).astimezone(tz).strftime('%Y-%m-%d %-H:%M:%S')
+-
+ def load_timezones():
+     for tz in gigdb.get_timezones():
+         timezones[tz[0]] = TimeZone(tz[0], tz[1])
+diff --git a/util/help.py b/util/help.py
+index 1ac3337..5f2e447 100644
+--- a/util/help.py
++++ b/util/help.py
+@@ -2,47 +2,17 @@
+ 
+ def show_help(command):
+     if not command:
+-        return """> To schedule **<message>** to be delivered to **<channel>** at **<time>**:
++        return """> GiggleMe's normal command interface has moved to Discord slash commands.
+ > 
+-> `~giggle <time> <options>`
+-> `<message>`
+-> 
+-> **<time>** may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
+-> 
+-> **Options:**
+-> 
+-> `channel=<channel>`:  The channel to deliver the message to.  May be a name, reference, or ID
+-> 
+-> `repeat=<frequency>`:   Repeat message at <frequency>.  For more information on repeating messages type `~giggle help repeat`
+-> 
+-> `desc="<brief description>"`:  Provide a description of the message.  This is helpful in identifying messages
+-> 
+-> `from_template=<template_id>`:  creates the message body from the <template_id> template
+-> Do not include a message body when using from_template
+-> 
+-> `pin=<True|False>`:  If True, the new message will be pinned
+-> 
+-> `set-topic=<True|False>`:  If True, set the channel topic to <message> instead of posting message in channel
++> Use `/giggle help` for current command help.
+ > 
+-> `set-channel-name=<True|False>`:  If True, set the channel name to <message> instead of posting message in channel
++> Schedule messages with `/giggle schedule`.
++> Create templates with `/giggle template create`.
++> Manage VIPs with `/giggle vip`.
++> Manage user authorization with `/giggle user`.
+ > 
+-> Template creation has moved to the slash-command interface:
+-> 
+-> `/giggle template create`
+-> 
+-> The following commands may be used to manage scheduled messages:
+-> 
+-> `list`, `show`, `send`, `edit`, `modify`, `cancel`, `timezone`, `timezones`, `time-format`, `help`
+->
+-> Bot-owner command: `adduser`
+-> 
+-> To see help for one of the above commands:
+-> 
+-> `~giggle help <command>`
+-> 
+-> You may also create auto-replies.  For more information on auto-replies type `~giggle help auto-replies`
+->
+-> VIP management has moved to `/giggle vip`."""
++> Classic prefix help is temporarily retained while the remaining Message Content-dependent features are phased out.
++> Auto-replies are still classic for now; use `~giggle help auto-replies` for that feature."""
+ 
+     if command == "list":
+         return """> `~giggle list <range>`
+@@ -70,8 +40,6 @@ def show_help(command):
+ > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message
+ > `next` may be used as <message-id> to reference the next message in the queue
+ > 
+-> Use `raw+` to include the full command syntax to re-create the message
+-> 
+ > Both `show` and `show raw` may be used to show templates"""
+ 
+     if command == "send":

@@ -1,0 +1,40 @@
+GiggleMe structured repeat/duration smoke test
+================================================
+
+Apply from the repository root:
+
+  python3 apply-structured-repeat-duration.py
+  git diff -- gigglebot.py
+
+Then restart GiggleTest.
+
+1. /giggle schedule should offer:
+   repeat_unit: Minutes, Hours, Days, Weeks, Months
+   repeat_every: integer
+   duration_unit: Minutes, Hours, Days, Weeks, Months
+   duration_for: integer
+
+2. Test:
+   repeat_unit: Hours
+   repeat_every: 6
+   duration_unit: Days
+   duration_for: 3
+
+3. Test Days, Weeks, and Months repeat intervals.
+
+4. Validation:
+   - unit without integer -> rejected
+   - integer without unit -> rejected
+   - zero/negative amount -> rejected
+   - duration without repeat -> rejected
+
+5. /giggle edit should expose the same structured fields plus:
+   repeat_unit: Remove repeat
+   duration_unit: No duration limit
+
+6. Confirm edit channel autocomplete still works.
+
+7. Confirm existing stored daily / weekly / monthly repeats still reschedule normally.
+
+Do not commit this checklist or the transformer script. Commit the resulting
+gigglebot.py change after review/testing.

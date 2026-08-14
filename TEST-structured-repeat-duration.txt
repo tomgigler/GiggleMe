@@ -1,0 +1,54 @@
+GiggleMe structured repeat/duration smoke test
+================================================
+
+After applying structured-repeat-duration.patch and restarting GiggleTest:
+
+1. Open /giggle schedule.
+   Confirm repeat_unit offers:
+     Minutes, Hours, Days, Weeks, Months
+   and repeat_every is an integer field.
+
+2. Confirm duration_unit offers:
+     Minutes, Hours, Days, Weeks, Months
+   and duration_for is an integer field.
+
+3. Schedule:
+     repeat_unit: Hours
+     repeat_every: 6
+     duration_unit: Days
+     duration_for: 3
+
+   Verify the stored repeat is hours:6 and the duration is accepted.
+
+4. Schedule:
+     repeat_unit: Days
+     repeat_every: 2
+
+   Verify the message advances by two calendar days after delivery.
+
+5. Schedule:
+     repeat_unit: Weeks
+     repeat_every: 2
+
+   Verify the next delivery advances by two weeks.
+
+6. Schedule:
+     repeat_unit: Months
+     repeat_every: 1
+
+   Verify the next delivery advances by one calendar month.
+
+7. Validation:
+   - choose repeat_unit without repeat_every -> useful error
+   - provide repeat_every without repeat_unit -> useful error
+   - use 0 or a negative amount -> rejected
+   - specify duration without a repeating message -> rejected
+
+8. /giggle edit:
+   Confirm the same unit + integer fields appear.
+   Confirm "Remove repeat" clears repeat.
+   Confirm "No duration limit" clears repeat_until.
+
+9. Existing-data compatibility:
+   If an existing repeating message stores daily, weekly, or monthly,
+   confirm it still displays/delivers/reschedules normally.

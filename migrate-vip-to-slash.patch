@@ -1,0 +1,488 @@
+diff --git a/README.md b/README.md
+index 2f744c7..7acbc48 100644
+--- a/README.md
++++ b/README.md
+@@ -516,6 +516,7 @@ GiggleMe has accumulated features incrementally over a long period of real-world
+ Useful refactoring/deployment goals include:
+ 
+ - replace `discord.Intents.all()` with the minimum required intents
++- remove Auto Replies when the privileged `MESSAGE_CONTENT` intent is removed; Auto Replies are intentionally not being migrated to slash commands
+ - add a sanitized example for the web application's own database/auth configuration
+ - split the large `on_message` command dispatcher into focused command handlers
+ - add database migrations for future schema changes
+diff --git a/gigglebot.py b/gigglebot.py
+index d15d3ed..309aef8 100644
+--- a/gigglebot.py
++++ b/gigglebot.py
+@@ -42,6 +42,11 @@ template_group = app_commands.Group(
+     description="Create and manage GiggleMe templates"
+ )
+ 
++vip_group = app_commands.Group(
++    name="vip",
++    description="Manage VIP voice-channel announcements"
++)
++
+ 
+ async def prepare_slash_interaction(interaction):
+     guild = interaction.guild
+@@ -309,6 +314,39 @@ def template_slash_help_embed():
+     return embed
+ 
+ 
++def vip_slash_help_embed():
++    embed = discord.Embed(
++        title="/giggle vip",
++        description=(
++            "Manage VIP voice-channel announcements. When a configured VIP "
++            "joins voice after the grace period, GiggleMe sends the selected template."
++        ),
++        color=0x00ff00
++    )
++    embed.add_field(
++        name="List",
++        value=(
++            "`/giggle vip list` shows VIPs for this server. "
++            "The bot owner may choose the all-server scope."
++        ),
++        inline=False
++    )
++    embed.add_field(
++        name="Add or update",
++        value=(
++            "`/giggle vip add user:<member> template:<template>` adds or updates a VIP.\n"
++            "`grace_hours` is optional; when omitted, the existing two-hour default is used."
++        ),
++        inline=False
++    )
++    embed.add_field(
++        name="Remove",
++        value="`/giggle vip remove user:<vip>` removes the VIP from this server.",
++        inline=False
++    )
++    return embed
++
++
+ def user_permissions_slash_help_embed():
+     embed = discord.Embed(
+         title="/giggle user",
+@@ -457,6 +495,9 @@ def slash_help_embed(command=None):
+     if command == "templates":
+         return template_slash_help_embed()
+ 
++    if command == "vip":
++        return vip_slash_help_embed()
++
+     if command == "users":
+         return user_permissions_slash_help_embed()
+ 
+@@ -485,6 +526,7 @@ def slash_help_embed(command=None):
+             "`/giggle edit` - edit a stored GiggleMe item\n"
+             "`/giggle schedule` - schedule a message for delivery\n"
+             "`/giggle template create` - create a reusable message template\n"
++            "`/giggle vip list|add|remove` - manage VIP voice announcements\n"
+             "`/giggle user grant` - grant a user permission to use GiggleMe\n"
+             "`/giggle user revoke` - revoke a user's GiggleMe permission\n"
+             "`/giggle test` - verify slash-command plumbing"
+@@ -524,6 +566,7 @@ MIGRATED_HELP_TOPICS = {
+     "schedule": "schedule",
+     "template": "templates",
+     "templates": "templates",
++    "vip": "vip",
+     "adduser": "users",
+     "users": "users",
+     "test": "test",
+@@ -534,6 +577,7 @@ MIGRATED_HELP_TOPICS = {
+ AUTOCOMPLETE_NONE = "__giggle_none__"
+ AUTOCOMPLETE_NO_MATCH = "__giggle_no_match__"
+ AUTOCOMPLETE_NO_CHANNELS = "__giggle_no_channels__"
++AUTOCOMPLETE_NO_VIPS = "__giggle_no_vips__"
+ 
+ 
+ def get_last_stored_message_id(author_id, guild_id, allowed_types=None):
+@@ -766,6 +810,53 @@ def stored_message_autocomplete(
+     ]
+ 
+ 
++def vip_autocomplete(interaction, current):
++    """Autocomplete VIPs already configured for the current server."""
++    if interaction.guild is None:
++        return []
++
++    current = current.casefold().strip()
++    choices = []
++
++    for vip in giguser.vips.values():
++        if vip.guild_id != interaction.guild.id:
++            continue
++
++        user = client.get_user(vip.vip_id)
++        user_name = user.name if user else f"User {vip.vip_id}"
++        grace = vip.grace_period if vip.grace_period is not None else "default"
++        label = f"{user_name} - {vip.template_id} - {grace}h"
++        searchable = f"{user_name} {vip.vip_id} {vip.template_id}".casefold()
++
++        if current and current not in searchable:
++            continue
++
++        choices.append(
++            app_commands.Choice(
++                name=label[:100],
++                value=str(vip.vip_id)
++            )
++        )
++
++        if len(choices) == 25:
++            break
++
++    if choices:
++        return choices
++
++    label = (
++        f'No VIPs match "{current[:60]}"'
++        if current
++        else "No VIPs configured for this server"
++    )
++    return [
++        app_commands.Choice(
++            name=label[:100],
++            value=AUTOCOMPLETE_NO_VIPS
++        )
++    ]
++
++
+ async def reject_message_autocomplete_sentinel(interaction, value):
+     if value not in (AUTOCOMPLETE_NONE, AUTOCOMPLETE_NO_MATCH):
+         return False
+@@ -974,6 +1065,197 @@ async def slash_user_revoke_server_autocomplete(
+     return user_permission_server_autocomplete(interaction, current)
+ 
+ 
++@vip_group.command(name="list", description="List configured VIP voice announcements")
++@app_commands.guild_only()
++@app_commands.describe(scope="VIPs to list")
++@app_commands.choices(scope=[
++    app_commands.Choice(name="This server", value="server"),
++    app_commands.Choice(name="All servers", value="all")
++])
++async def slash_vip_list(
++    interaction: discord.Interaction,
++    scope: str = "server"
++):
++    if not await prepare_slash_interaction(interaction):
++        return
++
++    list_all = scope == "all"
++    if list_all and interaction.user.id != settings.bot_owner_id:
++        await interaction.response.send_message(
++            "Only the configured GiggleMe bot owner can list VIPs from all servers."
++        )
++        return
++
++    lines = []
++    for vip in giguser.vips.values():
++        if not list_all and vip.guild_id != interaction.guild.id:
++            continue
++
++        user = client.get_user(vip.vip_id)
++        user_name = user.name if user else f"User {vip.vip_id}"
++        grace = (
++            f"{vip.grace_period}h"
++            if vip.grace_period is not None
++            else "default (2h)"
++        )
++        line = f"**{user_name}** - `{vip.template_id}` - **{grace}**"
++
++        if list_all:
++            guild = client.get_guild(vip.guild_id)
++            guild_name = guild.name if guild else str(vip.guild_id)
++            line += f" - **{guild_name}**"
++
++        lines.append(line)
++
++    if lines:
++        heading = "**VIP - Template - Grace Period**"
++        if list_all:
++            heading = "**VIP - Template - Grace Period - Server**"
++        description = heading + "\n" + "\n".join(lines)
++    else:
++        description = "No VIPs found."
++
++    await interaction.response.send_message(
++        embed=discord.Embed(description=description, color=0x00ff00)
++    )
++
++
++@vip_group.command(name="add", description="Add or update a VIP voice announcement")
++@app_commands.guild_only()
++@app_commands.describe(
++    user="Server member to make a VIP",
++    template="Template to send when this VIP joins voice",
++    grace_hours="Hours between announcements; blank uses the two-hour default"
++)
++async def slash_vip_add(
++    interaction: discord.Interaction,
++    user: discord.Member,
++    template: str,
++    grace_hours: Optional[int] = None
++):
++    if not await prepare_slash_interaction(interaction):
++        return
++
++    if await reject_message_autocomplete_sentinel(interaction, template):
++        return
++
++    if grace_hours is not None and grace_hours < 0:
++        await interaction.response.send_message(
++            "Grace period must be zero or a positive number of hours."
++        )
++        return
++
++    if template not in delayed_messages:
++        await interaction.response.send_message(
++            embed=discord.Embed(
++                description=f"Cannot find template `{template}`.",
++                color=0xff0000
++            )
++        )
++        return
++
++    if not isinstance(delayed_messages[template], Template):
++        await interaction.response.send_message(
++            embed=discord.Embed(
++                description=f"`{template}` is not a template.",
++                color=0xff0000
++            )
++        )
++        return
++
++    giguser.save_vip(
++        giguser.Vip(
++            user.id,
++            interaction.guild.id,
++            template,
++            grace_hours
++        )
++    )
++
++    grace_text = (
++        f"{grace_hours} hour(s)"
++        if grace_hours is not None
++        else "the default 2 hours"
++    )
++    await interaction.response.send_message(
++        embed=discord.Embed(
++            description=(
++                f"VIP updated for {user.mention}.\n"
++                f"Template: `{template}`\n"
++                f"Grace period: **{grace_text}**"
++            ),
++            color=0x00ff00
++        )
++    )
++
++
++@slash_vip_add.autocomplete("template")
++async def slash_vip_add_template_autocomplete(
++    interaction: discord.Interaction,
++    current: str
++):
++    return stored_message_autocomplete(
++        interaction,
++        current,
++        allowed_types=(Template,)
++    )
++
++
++@vip_group.command(name="remove", description="Remove a VIP voice announcement")
++@app_commands.guild_only()
++@app_commands.describe(user="VIP to remove")
++async def slash_vip_remove(
++    interaction: discord.Interaction,
++    user: str
++):
++    if not await prepare_slash_interaction(interaction):
++        return
++
++    if user == AUTOCOMPLETE_NO_VIPS:
++        await interaction.response.send_message(
++            "There are no VIPs configured for this server."
++        )
++        return
++
++    try:
++        user_id = int(user)
++    except (TypeError, ValueError):
++        await interaction.response.send_message(
++            f"`{user}` is not a valid VIP user ID."
++        )
++        return
++
++    key = (user_id, interaction.guild.id)
++    if key not in giguser.vips:
++        await interaction.response.send_message(
++            embed=discord.Embed(
++                description=f"User `{user_id}` is not in this server's VIP list.",
++                color=0xff0000
++            )
++        )
++        return
++
++    vip = giguser.vips[key]
++    cached_user = client.get_user(user_id)
++    user_name = cached_user.name if cached_user else str(user_id)
++    giguser.delete_vip(vip)
++
++    await interaction.response.send_message(
++        embed=discord.Embed(
++            description=f"Removed VIP **{user_name}**.",
++            color=0x00ff00
++        )
++    )
++
++
++@slash_vip_remove.autocomplete("user")
++async def slash_vip_remove_user_autocomplete(
++    interaction: discord.Interaction,
++    current: str
++):
++    return vip_autocomplete(interaction, current)
++
++
+ @giggle_group.command(name="test", description="Test GiggleMe slash commands")
+ async def slash_test(interaction: discord.Interaction):
+     await interaction.response.send_message("Good job. You used a slash command.")
+@@ -1721,6 +2003,7 @@ async def slash_schedule_template_autocomplete(
+     app_commands.Choice(name="Edit", value="edit"),
+     app_commands.Choice(name="Schedule", value="schedule"),
+     app_commands.Choice(name="Templates", value="templates"),
++    app_commands.Choice(name="VIPs", value="vip"),
+     app_commands.Choice(name="User permissions", value="users"),
+     app_commands.Choice(name="Test", value="test")
+ ])
+@@ -1729,6 +2012,7 @@ async def slash_help(interaction: discord.Interaction, command: Optional[str] =
+ 
+ 
+ giggle_group.add_command(template_group)
++giggle_group.add_command(vip_group)
+ giggle_group.add_command(user_group)
+ tree.add_command(giggle_group)
+ 
+@@ -2604,47 +2888,6 @@ async def cancel_delayed_message(channel, author, msg_num):
+     else:
+         await channel.send(embed=discord.Embed(description="Message not found", color=0xff0000))
+ 
+-async def add_vip(msg, vip_id, template_id, grace_period):
+-    if not client.get_user(int(vip_id)):
+-        raise GigException(f"Cannot find user {vip_id}")
+-    if template_id not in delayed_messages.keys():
+-        raise GigException(f"Cannot find template {template_id}")
+-    if type(delayed_messages[template_id]) is not Template:
+-        raise GigException(f"{template_id} is not a template")
+-    giguser.save_vip(giguser.Vip(vip_id, msg.guild.id, template_id, grace_period))
+-    await msg.channel.send(embed=discord.Embed(description="Updated Vip", color=0x00ff00))
+-
+-async def remove_vip(msg, vip_id):
+-    if (int(vip_id), msg.guild.id) not in giguser.vips:
+-        raise GigException(f"{vip_id} not in vips list")
+-    giguser.delete_vip(giguser.vips[int(vip_id), msg.guild.id])
+-    await msg.channel.send(embed=discord.Embed(description="Removed Vip", color=0x00ff00))
+-
+-async def list_vips(msg, list_all):
+-    output = ""
+-    for vip in giguser.vips:
+-        if giguser.vips[vip].guild_id == msg.guild.id or list_all and msg.author.id == settings.bot_owner_id:
+-            if not client.get_user(giguser.vips[vip].vip_id):
+-                output += f"Cannot find user {vip[0]}\n"
+-            else:
+-                output += "**" + client.get_user(giguser.vips[vip].vip_id).name + "**"
+-                output += " **-** "
+-                output += "**" + giguser.vips[vip].template_id + "**"
+-                output += " **-** "
+-                if giguser.vips[vip].grace_period is not None:
+-                    output += "**" + str(giguser.vips[vip].grace_period) + "**"
+-                else:
+-                    output += "**None**"
+-                if list_all:
+-                    output += " **-** "
+-                    output += "**" + client.get_guild(giguser.vips[vip].guild_id).name + "**"
+-                output += "\n"
+-    if output:
+-        output = "**Vip** - **Template** - **Grace Period**\n===================================\n" + output
+-    else:
+-        output = "No VIPs found"
+-    await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+-
+ async def show_guild_config(msg):
+     output = f"**Config Settings**"
+     output += "\n**approval_channel**:  "
+@@ -2676,6 +2919,12 @@ async def set_guild_config(params):
+ 
+     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
+ 
++# Auto Replies intentionally remain on the classic interface for now.
++# They inspect arbitrary guild message text and therefore depend on Discord's
++# privileged MESSAGE_CONTENT intent. Remove the AutoReply feature in the same
++# change that removes that intent; do not spend migration effort moving it to
++# slash commands.
++
+ async def create_auto_reply(params):
+     guild_id = params.pop('guild_id')
+     author_id = params.pop('author_id')
+@@ -2825,19 +3074,8 @@ async def on_message(msg):
+                     await msg.channel.send(embed=timezone_slash_help_embed())
+                     return
+ 
+-                match = re.match(r'~g(iggle)? +vip +list( +(all))? *$', msg.content)
+-                if match:
+-                    await list_vips(msg, match.group(3))
+-                    return
+-
+-                match = re.match(r'~g(iggle)? +vip +add +(\d+) +(\S+)( +(\d+))? *$', msg.content)
+-                if match:
+-                    await add_vip(msg, match.group(2), match.group(3), match.group(5))
+-                    return
+-
+-                match = re.match(r'~g(iggle)? +vip +remove +(\d+) *$', msg.content)
+-                if match:
+-                    await remove_vip(msg, match.group(2))
++                if re.match(r'~g(iggle)? +vip(?: +.*)?$', msg.content, re.DOTALL):
++                    await msg.channel.send(embed=vip_slash_help_embed())
+                     return
+ 
+                 match = re.match(r'~g(iggle)? +set( +([^\n]+))? *$', msg.content)
+diff --git a/util/help.py b/util/help.py
+index 4421e59..1ac3337 100644
+--- a/util/help.py
++++ b/util/help.py
+@@ -40,7 +40,9 @@ def show_help(command):
+ > 
+ > `~giggle help <command>`
+ > 
+-> You may also create auto-replies.  For more information on auto-replies type `~giggle help auto-replies`"""
++> You may also create auto-replies.  For more information on auto-replies type `~giggle help auto-replies`
++>
++> VIP management has moved to `/giggle vip`."""
+ 
+     if command == "list":
+         return """> `~giggle list <range>`
+@@ -160,6 +162,13 @@ def show_help(command):
+ > 
+ > Existing templates may still be managed with the appropriate GiggleMe commands."""
+ 
++    if command == "vip" or command == "vips":
++        return """> VIP management has moved to the slash-command interface.
++>
++> Use `/giggle vip list` to list VIPs.
++> Use `/giggle vip add` to add or update a VIP.
++> Use `/giggle vip remove` to remove a VIP."""
++
+     if command == "adduser":
+         return """> `~giggle adduser <user-id> <guild-id>`
+ > 
+@@ -232,4 +241,4 @@ def show_help(command):
+ > 
+ > `description="<description>"` A brief description of the auto-reply"""
+ 
+-    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `template`, `adduser`"
++    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `template`, `vip`, `adduser`"
