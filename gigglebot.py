@@ -252,7 +252,7 @@ def edit_slash_help_embed():
     embed.add_field(
         name="Editable fields",
         value=(
-            "`time` - new delivery time or minutes from now\n"
+            "`time` - new delivery time; uses the same formats as `/giggle schedule`\n"
             "`channel` - destination channel name, mention, or ID\n"
             "`repeat_unit` + `repeat_every` - repeat interval; choose minutes, "
             "hours, days, weeks, or months. Choose Remove repeat to stop repeating.\n"
@@ -262,6 +262,17 @@ def edit_slash_help_embed():
             "hours, days, weeks, or months. Choose No duration limit to clear it.\n"
             "`pin` - enable or disable pinning\n"
             "`publish` - enable or disable publishing"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Time formats",
+        value=(
+            "`0` - send now\n"
+            "`15` - 15 minutes from now\n"
+            "`8-14 9:30 PM` or `8-14 21:30` - current year\n"
+            "`2026-8-14 9:30 PM` or `2026-8-14 21:30` - explicit year\n"
+            "All times use your configured GiggleMe time zone."
         ),
         inline=False
     )
@@ -398,7 +409,7 @@ def schedule_slash_help_embed():
     embed.add_field(
         name="Required",
         value=(
-            "`time` - minutes from now or a date/time such as `08-14 09:30`\n"
+            "`time` - when to deliver; see the Time formats section below\n"
             "`content` - message body, unless `from_template` is used"
         ),
         inline=False
@@ -417,10 +428,16 @@ def schedule_slash_help_embed():
         inline=False
     )
     embed.add_field(
-        name="Time",
+        name="Time formats",
         value=(
-            "The time uses your configured GiggleMe time zone. A number means "
-            "that many minutes from now; `0` sends immediately."
+            "All times use your configured GiggleMe time zone.\n"
+            "`0` - send now\n"
+            "`15` - send 15 minutes from now\n"
+            "`8-14 9:30 PM` - August 14 at 9:30 PM in the current year\n"
+            "`8-14 21:30` - August 14 at 21:30 in the current year\n"
+            "`2026-8-14 9:30 PM` - explicit year, 12-hour time\n"
+            "`2026-8-14 21:30` - explicit year, 24-hour time\n"
+            "Seconds are optional, for example `21:30:15`."
         ),
         inline=False
     )
@@ -1700,7 +1717,7 @@ async def slash_edit_sent(
 @app_commands.guild_only()
 @app_commands.describe(
     message="GiggleMe message ID, or last",
-    time="New delivery time or minutes from now",
+    time="New time: 0=now, 15=15 min from now, or 8-14 9:30 PM / 2026-8-14 21:30",
     channel="Destination channel; suggestions include channels GiggleMe can send to",
     repeat_unit="Unit between repeated deliveries",
     repeat_every="Number of repeat units between deliveries",
@@ -1940,7 +1957,7 @@ async def slash_template_create_channel_autocomplete(
 )
 @app_commands.guild_only()
 @app_commands.describe(
-    time="Minutes from now, 0 for now, or a date/time",
+    time="When: 0=now, 15=15 min from now, or 8-14 9:30 PM / 2026-8-14 21:30",
     content="Message body; omit when using from_template",
     channel="Destination channel; suggestions include channels GiggleMe can send to",
     repeat_unit="Unit between repeated deliveries",
