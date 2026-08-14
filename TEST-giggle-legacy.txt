@@ -1,0 +1,54 @@
+GiggleMe /giggle legacy smoke test
+===================================
+
+From the repository root:
+
+  .venv/bin/python apply-giggle-legacy.py
+  git diff -- gigglebot.py
+
+Restart GiggleTest and verify:
+
+1. /giggle legacy appears.
+
+2. /giggle help -> Legacy scheduler explains the Raw+ workflow.
+
+3. Basic old-school schedule:
+
+     5
+     Hello from legacy
+
+   schedules a message five minutes from now.
+
+4. Full prefix works:
+
+     ~giggle 5 channel=general
+     Hello from the old command
+
+5. Raw+ round trip:
+   - schedule a message
+   - /giggle show it as Raw+
+   - copy the Raw+ text
+   - change its time/content
+   - paste into /giggle legacy
+   - confirm the new message is created
+
+6. Legacy options still work, for example:
+
+     ~giggle 5 channel=general repeat=hours:6 duration=days:2
+     Repeating legacy message
+
+7. Template recreation works without a message body:
+
+     ~giggle 0 from_template=<template-id>
+
+8. A whole fenced code block is accepted too.
+
+9. A retired non-scheduling command such as:
+
+     ~giggle timezone
+
+   shows Legacy help and does NOT run the old prefix command.
+
+10. Normal GiggleMe authorization still applies.
+
+Do not commit this transformer or checklist. Commit only gigglebot.py.
