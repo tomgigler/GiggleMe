@@ -1,0 +1,22 @@
+GiggleMe time-help smoke test
+
+Run from the repository root:
+
+  .venv/bin/python apply-clear-time-help.py
+  git diff -- gigglebot.py
+
+Then restart GiggleTest and confirm:
+
+1. /giggle schedule's time option shows examples for:
+   - 0 = now
+   - an integer = minutes from now
+   - MM-DD time using the current year
+   - YYYY-MM-DD time using an explicit year
+
+2. /giggle help -> Schedule shows the full time-format examples and states
+   that times use the user's configured GiggleMe time zone.
+
+3. /giggle edit's time option and Edit help use the same formats.
+
+Do not commit this transformer or checklist. Commit only the resulting
+gigglebot.py change after review/testing.
