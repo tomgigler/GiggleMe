@@ -62,6 +62,8 @@ class DelayedMessage:
         return output
 
     def get_show_content(self, raw=False, timezone=None):
+        if raw == "raw+":
+            return self.content + "\n```"
         if raw:
             return "```\n" + self.content + "\n```"
         return self.content
@@ -76,6 +78,38 @@ class Message(DelayedMessage):
         self.special_handling = special_handling
         if update_db:
             self.update_db()
+
+    def get_show_content(self, raw=False, timezone=None):
+        if raw != "raw+":
+            return super().get_show_content(raw, timezone)
+
+        command = f"~giggle {gigtz.command_localized_time(self.delivery_time, timezone)}"
+        command += f" channel={self.delivery_channel_id}"
+
+        if self.repeat:
+            command += f" repeat={self.repeat}"
+
+        if self.repeat_until:
+            # The original duration unit is not persisted. Emit elapsed
+            # minutes so Raw+ always produces valid legacy-scheduler syntax.
+            duration_minutes = max(
+                1,
+                int(round((self.repeat_until - self.delivery_time) / 60))
+            )
+            command += f" duration=minutes:{duration_minutes}"
+
+        if self.special_handling and self.special_handling & 8:
+            command += " pin=true"
+        if self.special_handling and self.special_handling & 16:
+            command += " set-topic=true"
+        if self.special_handling and self.special_handling & 32:
+            command += " set-channel-name=true"
+        if self.special_handling and self.special_handling & 64:
+            command += " publish=true"
+        if self.description:
+            command += f' desc="{self.description}"'
+
+        return "```\n" + command + "\n" + super().get_show_content(raw, timezone)
 
     def update_db(self):
         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until, self.special_handling)

@@ -162,7 +162,7 @@ def show_slash_help_embed():
     )
     embed.add_field(
         name="Format",
-        value="Choose normal output or raw Markdown.",
+        value="Choose normal, raw Markdown, or Raw+ for text ready to paste into `/giggle legacy`.",
         inline=False
     )
     return embed
@@ -1449,7 +1449,8 @@ async def slash_list(
 )
 @app_commands.choices(format=[
     app_commands.Choice(name="Normal", value="normal"),
-    app_commands.Choice(name="Raw Markdown", value="raw")
+    app_commands.Choice(name="Raw Markdown", value="raw"),
+    app_commands.Choice(name="Raw+ (legacy recreation)", value="raw+")
 ])
 async def slash_show(
     interaction: discord.Interaction,
@@ -3191,7 +3192,7 @@ async def on_message(msg):
                     await msg.channel.send(embed=list_slash_help_embed())
                     return
 
-                match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)|next) *$', msg.content)
+                match = re.match(r'~g(iggle)? +show( +(raw\+?))?( +(\S+)|next) *$', msg.content)
                 if match:
                     await msg.channel.send(embed=show_slash_help_embed())
                     return
