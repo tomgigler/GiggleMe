@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ACD Modmail - Server Members Intent Review</title>
+  <meta name="description" content="Evidence for ACD Modmail's use of Discord's Server Members privileged gateway intent.">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #ffffff;
+      --text: #202124;
+      --muted: #5f6368;
+      --border: #dadce0;
+      --panel: #f8f9fa;
+      --accent: #5865f2;
+      --note: #eef1ff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1e1f22;
+        --text: #f2f3f5;
+        --muted: #b5bac1;
+        --border: #3f4147;
+        --panel: #2b2d31;
+        --accent: #949cf7;
+        --note: #252941;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(920px, calc(100% - 40px));
+      margin: 48px auto;
+    }
+    h1, h2 { line-height: 1.25; }
+    h1 { margin-bottom: 0.35rem; font-size: 2rem; }
+    h2 { margin-top: 2.4rem; font-size: 1.35rem; }
+    p { margin: 0.75rem 0; }
+    a { color: var(--accent); }
+    .subtitle { margin-top: 0; color: var(--muted); }
+    .summary {
+      margin: 1.5rem 0 2rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--note);
+    }
+    .step {
+      margin: 1.5rem 0 2.25rem;
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+    .step h2 { margin-top: 0; }
+    figure { margin: 1rem 0 0; }
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+    figcaption {
+      margin-top: 0.6rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .review-note {
+      margin-top: 2.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ACD Modmail - Server Members Intent Review</h1>
+    <p class="subtitle">Evidence demonstrating why ACD Modmail requires Discord's Server Members privileged gateway intent.</p>
+
+    <div class="summary">
+      <strong>Use case summary:</strong>
+      ACD Modmail allows Discord users to contact the server moderation team by sending a direct message to the bot.
+      When a user does so, Modmail must determine whether that Discord user is a member of the server and associate the
+      DM sender with the corresponding server member. That member association is used when creating and managing the
+      private staff-side Modmail thread.
+    </div>
+
+    <div class="step">
+      <h2>1. A user contacts ACD Modmail by direct message</h2>
+      <p>
+        The user starts a Modmail conversation by sending a direct message to the ACD Modmail bot. Because the
+        conversation begins in a DM rather than through a command inside the server, Modmail must independently
+        determine the user's relationship to the server.
+      </p>
+      <figure>
+        <img src="images/01-user-dm.jpg" alt="Screenshot showing a user sending a direct message to ACD Modmail">
+        <figcaption>Screenshot 1: A user initiates a Modmail conversation by sending a direct message to ACD Modmail.</figcaption>
+      </figure>
+    </div>
+
+    <div class="step">
+      <h2>2. Modmail creates the private staff-side conversation</h2>
+      <p>
+        Modmail relays the user's message into the server's private moderation area and creates the staff-side
+        conversation used to handle the request.
+      </p>
+      <figure>
+        <img src="images/02-staff-thread.jpg" alt="Screenshot showing the private staff-side Modmail thread created for the user's message">
+        <figcaption>Screenshot 2: The user's DM has been relayed into the server's private Modmail area for moderators.</figcaption>
+      </figure>
+    </div>
+
+    <div class="step">
+      <h2>3. Modmail associates the DM sender with the corresponding server member</h2>
+      <p>
+        This is the portion of the workflow that requires the <strong>Server Members Intent</strong>. Modmail needs
+        access to server-member information so it can accurately determine whether the DM sender is a member of the
+        server and associate that Discord user with the correct member record used by the Modmail thread.
+      </p>
+      <p>
+        The member information shown to moderators provides the context needed to identify the person contacting the
+        moderation team and handle the thread appropriately.
+      </p>
+      <figure>
+        <img src="images/03-member-context.jpg" alt="Screenshot showing the member identity or member context associated with a Modmail thread">
+        <figcaption>
+          Screenshot 3: ACD Modmail identifies the DM sender as the corresponding server member and displays the
+          member context available to moderators.
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="step">
+      <h2>4. Moderators respond through the Modmail thread</h2>
+      <p>
+        Moderators work from the private staff-side thread while Modmail continues to associate the conversation with
+        the correct Discord user and server member. Replies are relayed back to the user through the bot.
+      </p>
+      <figure>
+        <img src="images/04-moderator-reply.jpg" alt="Screenshot showing a moderator reply in the private Modmail thread">
+        <figcaption>Screenshot 4: A moderator responds from the staff-side Modmail thread associated with the user.</figcaption>
+      </figure>
+    </div>
+
+    <section class="review-note">
+      <h2>Why the Server Members Intent is required</h2>
+      <p>
+        The Server Members Intent is not used for presence tracking, advertising, or unrelated member monitoring.
+        It is used so ACD Modmail can accurately check a user's server membership and associate a user who contacts the
+        bot by DM with the corresponding server member needed by the Modmail workflow.
+      </p>
+      <p>ACD Modmail is a self-hosted instance of the open-source Modmail project.</p>
+      <p>Privacy policy: <a href="https://acdmodmail.com/privacy-policy">https://acdmodmail.com/privacy-policy</a></p>
+      <p>Upstream Modmail documentation: <a href="https://docs.modmail.dev/faq/intents-review">https://docs.modmail.dev/faq/intents-review</a></p>
+    </section>
+
+    <footer>
+      This page was prepared as supporting evidence for ACD Modmail's Discord privileged-intent review.
+    </footer>
+  </main>
+</body>
+</html>
