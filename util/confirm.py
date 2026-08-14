@@ -1,39 +1,68 @@
 #!/usr/bin/env python
 import discord
-import asyncio
 
-confirmation_requests = {}
 
-class ConfirmationRequest:
-    def __init__(self, member_id):
+class ConfirmationView(discord.ui.View):
+    def __init__(self, member_id, seconds):
+        super().__init__(timeout=seconds)
         self.member_id = member_id
         self.response = None
 
+    async def interaction_check(self, interaction):
+        if interaction.user.id == self.member_id:
+            return True
+
+        await interaction.response.send_message(
+            "This confirmation belongs to another user.",
+            ephemeral=True
+        )
+        return False
+
+    def disable_buttons(self):
+        for item in self.children:
+            item.disabled = True
+
+    @discord.ui.button(
+        label="Yes",
+        emoji="✅",
+        style=discord.ButtonStyle.success
+    )
+    async def confirm_yes(self, interaction, button):
+        self.response = True
+        self.disable_buttons()
+        await interaction.response.edit_message(view=self)
+        self.stop()
+
+    @discord.ui.button(
+        label="No",
+        emoji="❌",
+        style=discord.ButtonStyle.danger
+    )
+    async def confirm_no(self, interaction, button):
+        self.response = False
+        self.disable_buttons()
+        await interaction.response.edit_message(view=self)
+        self.stop()
+
+
 async def confirm_request(channel, member_id, prompt, seconds, client):
-    confirmation_message = await channel.send(embed=discord.Embed(description=f"{prompt}\n\n✅ Yes\n\n❌ No", color=0x0000ff))
-    await confirmation_message.add_reaction('✅')
-    await confirmation_message.add_reaction('❌')
+    view = ConfirmationView(member_id, seconds)
 
-    confirmation_requests[confirmation_message.id] = ConfirmationRequest(member_id)
+    confirmation_message = await channel.send(
+        embed=discord.Embed(
+            description=prompt,
+            color=0x0000ff
+        ),
+        view=view
+    )
 
-    for i in range(seconds):
-        await asyncio.sleep(1)
-        if confirmation_requests[confirmation_message.id].response is not None:
-            break
+    timed_out = await view.wait()
 
-    confirmation_request = confirmation_requests.pop(confirmation_message.id)
+    if timed_out:
+        view.disable_buttons()
+        try:
+            await confirmation_message.edit(view=view)
+        except discord.HTTPException:
+            pass
 
-    try:
-        await confirmation_message.remove_reaction('✅', client.user)
-        await confirmation_message.remove_reaction('❌', client.user)
-    except:
-        pass
-
-    return confirmation_request.response
-
-def process_reaction(payload):
-    if payload.message_id in confirmation_requests and payload.user_id == confirmation_requests[payload.message_id].member_id:
-            if payload.emoji.name == '✅':
-                confirmation_requests[payload.message_id].response = True
-            else:
-                confirmation_requests[payload.message_id].response = False
+    return view.response

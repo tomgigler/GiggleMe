@@ -1,6 +1,6 @@
 # GiggleMe
 
-GiggleMe is a Discord bot for scheduling messages. Over time it has also grown support for repeating messages, templates, proposals and voting, automatic replies, time-zone handling, VIP/voice-channel behavior, and other server-specific features.
+GiggleMe is a Discord bot for scheduling messages. Over time it has also grown support for repeating messages, templates, automatic replies, time-zone handling, VIP/voice-channel behavior, and other server-specific features.
 
 The bot is primarily written in Python and stores persistent state in MySQL. The repository also contains an optional PHP-based web interface that uses the same database.
 
@@ -54,9 +54,8 @@ The schema contains these tables:
 - `user_guilds`
 - `users`
 - `vips`
-- `votes`
 
-The supplied schema intentionally mirrors the existing production schema. It does not add foreign keys, new indexes, or charset changes that are not already present in the running application.
+The supplied schema is the current GiggleMe baseline. Existing installations may require deliberate database migrations before their tables match it.
 
 ### Create a dedicated MySQL user
 
@@ -78,7 +77,7 @@ Use an administrative MySQL account only for initial schema creation or future s
 
 Create a Discord application and bot for your deployment, then invite that bot to the servers where you want to use GiggleMe.
 
-The current code creates the Discord client using `discord.Intents.all()`. It also reads normal message content and handles voice-state and reaction events, so Discord gateway intent configuration is a real runtime requirement rather than optional decoration.
+The current code creates the Discord client using `discord.Intents.all()`. It also reads normal message content and handles voice-state events, so Discord gateway intent configuration is a real runtime requirement rather than optional decoration.
 
 The exact minimum intent set has not yet been documented. Until that cleanup is completed, a self-hosted deployment should preserve the intent configuration expected by the current bot/library combination rather than disabling intents experimentally.
 
@@ -297,22 +296,31 @@ If desired, `restart-giggleme.sh` can later be simplified into a wrapper around 
 
 ## 8. Verify the bot
 
-Once connected to Discord, use:
+GiggleMe's primary command interface is Discord slash commands. Start with:
 
 ```text
-~giggle help
+/giggle help
 ```
 
-to display GiggleMe's built-in command help.
+Classic time-based scheduling syntax is no longer executable. If a user enters an old command such as `~giggle 5`, GiggleMe recognizes the scheduling pattern only to direct the user to `/giggle schedule` help.
 
-A useful initial smoke test is:
+Two classic-prefix paths intentionally remain for now: `~giggle help` and Auto Replies. Both are tied to the remaining privileged Message Content work and are planned to disappear when that intent is removed.
 
-1. Confirm the bot comes online.
-2. From a Discord account with administrator permission on the test server, run `~giggle help`. GiggleMe currently auto-registers server administrators when they first interact with the bot.
-3. Set or verify your timezone.
-4. Schedule a test message a few minutes in the future.
-5. Restart GiggleMe using the same process-management method you selected above.
-6. Confirm the scheduled message is reloaded from MySQL and delivered at the expected time.
+A useful smoke test is:
+
+1. Confirm the bot comes online and `/giggle` appears in the command picker.
+2. Run `/giggle help` and confirm the expected command groups are present.
+3. Set or verify your timezone and time format.
+4. Create a template, then schedule a message from it a few minutes in the future.
+5. List, show, edit, and cancel stored messages, including channel autocomplete where applicable.
+6. Exercise send/cancel confirmation buttons.
+7. Grant and revoke a user's GiggleMe authorization and confirm the `user_guilds` row changes as expected.
+8. List, add, and remove a VIP.
+9. Enter an old classic scheduling command and confirm it returns slash scheduling help without creating a message.
+10. Restart GiggleMe and confirm the full `/giggle` command tree is still registered.
+11. Confirm a scheduled message survives the restart and is delivered at the expected time.
+
+The command tree is synchronized for existing guilds during `on_ready()` and for newly joined guilds during `on_guild_join()`.
 
 If using systemd, also test automatic recovery once during initial deployment by restarting the service and confirming it returns cleanly.
 
@@ -429,7 +437,6 @@ The `messages` table is shared by several message-like features.
 The current application distinguishes message types partly through `delivery_time`:
 
 - `delivery_time >= 0`: scheduled message
-- `delivery_time = -1`: proposal
 - `delivery_time = -2`: auto-reply
 - other/null cases: template behavior
 
@@ -439,9 +446,9 @@ Scheduled messages can also contain repeat information, a repeat-until time, and
 
 ## Database notes
 
-The production-derived schema contains ten tables and no MySQL triggers or scheduled MySQL events.
+The schema contains nine tables and no MySQL triggers or scheduled MySQL events.
 
-Several relationships are maintained by application logic rather than MySQL foreign-key constraints. Guild, user, channel, template, and proposal IDs are related across tables without declared foreign keys.
+Several relationships are maintained by application logic rather than MySQL foreign-key constraints. Guild, user, channel, and template IDs are related across tables without declared foreign keys.
 
 The schema also contains a historical mixture of `utf8mb4` and `latin1` tables. `schema.sql` preserves that behavior intentionally. Charset normalization should be performed as a deliberate migration, not folded into initial installation.
 
@@ -499,6 +506,7 @@ GiggleMe has accumulated features incrementally over a long period of real-world
 Useful refactoring/deployment goals include:
 
 - replace `discord.Intents.all()` with the minimum required intents
+- remove Auto Replies when the privileged `MESSAGE_CONTENT` intent is removed; Auto Replies are intentionally not being migrated to slash commands
 - add a sanitized example for the web application's own database/auth configuration
 - split the large `on_message` command dispatcher into focused command handlers
 - add database migrations for future schema changes

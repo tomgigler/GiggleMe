@@ -2,46 +2,17 @@
 
 def show_help(command):
     if not command:
-        return """> To schedule **<message>** to be delivered to **<channel>** at **<time>**:
+        return """> GiggleMe's normal command interface has moved to Discord slash commands.
 > 
-> `~giggle <time> <options>`
-> `<message>`
+> Use `/giggle help` for current command help.
 > 
-> **<time>** may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
+> Schedule messages with `/giggle schedule`.
+> Create templates with `/giggle template create`.
+> Manage VIPs with `/giggle vip`.
+> Manage user authorization with `/giggle user`.
 > 
-> **Options:**
-> 
-> `channel=<channel>`:  The channel to deliver the message to.  May be a name, reference, or ID
-> 
-> `repeat=<frequency>`:   Repeat message at <frequency>.  For more information on repeating messages type `~giggle help repeat`
-> 
-> `desc="<brief description>"`:  Provide a description of the message.  This is helpful in identifying messages
-> 
-> `from_template=<template_id>`:  creates the message body from the <template_id> template
-> Do not include a message body when using from_template
-> 
-> `pin=<True|False>`:  If True, the new message will be pinned
-> 
-> `set-topic=<True|False>`:  If True, set the channel topic to <message> instead of posting message in channel
-> 
-> `set-channel-name=<True|False>`:  If True, set the channel name to <message> instead of posting message in channel
-> 
-> To create a template:
-> 
-> `~giggle template channel=<channel> desc="<brief description>"`
-> `<message>`
-> 
-> The following commands may be used to manage scheduled messages:
-> 
-> `list`, `show`, `send`, `edit`, `modify`, `cancel`, `timezone`, `timezones`, `time-format`, `help`
-> 
-> To see help for one of the above commands:
-> 
-> `~giggle help <command>`
-> 
-> You may also propose messages to be sent once approved.  For more information on proposing messages type `~giggle help proposals`
-> 
-> You may also create auto-replies.  For more information on auto-replies type `~giggle help auto-replies`"""
+> Classic prefix help is temporarily retained while the remaining Message Content-dependent features are phased out.
+> Auto-replies are still classic for now; use `~giggle help auto-replies` for that feature."""
 
     if command == "list":
         return """> `~giggle list <range>`
@@ -68,8 +39,6 @@ def show_help(command):
 > 
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message
 > `next` may be used as <message-id> to reference the next message in the queue
-> 
-> Use `raw+` to include the full command syntax to re-create the message
 > 
 > Both `show` and `show raw` may be used to show templates"""
 
@@ -154,6 +123,29 @@ def show_help(command):
 > 
 > Display a list of available time zones"""
 
+    if command == "template" or command == "templates":
+        return """> Template creation has moved to the slash-command interface.
+> 
+> Use `/giggle template create` to create a reusable message template.
+> 
+> Existing templates may still be managed with the appropriate GiggleMe commands."""
+
+    if command == "vip" or command == "vips":
+        return """> VIP management has moved to the slash-command interface.
+>
+> Use `/giggle vip list` to list VIPs.
+> Use `/giggle vip add` to add or update a VIP.
+> Use `/giggle vip remove` to remove a VIP."""
+
+    if command == "adduser":
+        return """> `~giggle adduser <user-id> <guild-id>`
+> 
+> Grant a user permission to use GiggleMe.
+> 
+> **<guild-id>** is optional. If omitted, permission is granted for the current server.
+> 
+> This command is restricted to the configured bot owner."""
+
     if command == "help":
         return """> `~giggle help <command>`
 > 
@@ -205,25 +197,6 @@ def show_help(command):
 > `wildcard=true` If specified, the AutoReply will trigger if the Trigger text is found
 >   anywhere in the message"""
 
-    if command == "proposals":
-        return """> The `propose` command is used to propose messages.  To propose <message>:
-> 
-> `~giggle propose propose_in_channel=<proposal-channel> channel=<delivery-channel>`
-> `<message>`
-> 
-> **<proposal-channel>** is the channel where the message will be proposed
-> **<delivery-channel>** is the channel where the message will be deilvered once approved
-> 
-> The following optional parameters may also be used when proposing a message:
-> 
-> `description="<description>"` A brief description of the message
-> 
-> `from_template=<template-id>` create the message body from the <template_id> template
-> Do not include a message body when using **from_template**
-> 
-> `required_approvals=<N>`  The number of approvals required before the message is sent
-> If **required_approvals** is not specified, the message will be sent after it receives two approvals"""
-
     if command == "auto-replies":
         return """> The `auto-reply` command is used to create auto replies.  To create an auto-reply:
 > 
@@ -236,4 +209,4 @@ def show_help(command):
 > 
 > `description="<description>"` A brief description of the auto-reply"""
 
-    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `proposals`"
+    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `template`, `vip`, `adduser`"

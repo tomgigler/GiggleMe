@@ -42,11 +42,15 @@ def display_localized_time(time, tz_id, format_24):
     else:
         return datetime.fromtimestamp(time).astimezone(tz).strftime('%-I:%M:%S %p %a %b %d, %Y %Z')
 
-def command_localized_time(time, tz_id):
+def command_localized_time(timestamp, tz_id):
+    # Format a stored delivery time for /giggle legacy input.
     if tz_id is None:
         tz_id = 1
     tz = timezone(timezones[tz_id].name)
-    return datetime.fromtimestamp(time).astimezone(tz).strftime('%Y-%m-%d %-H:%M:%S')
+    return datetime.fromtimestamp(timestamp).astimezone(tz).strftime(
+        '%Y-%m-%d %-H:%M:%S'
+    )
+
 
 def load_timezones():
     for tz in gigdb.get_timezones():
