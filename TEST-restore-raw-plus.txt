@@ -1,0 +1,39 @@
+GiggleMe Raw+ restoration smoke test
+=====================================
+
+From the repository root:
+
+  .venv/bin/python apply-restore-raw-plus.py
+  git diff -- gigglebot.py util/delayed_message.py util/gigtz.py
+
+Restart GiggleTest and test:
+
+1. /giggle show format offers:
+   Normal
+   Raw Markdown
+   Raw+ (legacy recreation)
+
+2. Schedule a message with several options, for example:
+   - channel
+   - repeat
+   - duration
+   - description
+
+3. Show it using Raw+.
+
+4. Confirm the second output is a code block resembling:
+
+   ~giggle 2026-08-14 21:30:00 channel=123456789 repeat=hours:6 duration=minutes:4320 desc="..."
+   message body
+
+5. Copy that entire text into /giggle legacy input:, edit the delivery time
+   or message body, and confirm the second message schedules successfully.
+
+6. Confirm Raw Markdown still displays only the raw message body.
+
+7. Confirm Normal is unchanged.
+
+Do not commit this transformer or checklist. Commit the resulting changes to:
+  gigglebot.py
+  util/delayed_message.py
+  util/gigtz.py
