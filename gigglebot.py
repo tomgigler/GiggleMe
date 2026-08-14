@@ -162,7 +162,7 @@ def show_slash_help_embed():
     )
     embed.add_field(
         name="Format",
-        value="Choose normal, raw Markdown, or raw+ to include recreation syntax.",
+        value="Choose normal output or raw Markdown.",
         inline=False
     )
     return embed
@@ -534,10 +534,11 @@ def slash_help_embed(command=None):
         inline=False
     )
     embed.add_field(
-        name="Still using legacy commands",
+        name="Temporary classic-prefix features",
         value=(
-            "Commands that have not yet been migrated continue to use the "
-            "`~giggle` syntax while the migration is in progress."
+            "Classic help and Auto Replies remain temporarily because they still "
+            "depend on the privileged Message Content path. Normal GiggleMe "
+            "scheduling and management use slash commands."
         ),
         inline=False
     )
@@ -1436,8 +1437,7 @@ async def slash_list(
 )
 @app_commands.choices(format=[
     app_commands.Choice(name="Normal", value="normal"),
-    app_commands.Choice(name="Raw Markdown", value="raw"),
-    app_commands.Choice(name="Raw + recreation syntax", value="raw+")
+    app_commands.Choice(name="Raw Markdown", value="raw")
 ])
 async def slash_show(
     interaction: discord.Interaction,
@@ -3024,7 +3024,7 @@ async def on_message(msg):
                     await msg.channel.send(embed=list_slash_help_embed())
                     return
 
-                match = re.match(r'~g(iggle)? +show( +(raw\+?))?( +(\S+)|next) *$', msg.content)
+                match = re.match(r'~g(iggle)? +show( +(raw))?( +(\S+)|next) *$', msg.content)
                 if match:
                     await msg.channel.send(embed=show_slash_help_embed())
                     return
@@ -3054,12 +3054,11 @@ async def on_message(msg):
                     await msg.channel.send(embed=template_slash_help_embed())
                     return
 
-                # Keep classic unnamed scheduling working for now because raw+
-                # still emits executable recreation syntax for scheduled messages.
-                # Template creation itself has moved to /giggle template create.
+                # Classic unnamed scheduling is retired. Keep recognizing the
+                # old syntax long enough to direct users to the slash interface.
                 match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    await parse_args(process_delay_message, {'guild': msg.guild, 'request_channel': msg.channel, 'request_message_id': msg.id, 'author_id': msg.author.id, 'delay': match.group(2), 'content': match.group(10)}, match.group(8))
+                    await msg.channel.send(embed=schedule_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +(time-format|tf)( +(12|24))? *$', msg.content)

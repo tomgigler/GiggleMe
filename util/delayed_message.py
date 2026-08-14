@@ -62,12 +62,9 @@ class DelayedMessage:
         return output
 
     def get_show_content(self, raw=False, timezone=None):
-        if raw == "raw+":
-            return self.content + "\n```"
-        elif raw:
+        if raw:
             return "```\n" + self.content + "\n```"
-        else:
-            return self.content
+        return self.content
 
 class Message(DelayedMessage):
     def __init__(self, id, guild_id, delivery_channel_id, delivery_time, author_id, repeat, last_repeat_message, content, description, repeat_until, special_handling, update_db=True):
@@ -79,29 +76,6 @@ class Message(DelayedMessage):
         self.special_handling = special_handling
         if update_db:
             self.update_db()
-
-    def get_show_content(self, raw=False, timezone=None):
-        command = ""
-        if raw == "raw+":
-            command = f"~giggle {gigtz.command_localized_time(self.delivery_time, timezone)}"
-            command += f" channel={self.delivery_channel_id}"
-            if self.repeat:
-                command += f" repeat={self.repeat}"
-            if self.repeat_until:
-                command += f" duration={int((self.repeat_until-self.delivery_time)/60)}"
-            if self.special_handling and self.special_handling & 8:
-                command += f" pin=true"
-            if self.special_handling and self.special_handling & 16:
-                command += f" set-topic=true"
-            if self.special_handling and self.special_handling & 32:
-                command += f" set-channel-name=true"
-            if self.special_handling and self.special_handling & 64:
-                command += f" publish=true"
-            if self.description:
-                command += f" desc=\"{self.description}\""
-            return "```\n" + command + "\n" + super().get_show_content(raw, timezone)
-        else:
-            return super().get_show_content(raw, timezone)
 
     def update_db(self):
         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until, self.special_handling)

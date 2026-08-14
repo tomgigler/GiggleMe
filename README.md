@@ -296,22 +296,31 @@ If desired, `restart-giggleme.sh` can later be simplified into a wrapper around 
 
 ## 8. Verify the bot
 
-Once connected to Discord, use:
+GiggleMe's primary command interface is Discord slash commands. Start with:
 
 ```text
-~giggle help
+/giggle help
 ```
 
-to display GiggleMe's built-in command help.
+Classic time-based scheduling syntax is no longer executable. If a user enters an old command such as `~giggle 5`, GiggleMe recognizes the scheduling pattern only to direct the user to `/giggle schedule` help.
 
-A useful initial smoke test is:
+Two classic-prefix paths intentionally remain for now: `~giggle help` and Auto Replies. Both are tied to the remaining privileged Message Content work and are planned to disappear when that intent is removed.
 
-1. Confirm the bot comes online.
-2. From a Discord account with administrator permission on the test server, run `~giggle help`. GiggleMe currently auto-registers server administrators when they first interact with the bot.
-3. Set or verify your timezone.
-4. Schedule a test message a few minutes in the future.
-5. Restart GiggleMe using the same process-management method you selected above.
-6. Confirm the scheduled message is reloaded from MySQL and delivered at the expected time.
+A useful smoke test is:
+
+1. Confirm the bot comes online and `/giggle` appears in the command picker.
+2. Run `/giggle help` and confirm the expected command groups are present.
+3. Set or verify your timezone and time format.
+4. Create a template, then schedule a message from it a few minutes in the future.
+5. List, show, edit, and cancel stored messages, including channel autocomplete where applicable.
+6. Exercise send/cancel confirmation buttons.
+7. Grant and revoke a user's GiggleMe authorization and confirm the `user_guilds` row changes as expected.
+8. List, add, and remove a VIP.
+9. Enter an old classic scheduling command and confirm it returns slash scheduling help without creating a message.
+10. Restart GiggleMe and confirm the full `/giggle` command tree is still registered.
+11. Confirm a scheduled message survives the restart and is delivered at the expected time.
+
+The command tree is synchronized for existing guilds during `on_ready()` and for newly joined guilds during `on_guild_join()`.
 
 If using systemd, also test automatic recovery once during initial deployment by restarting the service and confirming it returns cleanly.
 

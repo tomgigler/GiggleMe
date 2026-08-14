@@ -2,47 +2,17 @@
 
 def show_help(command):
     if not command:
-        return """> To schedule **<message>** to be delivered to **<channel>** at **<time>**:
+        return """> GiggleMe's normal command interface has moved to Discord slash commands.
 > 
-> `~giggle <time> <options>`
-> `<message>`
+> Use `/giggle help` for current command help.
 > 
-> **<time>** may be either a number of minutes from now or a DateTime of the format (YYYY-)MM-DD HH:MM(:SS)
+> Schedule messages with `/giggle schedule`.
+> Create templates with `/giggle template create`.
+> Manage VIPs with `/giggle vip`.
+> Manage user authorization with `/giggle user`.
 > 
-> **Options:**
-> 
-> `channel=<channel>`:  The channel to deliver the message to.  May be a name, reference, or ID
-> 
-> `repeat=<frequency>`:   Repeat message at <frequency>.  For more information on repeating messages type `~giggle help repeat`
-> 
-> `desc="<brief description>"`:  Provide a description of the message.  This is helpful in identifying messages
-> 
-> `from_template=<template_id>`:  creates the message body from the <template_id> template
-> Do not include a message body when using from_template
-> 
-> `pin=<True|False>`:  If True, the new message will be pinned
-> 
-> `set-topic=<True|False>`:  If True, set the channel topic to <message> instead of posting message in channel
-> 
-> `set-channel-name=<True|False>`:  If True, set the channel name to <message> instead of posting message in channel
-> 
-> Template creation has moved to the slash-command interface:
-> 
-> `/giggle template create`
-> 
-> The following commands may be used to manage scheduled messages:
-> 
-> `list`, `show`, `send`, `edit`, `modify`, `cancel`, `timezone`, `timezones`, `time-format`, `help`
->
-> Bot-owner command: `adduser`
-> 
-> To see help for one of the above commands:
-> 
-> `~giggle help <command>`
-> 
-> You may also create auto-replies.  For more information on auto-replies type `~giggle help auto-replies`
->
-> VIP management has moved to `/giggle vip`."""
+> Classic prefix help is temporarily retained while the remaining Message Content-dependent features are phased out.
+> Auto-replies are still classic for now; use `~giggle help auto-replies` for that feature."""
 
     if command == "list":
         return """> `~giggle list <range>`
@@ -69,8 +39,6 @@ def show_help(command):
 > 
 > **Note:**  `last` may be used as <message-id> to reference your most recently scheduled message
 > `next` may be used as <message-id> to reference the next message in the queue
-> 
-> Use `raw+` to include the full command syntax to re-create the message
 > 
 > Both `show` and `show raw` may be used to show templates"""
 
