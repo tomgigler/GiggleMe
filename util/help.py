@@ -40,7 +40,9 @@ def show_help(command):
 > 
 > `~giggle help <command>`
 > 
-> You may also create auto-replies.  For more information on auto-replies type `~giggle help auto-replies`"""
+> You may also create auto-replies.  For more information on auto-replies type `~giggle help auto-replies`
+>
+> VIP management has moved to `/giggle vip`."""
 
     if command == "list":
         return """> `~giggle list <range>`
@@ -160,6 +162,13 @@ def show_help(command):
 > 
 > Existing templates may still be managed with the appropriate GiggleMe commands."""
 
+    if command == "vip" or command == "vips":
+        return """> VIP management has moved to the slash-command interface.
+>
+> Use `/giggle vip list` to list VIPs.
+> Use `/giggle vip add` to add or update a VIP.
+> Use `/giggle vip remove` to remove a VIP."""
+
     if command == "adduser":
         return """> `~giggle adduser <user-id> <guild-id>`
 > 
@@ -232,4 +241,4 @@ def show_help(command):
 > 
 > `description="<description>"` A brief description of the auto-reply"""
 
-    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `template`, `adduser`"
+    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `template`, `vip`, `adduser`"

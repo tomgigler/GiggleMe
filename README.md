@@ -497,6 +497,7 @@ GiggleMe has accumulated features incrementally over a long period of real-world
 Useful refactoring/deployment goals include:
 
 - replace `discord.Intents.all()` with the minimum required intents
+- remove Auto Replies when the privileged `MESSAGE_CONTENT` intent is removed; Auto Replies are intentionally not being migrated to slash commands
 - add a sanitized example for the web application's own database/auth configuration
 - split the large `on_message` command dispatcher into focused command handlers
 - add database migrations for future schema changes
