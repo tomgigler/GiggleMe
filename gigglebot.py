@@ -201,7 +201,12 @@ def show_slash_help_embed():
     )
     embed.add_field(
         name="Format",
-        value="Choose normal, raw Markdown, or Raw+ for text ready to paste into `/giggle legacy`.",
+        value=(
+            "Choose normal, raw Markdown, or Raw+. Raw+ uses ` -- ` between "
+            "the command and message body. Single-line Raw+ output can be pasted "
+            "directly into `/giggle legacy`; use the web interface for Raw+ "
+            "containing real line breaks."
+        ),
         inline=False
     )
     return embed
@@ -296,7 +301,8 @@ def edit_slash_help_embed():
             "`repeat_unit` + `repeat_every` - repeat interval; choose minutes, "
             "hours, days, weeks, or months. Choose Remove repeat to stop repeating.\n"
             "`description` - stored description\n"
-            "`content` - message content\n"
+            "`content` - single-line message content; use the web interface for "
+            "multiline content\n"
             "`duration_unit` + `duration_for` - how long to repeat; choose minutes, "
             "hours, days, weeks, or months. Choose No duration limit to clear it.\n"
             "`pin` - enable or disable pinning\n"
@@ -455,7 +461,8 @@ def legacy_slash_help_embed(topic=None):
             title="Legacy scheduler syntax",
             description=(
                 "`/giggle legacy` runs GiggleMe's old text scheduling syntax "
-                "without requiring Message Content."
+                "without requiring Message Content. The slash-command form is "
+                "intentionally single-line."
             ),
             color=0x00ff00
         )
@@ -463,8 +470,7 @@ def legacy_slash_help_embed(topic=None):
             name="Command format",
             value=(
                 "```text\n"
-                "~giggle <time> [option=value ...]\n"
-                "<message body>\n"
+                "~giggle <time> [option=value ...] -- <message body>\n"
                 "```\n"
                 "The `~giggle` / `~g` prefix is optional inside `/giggle legacy`."
             ),
@@ -475,8 +481,8 @@ def legacy_slash_help_embed(topic=None):
             value=(
                 "```text\n"
                 "~giggle 2026-08-14 21:30 channel=general "
-                "repeat=hours:6 duration=days:2 desc=\"status reminder\"\n"
-                "Remember to post the status update\n"
+                "repeat=hours:6 duration=days:2 desc=\"status reminder\" "
+                "-- Remember to post the status update\n"
                 "```"
             ),
             inline=False
@@ -592,9 +598,11 @@ def legacy_slash_help_embed(topic=None):
             "Raw+ workflow",
             (
                 "Use `/giggle show` with **Raw+** to reconstruct a stored message as "
-                "legacy scheduling text. Copy it, edit the time/body/options, then "
-                "paste it into `/giggle legacy`.\n"
-                "This is useful when creating several similar scheduled messages."
+                "legacy scheduling text. Raw+ uses ` -- ` between the command and "
+                "message body.\n"
+                "Single-line messages can be copied, edited, and pasted directly "
+                "into `/giggle legacy`. Use the web interface for Raw+ containing "
+                "real line breaks."
             )
         )
     }
@@ -629,10 +637,7 @@ def schedule_slash_help_embed():
     )
     embed.add_field(
         name="Required",
-        value=(
-            "`time` - when to deliver; see the Time formats section below\n"
-            "`content` - message body, unless `from_template` is used"
-        ),
+        value="`time` - when to deliver; see the Time formats section below",
         inline=False
     )
     embed.add_field(
@@ -645,6 +650,15 @@ def schedule_slash_help_embed():
             "`description` - short description used when listing messages\n"
             "`from_template` - create the body from a stored template\n"
             "`pin`, `publish`, `set_topic`, `set_channel_name` - delivery behavior"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Message content",
+        value=(
+            "If `from_template` is not selected, GiggleMe opens a message editor "
+            "after the slash command is submitted. The editor supports multiline "
+            "content."
         ),
         inline=False
     )
@@ -1999,6 +2013,18 @@ async def slash_edit(
         )
         return
 
+    if content is not None and ("\n" in content or "\r" in content):
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                description=(
+                    "Multiline message content cannot be edited through "
+                    "`/giggle edit`. Use the GiggleMe web interface."
+                ),
+                color=0xff0000
+            )
+        )
+        return
+
     message_id = await resolve_slash_message_reference(
         interaction,
         message,
@@ -2177,6 +2203,42 @@ async def slash_template_create_channel_autocomplete(
     return schedule_channel_autocomplete(interaction, current)
 
 
+class ScheduleContentModal(discord.ui.Modal):
+    def __init__(self, params):
+        super().__init__(title="Schedule Message")
+        self.params = params
+        self.content = discord.ui.TextInput(
+            label="Message content",
+            style=discord.TextStyle.paragraph,
+            placeholder="Enter the message to schedule",
+            required=True,
+            max_length=4000
+        )
+        self.add_item(self.content)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        params = dict(self.params)
+        params["request_message_id"] = interaction.id
+        params["content"] = self.content.value
+
+        await interaction.response.defer()
+        try:
+            await process_delay_message(params)
+            await interaction.edit_original_response(
+                embed=discord.Embed(
+                    description="Schedule request completed.",
+                    color=0x00ff00
+                )
+            )
+        except GigException as e:
+            await interaction.edit_original_response(
+                embed=discord.Embed(
+                    description=slash_error_text(e, "Schedule"),
+                    color=0xff0000
+                )
+            )
+
+
 @giggle_group.command(
     name="schedule",
     description="Schedule a message for future delivery"
@@ -2184,7 +2246,6 @@ async def slash_template_create_channel_autocomplete(
 @app_commands.guild_only()
 @app_commands.describe(
     time="When: 0=now, 15=15 min from now, or 8-14 9:30 PM / 2026-8-14 21:30",
-    content="Message body; omit when using from_template",
     channel="Destination channel; suggestions include channels GiggleMe can send to",
     repeat_unit="Unit between repeated deliveries",
     repeat_every="Number of repeat units between deliveries",
@@ -2216,7 +2277,6 @@ async def slash_template_create_channel_autocomplete(
 async def slash_schedule(
     interaction: discord.Interaction,
     time: str,
-    content: Optional[str] = None,
     channel: Optional[str] = None,
     repeat_unit: Optional[str] = None,
     repeat_every: Optional[int] = None,
@@ -2257,15 +2317,14 @@ async def slash_schedule(
         )
         return
 
-    await interaction.response.defer()
-
     params = {
         "guild": interaction.guild,
         "request_channel": interaction.channel,
         "request_message_id": interaction.id,
         "author_id": interaction.user.id,
         "delay": time,
-        "content": content,
+        "content": None,
+
         "channel": channel,
         "repeat": repeat,
         "desc": description,
@@ -2279,8 +2338,17 @@ async def slash_schedule(
         )
     }
 
+    # Templates already supply their own body. Normal schedules get a proper
+    # multiline editor instead of trying to turn a slash-command string option
+    # into a miniature text editor.
+    if not from_template:
+        await interaction.response.send_modal(ScheduleContentModal(params))
+        return
+
+    await interaction.response.defer()
     try:
         await process_delay_message(params)
+
         await interaction.edit_original_response(
             embed=discord.Embed(
                 description="Schedule request completed.",
@@ -2346,7 +2414,44 @@ async def slash_legacy(
             count=1
         ).strip()
 
+    # The slash-command compatibility path is deliberately single-line. A
+    # generated Raw+ command uses " -- " for the command/body boundary.
+    if "\n" in legacy_input or "\r" in legacy_input:
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                description=(
+                    "Multiline input is not supported by `/giggle legacy`. "
+                    "Use `/giggle schedule` for the message editor, or use the "
+                    "GiggleMe web interface."
+                ),
+                color=0xff0000
+            )
+        )
+        return
+
+    # Find the first separator outside quoted option values. In particular,
+    # desc="something -- something" must not become the body boundary.
+    in_quotes = False
+    separator_pos = None
+    i = 0
+    while i <= len(legacy_input) - 4:
+        char = legacy_input[i]
+        if char == '"' and (i == 0 or legacy_input[i - 1] != "\\"):
+            in_quotes = not in_quotes
+        if not in_quotes and legacy_input.startswith(" -- ", i):
+            separator_pos = i
+            break
+        i += 1
+
+    if separator_pos is not None:
+        legacy_input = (
+            legacy_input[:separator_pos]
+            + "\n"
+            + legacy_input[separator_pos + 4:]
+        )
+
     # Raw+ includes the old prefix. It is optional here.
+
     legacy_input = re.sub(
         r"^~g(?:iggle)?\s+",
         "",

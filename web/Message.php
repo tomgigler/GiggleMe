@@ -168,6 +168,27 @@ class Message {
       throw new BadRequestException("The free version of this software only allows you to have a total of 10 scheduled messages/templates at any one time.  Please DM the bot to inquire about upgrade options.");
     }
 
+    // Raw+ may use " -- " for the structural command/body boundary. Find the
+    // first separator outside quoted option values, but only before the first
+    // real newline. This preserves old multiline Raw+ input and descriptions
+    // such as desc="morning -- status".
+    $newline_pos = strpos($cmd, "\n");
+    $scan_limit = ($newline_pos === false) ? strlen($cmd) : $newline_pos;
+    $separator_pos = false;
+    $in_quotes = false;
+    for($i = 0; $i <= $scan_limit - 4; $i++){
+      if($cmd[$i] === '"' && ($i === 0 || $cmd[$i - 1] !== '\\')){
+        $in_quotes = !$in_quotes;
+      }
+      if(!$in_quotes && substr($cmd, $i, 4) === " -- "){
+        $separator_pos = $i;
+        break;
+      }
+    }
+    if($separator_pos !== false){
+      $cmd = substr($cmd, 0, $separator_pos)."\n".substr($cmd, $separator_pos + 4);
+    }
+
     [ $command, $content ] = explode("\n", $cmd, 2);
     if(!preg_match("/^(~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} \d{1,2}:\d{2}(:\d{2})?|\d+))/", $command, $matches)){
       throw new BadRequestException("Invalid command:\n".$command);
