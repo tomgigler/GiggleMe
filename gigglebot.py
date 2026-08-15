@@ -81,6 +81,27 @@ async def prepare_slash_interaction(interaction):
     return True
 
 
+PREFIX_TO_SLASH_GUIDE_URL = "https://github.com/tomgigler/GiggleMe/blob/main/PREFIX_TO_SLASH.md"
+
+
+async def send_prefix_migration_help(channel, embed=None):
+    migration_link = (
+        f"[Prefix → Slash migration guide]({PREFIX_TO_SLASH_GUIDE_URL})"
+    )
+
+    if embed is not None:
+        embed.add_field(
+            name="Moving from prefix commands",
+            value=migration_link,
+            inline=False
+        )
+        await channel.send(embed=embed)
+    else:
+        await channel.send(
+            f"**GiggleMe has moved to slash commands:** {migration_link}"
+        )
+
+
 def timezone_slash_help_embed():
     embed = discord.Embed(
         title="/giggle timezone",
@@ -3515,67 +3536,68 @@ async def on_message(msg):
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|a(uto(-replies)?)?)?)? *$', msg.content)
                 if match:
-                    await msg.channel.send(embed=list_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, list_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +show( +(raw\+?))?( +(\S+)|next) *$', msg.content)
                 if match:
-                    await msg.channel.send(embed=show_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, show_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +(cancel|delete|remove|clear|rm) +(\S+) *$', msg.content)
                 if match:
-                    await msg.channel.send(embed=cancel_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, cancel_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +send +(\S+) *$', msg.content)
                 if match:
-                    await msg.channel.send(embed=send_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, send_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +modify +(\d+) *\n(.*)$', msg.content)
                 if match:
-                    await msg.channel.send(embed=edit_sent_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, edit_sent_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +edit +(\S+)( +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+))?( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    await msg.channel.send(embed=edit_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, edit_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +template( +[^\n]+)?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    await msg.channel.send(embed=template_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, template_slash_help_embed())
                     return
 
                 # Classic unnamed scheduling is retired. Keep recognizing the
                 # old syntax long enough to direct users to the slash interface.
                 match = re.match(r'~g(iggle)? +((\d{4}-)?\d{1,2}-\d{1,2} +\d{1,2}:\d{1,2}(:\d{1,2})?( +(AM|PM))?|\d+)( +([^\n]+))?( *\n(.*))?$', msg.content, re.DOTALL)
                 if match:
-                    await msg.channel.send(embed=schedule_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, schedule_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +(time-format|tf)( +(12|24))? *$', msg.content)
                 if match:
-                    await msg.channel.send(embed=time_format_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, time_format_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +(help|\?)( +(\S+))? *$', msg.content)
                 if match:
                     await msg.channel.send(help.show_help(match.group(4)))
+                    await send_prefix_migration_help(msg.channel)
                     return
 
                 match = re.match(r'~g(iggle)? +(timezone|tz)( +(\S+))? *$', msg.content)
                 if match:
-                    await msg.channel.send(embed=timezone_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, timezone_slash_help_embed())
                     return
 
                 if re.match(r'~g(iggle)? +(timezones|tzs) *$', msg.content):
-                    await msg.channel.send(embed=timezone_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, timezone_slash_help_embed())
                     return
 
                 if re.match(r'~g(iggle)? +vip(?: +.*)?$', msg.content, re.DOTALL):
-                    await msg.channel.send(embed=vip_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, vip_slash_help_embed())
                     return
 
                 match = re.match(r'~g(iggle)? +set( +([^\n]+))? *$', msg.content)
@@ -3588,7 +3610,7 @@ async def on_message(msg):
 
                 match = re.match(r'^~g(iggle)? +adduser +(\S+)( +(\S+))? *$', msg.content)
                 if match and msg.author.id == settings.bot_owner_id:
-                    await msg.channel.send(embed=user_permissions_slash_help_embed())
+                    await send_prefix_migration_help(msg.channel, user_permissions_slash_help_embed())
                     return
 
                 await msg.channel.send(embed=discord.Embed(description="Invalid command.  To see help type:\n\n`~giggle help`", color=0xff0000))
