@@ -3463,14 +3463,39 @@ async def on_message(msg):
 
     if isinstance(msg.channel, discord.channel.DMChannel):
         if msg.author.id == settings.bot_owner_id:
-            match = re.match(r'(\d{18})\s+(.+)', msg.content)
+            match = re.match(r'(\d+)\s+(.+)', msg.content, re.DOTALL)
             if match:
-                user = client.get_user(int(match.group(1)))
-                await user.send(match.group(2))
+                user_id = int(match.group(1))
+                user = client.get_user(user_id)
+
+                if user is None:
+                    try:
+                        user = await client.fetch_user(user_id)
+                    except discord.NotFound:
+                        await msg.channel.send(f"Cannot find user `{user_id}`")
+                        return
+
+                try:
+                    await user.send(match.group(2))
+                    await msg.channel.send(
+                        f"Message sent to {user} (`{user_id}`)"
+                    )
+                except discord.Forbidden:
+                    await msg.channel.send(
+                        f"Cannot send a DM to {user} (`{user_id}`)"
+                    )
+                return
         else:
             user = client.get_user(settings.bot_owner_id)
+
+            if user is None:
+                user = await client.fetch_user(settings.bot_owner_id)
+
             content = re.sub("\n", "\n> ", msg.content)
-            await user.send(f"{msg.author.mention} ({msg.author.id}) said:\n> {content}")
+            await user.send(
+                f"{msg.author.mention} ({msg.author.id}) said:\n> {content}"
+            )
+
         return
 
     if re.match(r'~(giggle|g |g$)', msg.content):
