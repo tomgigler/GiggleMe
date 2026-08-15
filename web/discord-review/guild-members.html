@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guild Members Intent | GiggleMe</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <p class="site-title"><strong>GiggleMe</strong> · Discord Review Documentation</p>
+    <nav aria-label="Review documentation">
+<a href="index.html">Privacy Policy</a>
+<a href="message-content.html">Message Content Intent</a>
+<a href="guild-members.html" aria-current="page">Guild Members Intent</a>
+</nav>
+  </div>
+</header>
+<main>
+  <article>
+<h1>GiggleMe and the Guild Members Intent</h1>
+
+<p>GiggleMe requests Discord's <strong>Guild Members</strong> Privileged Gateway Intent for member and role placeholder resolution in scheduled messages.</p>
+
+<h2>Why GiggleMe uses placeholders</h2>
+<p>GiggleMe allows a scheduled message to contain placeholders that are resolved later, when the message is actually delivered.</p>
+<pre><code>{Testers}
+{Testers:expand}</code></pre>
+
+<h3>1. Preventing premature mentions</h3>
+<p>If GiggleMe converted a member or role into a Discord mention while the scheduled message was being created, users could be pinged immediately.</p>
+<p>Instead, GiggleMe stores the placeholder and resolves it at delivery time. People are mentioned only when the scheduled message is actually sent.</p>
+
+<h3>2. Resolving against the delivery-time server membership</h3>
+<p>The member or role needed in the eventual message may not be conveniently selectable from the channel where the schedule is being created.</p>
+<p>More importantly, role membership can change between the time a message is scheduled and the time it is delivered.</p>
+<p>Resolving the placeholder at delivery time lets GiggleMe use the current guild membership rather than freezing the membership when the schedule is created.</p>
+
+<h2>Role expansion</h2>
+<p>GiggleMe supports the <code>:expand</code> modifier.</p>
+<pre><code>{Testers:expand}</code></pre>
+<p>When the message is delivered, GiggleMe finds the members who currently have the <code>Testers</code> role and expands the placeholder into mentions for those individual members.</p>
+<p>GiggleMe also supports exclusions when expanding roles.</p>
+<p>Reliable role expansion requires access to the server's member population rather than relying on whichever members happen to be present in an incomplete local cache.</p>
+
+<h2>Example</h2>
+<p>A scheduled message contains:</p>
+<pre><code>Deployment complete. Please review: {Testers:expand}</code></pre>
+<p>When the schedule is created, no members of the <code>Testers</code> role are pinged.</p>
+<p>At delivery time, if Alice and Bob currently hold the <code>Testers</code> role, GiggleMe resolves the placeholder and sends the equivalent of:</p>
+<pre><code>Deployment complete. Please review: @Alice, @Bob</code></pre>
+<p>The actual Discord mentions are generated only when the scheduled message is delivered.</p>
+
+<h2>Screenshot evidence</h2>
+<h3>1. Scheduled placeholder</h3>
+<p>Show a scheduled message being created with a test role placeholder such as <code>{Testers:expand}</code>, demonstrating that nobody is pinged during creation.</p>
+<figure class="screenshot">
+  <img src="images/guild-members-schedule.png" alt="Placeholder for scheduled role placeholder screenshot">
+  <figcaption>Replace <code>images/guild-members-schedule.png</code> with the final screenshot.</figcaption>
+</figure>
+
+<h3>2. Delivery-time expansion</h3>
+<p>Show the delivered scheduled message after the placeholder has been expanded into the current members of the test role.</p>
+<figure class="screenshot">
+  <img src="images/guild-members-delivery.png" alt="Placeholder for delivery-time role expansion screenshot">
+  <figcaption>Replace <code>images/guild-members-delivery.png</code> with the final screenshot.</figcaption>
+</figure>
+
+<h2>Requested access</h2>
+<p>GiggleMe requests Guild Members so member and role placeholders can be resolved reliably using current guild membership, particularly when expanding roles into their individual members.</p>
+<p>GiggleMe does not use the Guild Members intent for advertising, profiling, presence tracking, or unrelated collection of server-member information.</p>
+
+<div class="page-links">
+<strong>Related:</strong>
+<a href="index.html">Privacy Policy</a> ·
+<a href="message-content.html">Message Content Intent</a>
+</div>
+  </article>
+</main>
+<footer>
+  <p>GiggleMe documentation for Discord privileged intent review.</p>
+</footer>
+</body>
+</html>
