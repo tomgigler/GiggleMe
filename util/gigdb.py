@@ -14,20 +14,24 @@ def db_connect():
 
 def db_execute_sql(sql, fetch, **kwargs):
     mydb = db_connect()
+    mycursor = None
 
-    mycursor = mydb.cursor(buffered=True)
+    try:
+        mycursor = mydb.cursor(buffered=True)
+        mycursor.execute(sql, tuple(kwargs.values()))
 
-    mycursor.execute(sql, tuple(kwargs.values()))
+        rows = None
+        if fetch:
+            rows = mycursor.fetchall()
 
-    rows = None
-    if fetch:
-        rows = mycursor.fetchall()
-
-    mydb.commit()
-    mycursor.close()
-    mydb.disconnect()
-
-    return rows
+        mydb.commit()
+        return rows
+    finally:
+        try:
+            if mycursor is not None:
+                mycursor.close()
+        finally:
+            mydb.disconnect()
 
 def get_all(table):
     return db_execute_sql(f"SELECT * FROM {table}", True)
