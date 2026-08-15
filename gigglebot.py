@@ -23,7 +23,25 @@ from gigparse import parse_args, GigParseException
 class GigException(Exception):
     pass
 
-client = discord.Client(intents=discord.Intents.all())
+# Subscribe only to the Gateway data GiggleMe actually uses.
+#
+# Privileged intents:
+# - members: required for reliable member/role placeholder resolution,
+#   including {role:expand}.
+# - message_content: required for Auto Replies and temporary classic-prefix
+#   compatibility.
+#
+# Guild Presences and other unused intents are deliberately not requested.
+intents = discord.Intents.none()
+intents.guilds = True
+intents.emojis_and_stickers = True
+intents.members = True
+intents.voice_states = True
+intents.guild_messages = True
+intents.dm_messages = True
+intents.message_content = True
+
+client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 slash_commands_synced = False
 
