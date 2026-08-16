@@ -301,8 +301,7 @@ def edit_slash_help_embed():
             "`repeat_unit` + `repeat_every` - repeat interval; choose minutes, "
             "hours, days, weeks, or months. Choose Remove repeat to stop repeating.\n"
             "`description` - stored description\n"
-            "`content` - single-line message content; use the web interface for "
-            "multiline content\n"
+            "`content` - open the message-content editor\n"
             "`duration_unit` + `duration_for` - how long to repeat; choose minutes, "
             "hours, days, weeks, or months. Choose No duration limit to clear it.\n"
             "`pin` - enable or disable pinning\n"
@@ -1962,7 +1961,7 @@ async def slash_edit_sent(
     repeat_unit="Unit between repeated deliveries",
     repeat_every="Number of repeat units between deliveries",
     description="New stored description",
-    content="New message content",
+    content="Open the message-content editor",
     duration_unit="Unit for the repeat duration",
     duration_for="Number of duration units",
     pin="Enable or disable pinning",
@@ -1994,7 +1993,7 @@ async def slash_edit(
     repeat_unit: Optional[str] = None,
     repeat_every: Optional[int] = None,
     description: Optional[str] = None,
-    content: Optional[str] = None,
+    content: Optional[bool] = None,
     duration_unit: Optional[str] = None,
     duration_for: Optional[int] = None,
     pin: Optional[bool] = None,
@@ -2010,18 +2009,6 @@ async def slash_edit(
         await interaction.response.send_message(
             "GiggleMe does not currently have permission to deliver messages "
             "to any text channel in this server."
-        )
-        return
-
-    if content is not None and ("\n" in content or "\r" in content):
-        await interaction.response.send_message(
-            embed=discord.Embed(
-                description=(
-                    "Multiline message content cannot be edited through "
-                    "`/giggle edit`. Use the GiggleMe web interface."
-                ),
-                color=0xff0000
-            )
         )
         return
 
@@ -2052,8 +2039,6 @@ async def slash_edit(
         )
         return
 
-    await interaction.response.defer()
-
     # GiggleMe-generated IDs are lowercase MD5 fragments, but accepting
     # pasted uppercase IDs costs nothing and removes a needless trap.
     message_id = message_id.casefold()
@@ -2071,7 +2056,7 @@ async def slash_edit(
                 "Use `/giggle list` to find the stored message ID."
             )
 
-        await interaction.edit_original_response(
+        await interaction.response.send_message(
             embed=discord.Embed(description=detail, color=0xff0000)
         )
         return
@@ -2092,11 +2077,33 @@ async def slash_edit(
         "channel": channel,
         "repeat": repeat,
         "desc": description,
-        "content": content,
+        "content": None,
         "duration": duration,
         "pin": None if pin is None else str(pin).lower(),
         "publish": None if publish is None else str(publish).lower()
     }
+
+    if content:
+        current_content = delayed_messages[message_id].content or ""
+
+        if len(current_content) > 4000:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    description=(
+                        "This message is too long for Discord's content editor. "
+                        "Use the GiggleMe web interface to edit it."
+                    ),
+                    color=0xff0000
+                )
+            )
+            return
+
+        await interaction.response.send_modal(
+            EditContentModal(params, message_id, current_content)
+        )
+        return
+
+    await interaction.response.defer()
 
     try:
         await edit_delay_message(params)
@@ -2108,7 +2115,10 @@ async def slash_edit(
         )
     except GigException as e:
         await interaction.edit_original_response(
-            embed=discord.Embed(description=slash_error_text(e, "Edit"), color=0xff0000)
+            embed=discord.Embed(
+                description=slash_error_text(e, "Edit"),
+                color=0xff0000
+            )
         )
 
 
@@ -2201,6 +2211,45 @@ async def slash_template_create_channel_autocomplete(
     current: str
 ):
     return schedule_channel_autocomplete(interaction, current)
+
+
+class EditContentModal(discord.ui.Modal):
+    def __init__(self, params, message_id, current_content):
+        super().__init__(title="Edit Message Content")
+        self.params = params
+        self.message_id = message_id
+        self.content = discord.ui.TextInput(
+            label="Message content",
+            style=discord.TextStyle.paragraph,
+            default=current_content,
+            required=True,
+            max_length=4000
+        )
+        self.add_item(self.content)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        params = dict(self.params)
+        params["content"] = self.content.value
+
+        await interaction.response.defer()
+
+        try:
+            await edit_delay_message(params)
+            await interaction.edit_original_response(
+                embed=discord.Embed(
+                    description=(
+                        f"Edit request completed for message **{self.message_id}**."
+                    ),
+                    color=0x00ff00
+                )
+            )
+        except GigException as e:
+            await interaction.edit_original_response(
+                embed=discord.Embed(
+                    description=slash_error_text(e, "Edit"),
+                    color=0xff0000
+                )
+            )
 
 
 class ScheduleContentModal(discord.ui.Modal):
