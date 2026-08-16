@@ -41,7 +41,7 @@ function show_as_command_click(){
     success: function( response ) {
       var message = JSON.parse(response);
       if($('#show_as_command_chkbx').prop('checked'))
-        $('#display_content_pre').text(message.command+"\n"+message.content);
+        $('#display_content_pre').text(message.command+" -- "+message.content);
       else
         $('#display_content_pre').text(message.content);
     }

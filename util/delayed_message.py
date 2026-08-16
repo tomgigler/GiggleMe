@@ -109,7 +109,7 @@ class Message(DelayedMessage):
         if self.description:
             command += f' desc="{self.description}"'
 
-        return "```\n" + command + "\n" + super().get_show_content(raw, timezone)
+        return "```\n" + command + " -- " + super().get_show_content(raw, timezone)
 
     def update_db(self):
         gigdb.update_message(self.id, self.guild_id, self.delivery_channel_id, self.delivery_time, self.author_id, self.repeat, self.last_repeat_message, self.content, self.description, self.repeat_until, self.special_handling)
