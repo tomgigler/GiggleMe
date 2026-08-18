@@ -8,6 +8,7 @@ Built against repository state:
 
 - `web/help/index.html`
 - `web/help/styles.css`
+- `web/help/giggleme-logo.svg`
 
 The help page is intentionally self-contained and does not modify the existing PHP web interface.
 After extracting this bundle into the GiggleMe repository root, the page should be available at `/help/` when `web/` is the site's document root.
@@ -27,3 +28,8 @@ After extracting this bundle into the GiggleMe repository root, the page should 
 ## Video placeholders
 
 The current placeholders are ordinary HTML and CSS. When videos are ready, each placeholder can be replaced with an `<iframe>` or `<video>` element while keeping the surrounding guide card and anchor unchanged.
+
+## Logo change
+
+The header brand mark now uses `web/help/giggleme-logo.svg` instead of the temporary stylized `G` badge.
+If you want to swap in a different official logo asset later, keep the filename or update the `<img>` in `web/help/index.html`.

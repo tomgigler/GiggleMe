@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="80" viewBox="0 0 320 80" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">GiggleMe logo</title>
+  <desc id="desc">GiggleMe wordmark with a smiling chat bubble icon.</desc>
+  <defs>
+    <linearGradient id="bubbleGrad" x1="10" y1="8" x2="70" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9A8CFF"/>
+      <stop offset="1" stop-color="#7C6DF2"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="84" y1="16" x2="240" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#D8D3FF"/>
+    </linearGradient>
+  </defs>
+  <g filter="url(#shadow)">
+    <path d="M40 8C22.327 8 8 21.88 8 39C8 56.12 22.327 70 40 70C45.944 70 51.511 68.432 56.302 65.7L70 72L66.353 57.833C70.488 52.66 72 46.14 72 39C72 21.88 57.673 8 40 8Z" fill="url(#bubbleGrad)"/>
+    <circle cx="30" cy="36" r="4" fill="#0F1117" opacity="0.9"/>
+    <circle cx="50" cy="36" r="4" fill="#0F1117" opacity="0.9"/>
+    <path d="M28 48C31.769 52.533 36.461 54.8 40 54.8C43.539 54.8 48.231 52.533 52 48" stroke="#0F1117" stroke-width="4.5" stroke-linecap="round"/>
+  </g>
+  <text x="90" y="52" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="36" font-weight="800" fill="url(#textGrad)">GiggleMe</text>
+  <text x="91" y="68" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="600" letter-spacing="2" fill="#AEB6C7">HELP &amp; TUTORIALS</text>
+  <defs>
+    <filter id="shadow" x="0" y="0" width="80" height="80" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="6"/>
+      <feGaussianBlur stdDeviation="6"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.486275 0 0 0 0 0.427451 0 0 0 0 0.94902 0 0 0 0.32 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+</svg>
