@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Help and tutorials for the GiggleMe Discord bot.">
+  <title>GiggleMe Help</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="#top" aria-label="GiggleMe Help home">
+        <img class="brand-logo" src="giggleme-logo-dark.png" alt="GiggleMe logo">
+      </a>
+      <nav class="header-nav" aria-label="Help navigation">
+        <a href="#start">Start here</a>
+        <a href="#features">Features</a>
+        <a href="#commands">Commands</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">GiggleMe help</p>
+          <h1>Schedule it now. Let GiggleMe remember it later.</h1>
+          <p class="lede">
+            Learn the main GiggleMe workflows with short tutorials, command references,
+            and examples you can use directly in Discord.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#start">Get started</a>
+            <a class="button secondary" href="#commands">Browse commands</a>
+          </div>
+        </div>
+        <aside class="quick-card" aria-label="Quick start">
+          <span class="card-kicker">Quick start</span>
+          <code>/giggle help</code>
+          <p>Open GiggleMe's built-in command help without leaving Discord.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section shell" id="start">
+      <div class="section-heading">
+        <p class="eyebrow">Start here</p>
+        <h2>The three things most people need first</h2>
+        <p>These tutorials will be the shortest path from “the bot is installed” to “the bot is useful.”</p>
+      </div>
+
+      <div class="card-grid three">
+        <article class="feature-card featured">
+          <div class="video-placeholder" aria-label="Scheduling tutorial video placeholder">
+            <span>Video coming soon</span>
+          </div>
+          <div class="card-body">
+            <span class="card-kicker">1 · Schedule a message</span>
+            <h3>Send something later</h3>
+            <p>Choose a delivery time and channel, enter the message in GiggleMe's editor, and let the bot deliver it.</p>
+            <div class="command-row"><code>/giggle schedule</code></div>
+            <a class="text-link" href="#scheduling">Scheduling help →</a>
+          </div>
+        </article>
+
+        <article class="feature-card featured">
+          <div class="video-placeholder" aria-label="Managing messages tutorial video placeholder">
+            <span>Video coming soon</span>
+          </div>
+          <div class="card-body">
+            <span class="card-kicker">2 · Find and manage it</span>
+            <h3>List, inspect, edit, send, or cancel</h3>
+            <p>GiggleMe assigns stored items IDs so you can find them again instead of relying on human memory, a famously unstable storage medium.</p>
+            <div class="command-row"><code>/giggle list</code><code>/giggle show</code></div>
+            <a class="text-link" href="#manage">Message management →</a>
+          </div>
+        </article>
+
+        <article class="feature-card featured">
+          <div class="video-placeholder" aria-label="Settings tutorial video placeholder">
+            <span>Video coming soon</span>
+          </div>
+          <div class="card-body">
+            <span class="card-kicker">3 · Check your settings</span>
+            <h3>Set your time zone</h3>
+            <p>Scheduled times use your GiggleMe time zone, so setting it correctly is rather more useful than blaming time itself.</p>
+            <div class="command-row"><code>/giggle timezone</code><code>/giggle time-format</code></div>
+            <a class="text-link" href="#settings">Settings help →</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section section-alt" id="features">
+      <div class="shell">
+        <div class="section-heading">
+          <p class="eyebrow">Feature guides</p>
+          <h2>Learn GiggleMe by what you want to do</h2>
+          <p>Each section has a permanent anchor so a tutorial or support reply can link straight to the relevant feature.</p>
+        </div>
+
+        <div class="feature-list">
+          <article class="guide" id="scheduling">
+            <div class="guide-copy">
+              <span class="card-kicker">Core workflow</span>
+              <h3>Scheduling messages</h3>
+              <p>Schedule one-time or repeating messages, select a destination channel, or build the message from a saved template.</p>
+              <div class="command-row"><code>/giggle schedule</code></div>
+              <ul>
+                <li>Relative or absolute delivery times</li>
+                <li>Repeating schedules with an optional duration</li>
+                <li>Multiline content through the Discord editor</li>
+                <li>Optional delivery behavior such as pinning or publishing</li>
+              </ul>
+            </div>
+            <div class="video-placeholder large" aria-label="Scheduling messages video placeholder">
+              <span>Scheduling tutorial</span>
+              <small>Video coming soon</small>
+            </div>
+          </article>
+
+          <article class="guide" id="manage">
+            <div class="guide-copy">
+              <span class="card-kicker">Stored items</span>
+              <h3>Finding and managing messages</h3>
+              <p>Use IDs and filters to find stored messages, then inspect, edit, send, or cancel them.</p>
+              <div class="command-row">
+                <code>/giggle list</code><code>/giggle show</code><code>/giggle edit</code><code>/giggle send</code><code>/giggle cancel</code>
+              </div>
+            </div>
+            <div class="video-placeholder large" aria-label="Managing stored messages video placeholder">
+              <span>Managing messages tutorial</span>
+              <small>Video coming soon</small>
+            </div>
+          </article>
+
+          <article class="guide" id="templates">
+            <div class="guide-copy">
+              <span class="card-kicker">Reusable content</span>
+              <h3>Templates</h3>
+              <p>Store reusable message content once, then use it when scheduling future messages.</p>
+              <div class="command-row"><code>/giggle template create</code></div>
+              <p class="note">Existing templates can also be found and managed with the regular list, show, edit, and cancel commands.</p>
+            </div>
+            <div class="video-placeholder large" aria-label="Templates video placeholder">
+              <span>Templates tutorial</span>
+              <small>Video coming soon</small>
+            </div>
+          </article>
+
+          <article class="guide evidence-guide" id="auto-replies">
+            <div class="guide-copy">
+              <div class="label-row">
+                <span class="card-kicker">Automation</span>
+                <span class="evidence-badge">Discord review evidence</span>
+              </div>
+              <h3>Auto Replies</h3>
+              <p>Create a reply that is triggered by an ordinary server message. Matching can be exact or use the wildcard option.</p>
+              <div class="command-row"><code>/giggle auto-reply create</code></div>
+              <p class="note">The tutorial will show configuration, the triggering message, and GiggleMe's resulting reply in one continuous workflow.</p>
+            </div>
+            <div class="video-placeholder large evidence" aria-label="Auto Replies evidence video placeholder">
+              <span>Auto Replies</span>
+              <small>Tutorial / Message Content evidence</small>
+            </div>
+          </article>
+
+          <article class="guide evidence-guide" id="role-expansion">
+            <div class="guide-copy">
+              <div class="label-row">
+                <span class="card-kicker">Dynamic message content</span>
+                <span class="evidence-badge">Discord review evidence</span>
+              </div>
+              <h3>Role member expansion</h3>
+              <p>GiggleMe can resolve a role when a scheduled message is delivered and expand it to the members who currently have that role.</p>
+              <div class="command-row"><code>{RoleName:expand}</code></div>
+              <p class="note">The tutorial will demonstrate a scheduled message using role expansion and the resulting member list at delivery time.</p>
+            </div>
+            <div class="video-placeholder large evidence" aria-label="Role member expansion evidence video placeholder">
+              <span>Dynamic role members</span>
+              <small>Tutorial / Guild Members evidence</small>
+            </div>
+          </article>
+
+          <article class="guide" id="vip">
+            <div class="guide-copy">
+              <span class="card-kicker">Voice channels</span>
+              <h3>VIP announcements</h3>
+              <p>Associate a member with a template so GiggleMe can announce a VIP joining voice after the configured grace period.</p>
+              <div class="command-row"><code>/giggle vip list</code><code>/giggle vip add</code><code>/giggle vip remove</code></div>
+            </div>
+            <div class="video-placeholder large" aria-label="VIP announcements video placeholder">
+              <span>VIP tutorial</span>
+              <small>Video coming soon</small>
+            </div>
+          </article>
+
+          <article class="guide" id="permissions">
+            <div class="guide-copy">
+              <span class="card-kicker">Administration</span>
+              <h3>User permissions</h3>
+              <p>Grant or revoke permission for a user to use GiggleMe in a server.</p>
+              <div class="command-row"><code>/giggle user grant</code><code>/giggle user revoke</code></div>
+            </div>
+            <div class="video-placeholder large" aria-label="User permissions video placeholder">
+              <span>User permissions tutorial</span>
+              <small>Video coming soon</small>
+            </div>
+          </article>
+
+          <article class="guide" id="settings">
+            <div class="guide-copy">
+              <span class="card-kicker">Personal settings</span>
+              <h3>Time zone and time format</h3>
+              <p>View or change the time zone GiggleMe uses for your schedules and choose 12-hour or 24-hour display.</p>
+              <div class="command-row"><code>/giggle timezone</code><code>/giggle time-format</code></div>
+            </div>
+            <div class="video-placeholder large" aria-label="Settings video placeholder">
+              <span>Settings tutorial</span>
+              <small>Video coming soon</small>
+            </div>
+          </article>
+
+          <article class="guide" id="legacy">
+            <div class="guide-copy">
+              <span class="card-kicker">Advanced / migration</span>
+              <h3>Legacy syntax and Raw+</h3>
+              <p>GiggleMe keeps a compatibility path for old scheduling syntax and Raw+ workflows while the primary interface is slash commands.</p>
+              <div class="command-row"><code>/giggle legacy</code></div>
+              <p class="note">The web interface remains useful when a Raw+ message contains real line breaks.</p>
+            </div>
+            <div class="video-placeholder large" aria-label="Legacy and Raw Plus video placeholder">
+              <span>Legacy / Raw+ tutorial</span>
+              <small>Video coming soon</small>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section shell" id="commands">
+      <div class="section-heading">
+        <p class="eyebrow">Command reference</p>
+        <h2>Slash commands at a glance</h2>
+        <p>This is intentionally compact. Detailed explanations live with the feature they support.</p>
+      </div>
+
+      <div class="command-table" role="table" aria-label="GiggleMe command reference">
+        <div class="command-entry" role="row"><code>/giggle help</code><span>Open built-in GiggleMe help.</span></div>
+        <div class="command-entry" role="row"><code>/giggle schedule</code><span>Schedule a message for delivery.</span></div>
+        <div class="command-entry" role="row"><code>/giggle list</code><span>List stored messages and related items.</span></div>
+        <div class="command-entry" role="row"><code>/giggle show</code><span>Show a stored item.</span></div>
+        <div class="command-entry" role="row"><code>/giggle edit</code><span>Edit a stored GiggleMe item.</span></div>
+        <div class="command-entry" role="row"><code>/giggle send</code><span>Send a scheduled message immediately.</span></div>
+        <div class="command-entry" role="row"><code>/giggle cancel</code><span>Cancel a stored item.</span></div>
+        <div class="command-entry" role="row"><code>/giggle edit-sent</code><span>Edit a Discord message already sent by GiggleMe.</span></div>
+        <div class="command-entry" role="row"><code>/giggle template create</code><span>Create a reusable template.</span></div>
+        <div class="command-entry" role="row"><code>/giggle auto-reply create</code><span>Create an Auto Reply.</span></div>
+        <div class="command-entry" role="row"><code>/giggle vip …</code><span>List, add, or remove VIP voice announcements.</span></div>
+        <div class="command-entry" role="row"><code>/giggle user …</code><span>Grant or revoke GiggleMe user permission.</span></div>
+        <div class="command-entry" role="row"><code>/giggle timezone</code><span>View or change your time zone.</span></div>
+        <div class="command-entry" role="row"><code>/giggle time-format</code><span>View or change your time display format.</span></div>
+        <div class="command-entry" role="row"><code>/giggle legacy</code><span>Use legacy scheduling text or a Raw+ workflow.</span></div>
+        <div class="command-entry" role="row"><code>/giggle test</code><span>Verify slash-command plumbing.</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <div>
+        <strong>GiggleMe</strong>
+        <p>A Discord bot for scheduling, repeating, templating, and automating messages.</p>
+      </div>
+      <div class="footer-links">
+        <a href="../discord-review/">Privacy &amp; Discord review</a>
+        <a href="#top">Back to top ↑</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
