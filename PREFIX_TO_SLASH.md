@@ -25,6 +25,7 @@ to see the available commands.
 | `~g modify <discord-message-id>` | `/giggle edit-sent` |
 | `~g edit <id> ...` | `/giggle edit` |
 | `~g template ...` | `/giggle template create` |
+| `~g auto-reply <trigger> ...` | `/giggle auto-reply create` |
 | `~g <time> ...` | `/giggle schedule` |
 | `~g timezone` / `~g tz` | `/giggle timezone` |
 | `~g timezones` / `~g tzs` | `/giggle timezone` and use autocomplete |
@@ -107,9 +108,13 @@ backward compatibility while the transition is completed.
 
 ## Auto Replies
 
-Auto Replies are different from ordinary commands: they intentionally inspect
-normal message text for configured triggers. They remain on the classic
-Message Content path for now.
+Auto Replies are configured with `/giggle auto-reply create`. The trigger and
+behavior options are supplied as slash-command fields, and GiggleMe then opens
+a modal for the reply body.
+
+The configured Auto Reply still intentionally examines normal server messages
+for its trigger. Message Content therefore remains required for Auto Reply
+matching even though Auto Reply configuration has moved to slash commands.
 
 ## Need help?
 

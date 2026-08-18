@@ -304,7 +304,7 @@ GiggleMe's primary command interface is Discord slash commands. Start with:
 
 Classic time-based scheduling syntax is no longer executable. If a user enters an old command such as `~giggle 5`, GiggleMe recognizes the scheduling pattern only to direct the user to `/giggle schedule` help.
 
-Two classic-prefix paths intentionally remain for now: `~giggle help` and Auto Replies. Both are tied to the remaining privileged Message Content work and are planned to disappear when that intent is removed.
+Auto Reply configuration uses `/giggle auto-reply create`. Auto Reply matching still requires the privileged Message Content intent because triggering messages are ordinary server messages. Classic `~giggle help` remains temporarily as migration guidance.
 
 A useful smoke test is:
 
@@ -315,10 +315,11 @@ A useful smoke test is:
 5. List, show, edit, and cancel stored messages, including channel autocomplete where applicable.
 6. Exercise send/cancel confirmation buttons.
 7. Grant and revoke a user's GiggleMe authorization and confirm the `user_guilds` row changes as expected.
-8. List, add, and remove a VIP.
-9. Enter an old classic scheduling command and confirm it returns slash scheduling help without creating a message.
-10. Restart GiggleMe and confirm the full `/giggle` command tree is still registered.
-11. Confirm a scheduled message survives the restart and is delivered at the expected time.
+8. Create an Auto Reply with `/giggle auto-reply create`, trigger it from an ordinary server message, then list/show/cancel it.
+9. List, add, and remove a VIP.
+10. Enter an old classic scheduling command and confirm it returns slash scheduling help without creating a message.
+11. Restart GiggleMe and confirm the full `/giggle` command tree is still registered.
+12. Confirm a scheduled message survives the restart and is delivered at the expected time.
 
 The command tree is synchronized for existing guilds during `on_ready()` and for newly joined guilds during `on_guild_join()`.
 
@@ -506,7 +507,7 @@ GiggleMe has accumulated features incrementally over a long period of real-world
 Useful refactoring/deployment goals include:
 
 - replace `discord.Intents.all()` with the minimum required intents
-- remove Auto Replies when the privileged `MESSAGE_CONTENT` intent is removed; Auto Replies are intentionally not being migrated to slash commands
+- keep Auto Reply configuration on slash commands; if the privileged `MESSAGE_CONTENT` intent is ever removed, remove or redesign the trigger-matching feature that depends on ordinary message text
 - add a sanitized example for the web application's own database/auth configuration
 - split the large `on_message` command dispatcher into focused command handlers
 - add database migrations for future schema changes
