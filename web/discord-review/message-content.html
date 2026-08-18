@@ -24,13 +24,13 @@
 <p>GiggleMe requests Discord's <strong>Message Content</strong> Privileged Gateway Intent for its Auto Reply feature.</p>
 
 <h2>Why GiggleMe needs Message Content</h2>
-<p>Authorized GiggleMe users can configure an Auto Reply consisting of trigger text, reply text, and optional delivery behavior.</p>
+<p>Authorized GiggleMe users configure an Auto Reply with <code>/giggle auto-reply create</code>, supplying trigger text and optional behavior through slash-command fields and the reply text through a modal editor.</p>
 <p>After an Auto Reply is configured, GiggleMe examines ordinary messages posted in that Discord server. When a message matches the configured trigger, GiggleMe sends the configured response.</p>
 <p>This feature specifically reacts to normal user messages. The user sending the triggering message does not invoke a slash command or otherwise address GiggleMe.</p>
 <p>Without access to Message Content, GiggleMe cannot determine whether an ordinary server message matches an Auto Reply trigger.</p>
 
 <h2>Slash commands are used for normal commands</h2>
-<p>GiggleMe's normal interactive command interface has been migrated to Discord slash commands.</p>
+<p>GiggleMe's normal interactive command interface, including Auto Reply configuration, uses Discord slash commands.</p>
 <p>Legacy <code>~giggle</code> / <code>~g</code> prefix-command compatibility may remain temporarily to help existing users migrate, but preserving prefix commands is not the reason GiggleMe requests Message Content access.</p>
 <p>The privileged intent is requested because Auto Replies require access to the text of ordinary server messages.</p>
 
@@ -50,7 +50,7 @@ Reply: Hello from GiggleMe</code></pre>
 
 <h2>Screenshot evidence</h2>
 <h3>1. Auto Reply configuration</h3>
-<p>Show an authorized user creating an Auto Reply using a harmless test trigger and response.</p>
+<p>Show an authorized user creating an Auto Reply with <code>/giggle auto-reply create</code> using a harmless test trigger and response.</p>
 <figure class="screenshot">
   <img src="images/message-content-configuration.png" alt="Placeholder for Auto Reply configuration screenshot">
   <figcaption>Replace <code>images/message-content-configuration.png</code> with the final screenshot.</figcaption>

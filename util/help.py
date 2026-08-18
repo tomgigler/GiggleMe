@@ -11,8 +11,8 @@ def show_help(command):
 > Manage VIPs with `/giggle vip`.
 > Manage user authorization with `/giggle user`.
 > 
-> Classic prefix help is temporarily retained while the remaining Message Content-dependent features are phased out.
-> Auto-replies are still classic for now; use `~giggle help auto-replies` for that feature."""
+> Classic prefix help is temporarily retained as migration guidance.
+> Auto Replies are configured with `/giggle auto-reply create`. Trigger matching still requires Message Content because triggers are ordinary server messages."""
 
     if command == "list":
         return """> `~giggle list <range>`
@@ -181,32 +181,12 @@ def show_help(command):
 > 
 > For example: `duration=hours:2`"""
 
-    if command == "auto" or command == "auto-replies":
-        return f"""> The `{command}` command is used send auto replies.  To create an AutoReply:
-> 
-> `~giggle {command} <trigger> desc=<description> wildcard=<wildcard>`
-> `<reply>`
-> 
-> **<trigger>** is the text that will "trigger" the AutoReply.  Triggers are case insensitive
->   and must be the only text in the message unless `wildcard=true` is specified
-> 
-> The following optional parameters may also be used when creating an AutoReply:
-> 
-> `desc="<description>"` A brief description of the message
-> 
-> `wildcard=true` If specified, the AutoReply will trigger if the Trigger text is found
->   anywhere in the message"""
-
-    if command == "auto-replies":
-        return """> The `auto-reply` command is used to create auto replies.  To create an auto-reply:
-> 
-> `~giggle auto-reply <trigger>`
-> `<reply>`
-> 
-> **<trigger>** is the text that will trigger the auto reply
-> 
-> The following optional parameters may also be used when creating an auto-reply:
-> 
-> `description="<description>"` A brief description of the auto-reply"""
-
-    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `template`, `vip`, `adduser`"
+    if command in ("auto", "auto-reply", "auto-replies"):
+        return """> Auto Reply configuration has moved to Discord slash commands.
+>
+> Use `/giggle auto-reply create` to create an Auto Reply.
+>
+> Use `/giggle list category:Auto-replies`, `/giggle show`, `/giggle edit`, and `/giggle cancel` to manage existing Auto Replies.
+>
+> Auto Reply trigger matching still requires Discord Message Content because the triggering message is ordinary server text, not a slash command."""
+    return f"> \"{command}\" is not a recognized help topic\n> \n> Available topics are `list`, `show`, `send`, `edit`, `cancel`, `timezone`, `timezones`, `help`, `repeat`, `template`, `auto-replies`, `vip`, `adduser`"

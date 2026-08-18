@@ -66,6 +66,12 @@ vip_group = app_commands.Group(
 )
 
 
+auto_reply_group = app_commands.Group(
+    name="auto-reply",
+    description="Create and manage GiggleMe Auto Replies"
+)
+
+
 async def prepare_slash_interaction(interaction):
     guild = interaction.guild
     member = interaction.user
@@ -357,6 +363,58 @@ def template_slash_help_embed():
         value=(
             "Templates also work with `/giggle list`, `/giggle show`, "
             "`/giggle edit`, and `/giggle cancel`."
+        ),
+        inline=False
+    )
+    return embed
+
+
+def auto_reply_slash_help_embed():
+    embed = discord.Embed(
+        title="/giggle auto-reply create",
+        description=(
+            "Create an Auto Reply that reacts to ordinary messages posted in "
+            "this server."
+        ),
+        color=0x00ff00
+    )
+    embed.add_field(
+        name="Create",
+        value=(
+            "Use `/giggle auto-reply create trigger:<text>`. After the slash "
+            "options are submitted, GiggleMe opens a multiline editor for the reply."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Options",
+        value=(
+            "`channel` - send the reply in a specific channel instead of the "
+            "channel containing the trigger\n"
+            "`description` - short description used when listing the Auto Reply\n"
+            "`wildcard` - match when the trigger appears anywhere in a message\n"
+            "`delete` - delete the triggering message after it matches\n"
+            "`report` - report the triggering message to the configured approval "
+            "channel instead of sending the reply"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Matching",
+        value=(
+            "Triggers are case-insensitive. Without `wildcard`, the trigger must "
+            "be the entire message. Auto Reply matching still requires Discord's "
+            "Message Content intent because the triggering message is an ordinary "
+            "server message, not a slash command."
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Managing Auto Replies",
+        value=(
+            "Use `/giggle list category:Auto-replies`, `/giggle show`, "
+            "`/giggle edit`, and `/giggle cancel` for existing Auto Replies. "
+            "To change a trigger or matching behavior, delete and recreate the Auto Reply."
         ),
         inline=False
     )
@@ -752,6 +810,9 @@ def slash_help_embed(command=None):
     if command == "templates":
         return template_slash_help_embed()
 
+    if command == "auto-replies":
+        return auto_reply_slash_help_embed()
+
     if command == "vip":
         return vip_slash_help_embed()
 
@@ -784,6 +845,7 @@ def slash_help_embed(command=None):
             "`/giggle schedule` - schedule a message for delivery\n"
             "`/giggle legacy` - schedule using old text-command syntax or Raw+ output\n"
             "`/giggle template create` - create a reusable message template\n"
+            "`/giggle auto-reply create` - create an Auto Reply\n"
             "`/giggle vip list|add|remove` - manage VIP voice announcements\n"
             "`/giggle user grant` - grant a user permission to use GiggleMe\n"
             "`/giggle user revoke` - revoke a user's GiggleMe permission\n"
@@ -792,11 +854,12 @@ def slash_help_embed(command=None):
         inline=False
     )
     embed.add_field(
-        name="Temporary classic-prefix features",
+        name="Message Content",
         value=(
-            "Classic help and Auto Replies remain temporarily because they still "
-            "depend on the privileged Message Content path. Normal GiggleMe "
-            "scheduling and management use slash commands."
+            "Auto Replies are configured with slash commands, but matching still "
+            "examines ordinary server messages and therefore requires Discord's "
+            "privileged Message Content intent. Classic prefix help remains "
+            "temporarily for migration guidance."
         ),
         inline=False
     )
@@ -825,6 +888,9 @@ MIGRATED_HELP_TOPICS = {
     "schedule": "schedule",
     "template": "templates",
     "templates": "templates",
+    "auto": "auto-replies",
+    "auto-reply": "auto-replies",
+    "auto-replies": "auto-replies",
     "vip": "vip",
     "adduser": "users",
     "users": "users",
@@ -2149,6 +2215,97 @@ async def slash_edit_channel_autocomplete(
     return schedule_channel_autocomplete(interaction, current)
 
 
+class AutoReplyContentModal(discord.ui.Modal):
+    def __init__(self, params):
+        super().__init__(title="Create Auto Reply")
+        self.params = params
+        self.reply = discord.ui.TextInput(
+            label="Reply",
+            style=discord.TextStyle.paragraph,
+            placeholder="Enter the Auto Reply response",
+            required=True,
+            max_length=4000
+        )
+        self.add_item(self.reply)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        params = dict(self.params)
+        params["reply"] = self.reply.value
+
+        try:
+            auto_reply = create_auto_reply_record(params)
+            embed = discord.Embed(
+                description="Your auto reply has been created",
+                color=0x00ff00
+            )
+            embed.add_field(name="ID", value=auto_reply.id, inline=True)
+
+            await interaction.response.send_message(embed=embed)
+
+        except GigException as e:
+            await interaction.response.send_message(
+                embed=discord.Embed(
+                    description=slash_error_text(e, "Auto Replies"),
+                    color=0xff0000
+                )
+            )
+
+@auto_reply_group.command(name="create", description="Create an Auto Reply")
+@app_commands.guild_only()
+@app_commands.describe(
+    trigger="Text that triggers the Auto Reply; matching is case-insensitive",
+    channel="Reply in this channel instead of the channel containing the trigger",
+    description="Short description used when listing the Auto Reply",
+    wildcard="Match when the trigger appears anywhere in the message",
+    delete="Delete the triggering message after it matches",
+    report="Report the triggering message instead of sending the reply"
+)
+async def slash_auto_reply_create(
+    interaction: discord.Interaction,
+    trigger: str,
+    channel: Optional[str] = None,
+    description: Optional[str] = None,
+    wildcard: bool = False,
+    delete: bool = False,
+    report: bool = False
+):
+    if not await prepare_slash_interaction(interaction):
+        return
+
+    if channel == AUTOCOMPLETE_NO_CHANNELS:
+        await interaction.response.send_message(
+            "GiggleMe does not currently have permission to deliver messages "
+            "to that channel."
+        )
+        return
+
+    trigger = trigger.strip()
+    if not trigger:
+        await interaction.response.send_message("The Auto Reply trigger cannot be empty.")
+        return
+
+    params = {
+        "guild_id": interaction.guild.id,
+        "author_id": interaction.user.id,
+        "trigger": trigger,
+        "channel": channel,
+        "desc": description,
+        "wildcard": wildcard,
+        "delete": delete,
+        "report": report
+    }
+
+    await interaction.response.send_modal(AutoReplyContentModal(params))
+
+
+@slash_auto_reply_create.autocomplete("channel")
+async def slash_auto_reply_create_channel_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+):
+    return schedule_channel_autocomplete(interaction, current)
+
+
 @template_group.command(
     name="create",
     description="Create a reusable GiggleMe message template"
@@ -2587,6 +2744,7 @@ async def slash_legacy(
     app_commands.Choice(name="Schedule", value="schedule"),
     app_commands.Choice(name="Legacy scheduler", value="legacy"),
     app_commands.Choice(name="Templates", value="templates"),
+    app_commands.Choice(name="Auto Replies", value="auto-replies"),
     app_commands.Choice(name="VIPs", value="vip"),
     app_commands.Choice(name="User permissions", value="users"),
     app_commands.Choice(name="Test", value="test")
@@ -2596,6 +2754,7 @@ async def slash_help(interaction: discord.Interaction, command: Optional[str] = 
 
 
 giggle_group.add_command(template_group)
+giggle_group.add_command(auto_reply_group)
 giggle_group.add_command(vip_group)
 giggle_group.add_command(user_group)
 tree.add_command(giggle_group)
@@ -3588,66 +3747,69 @@ async def set_guild_config(params):
 
     await msg.channel.send(embed=discord.Embed(description=output, color=0x00ff00))
 
-# Auto Replies intentionally remain on the classic interface for now.
-# They inspect arbitrary guild message text and therefore depend on Discord's
-# privileged MESSAGE_CONTENT intent. Remove the AutoReply feature in the same
-# change that removes that intent; do not spend migration effort moving it to
-# slash commands.
-
-async def create_auto_reply(params):
-    guild_id = params.pop('guild_id')
-    author_id = params.pop('author_id')
-    trigger = params.pop('trigger')
-    reply = params.pop('reply')
-    message_channel = params.pop('message_channel')
-    channel = params.pop('channel', None)
-    desc = params.pop('desc', None)
-    wildcard = params.pop('wildcard', None)
-    delete = params.pop('delete', None)
-    report = params.pop('report', None)
+# Auto Reply configuration uses slash commands, but matching ordinary server
+# messages below still requires Discord's privileged MESSAGE_CONTENT intent.
+def create_auto_reply_record(params):
+    guild_id = params.pop("guild_id")
+    author_id = params.pop("author_id")
+    trigger = params.pop("trigger")
+    reply = params.pop("reply")
+    channel = params.pop("channel", None)
+    desc = params.pop("desc", None)
+    wildcard = params.pop("wildcard", False)
+    delete = params.pop("delete", False)
+    report = params.pop("report", False)
 
     if params:
-        raise GigException(f"Invalid command.  Parameter **{next(iter(params))}** is unrecognized\n\nTo see help type:\n\n`~giggle help`")
+        raise GigException(
+            "Invalid Auto Reply parameter **{}**".format(next(iter(params)))
+        )
+
+    guild = client.get_guild(guild_id)
+    if guild is None:
+        raise GigException("Cannot find the Discord server for this Auto Reply")
 
     channel_id = None
     if channel is not None:
-        channel_id = get_channel_by_name_or_id(client.get_guild(guild_id), channel).id
+        channel_id = get_channel_by_name_or_id(guild, channel).id
 
     special_handling = 0
-
-    if wildcard is not None:
-        if wildcard.lower() != 'true' and wildcard.lower() != 'false' and wildcard != '0' and wildcard != '1' and wildcard.lower() != 'yes' and wildcard.lower() != 'no':
-            raise GigException(f"**{wildcard}** is an invalid value for wildcard\n\nTo see help type:\n\n`~giggle help`")
-        if wildcard.lower() == 'true' or wildcard == '1' or wildcard.lower() == 'yes':
-            special_handling = special_handling | 1
-
-    if delete is not None:
-        if delete.lower() != 'true' and delete.lower() != 'false' and delete != '0' and delete != '1' and delete.lower() != 'yes' and delete.lower() != 'no':
-            raise GigException(f"**{delete}** is an invalid value for delete\n\nTo see help type:\n\n`~giggle help`")
-        if delete.lower() == 'true' or delete == '1' or delete.lower() == 'yes':
-            special_handling = special_handling | 2
-
-    if report is not None:
-        if report.lower() != 'true' and report.lower() != 'false' and report != '0' and report != '1' and report.lower() != 'yes' and report.lower() != 'no':
-            raise GigException(f"**{report}** is an invalid value for report\n\nTo see help type:\n\n`~giggle help`")
-        if report.lower() == 'true' or report == '1' or report.lower() == 'yes':
-            special_handling = special_handling | 4
-
+    if wildcard:
+        special_handling |= 1
+    if delete:
+        special_handling |= 2
+    if report:
+        special_handling |= 4
     if special_handling == 0:
         special_handling = None
 
-    for message_id in delayed_messages:
-        if type(delayed_messages[message_id]) is AutoReply and delayed_messages[message_id].guild_id == guild_id and delayed_messages[message_id].trigger.lower() == trigger.lower():
-            embed=discord.Embed(description=f"**{delayed_messages[message_id].trigger}** is already in use", color=0xff0000)
-            embed.add_field(name="ID", value=f"{message_id}", inline=True)
-            await message_channel.send(embed=embed)
-            return
+    for message_id, stored_message in delayed_messages.items():
+        if (
+            type(stored_message) is AutoReply
+            and stored_message.guild_id == guild_id
+            and stored_message.trigger.casefold() == trigger.casefold()
+        ):
+            raise GigException(
+                "**{}** is already in use by Auto Reply **{}**".format(
+                    stored_message.trigger,
+                    message_id
+                )
+            )
 
-    newAutoReply = AutoReply(None, guild_id, channel_id, author_id, trigger, reply, desc, special_handling, True)
-    delayed_messages[newAutoReply.id] = newAutoReply
-    embed=discord.Embed(description=f"Your auto reply has been created", color=0x00ff00)
-    embed.add_field(name="ID", value=f"{newAutoReply.id}", inline=True)
-    await message_channel.send(embed=embed)
+    auto_reply = AutoReply(
+        None,
+        guild_id,
+        channel_id,
+        author_id,
+        trigger,
+        reply,
+        desc,
+        special_handling,
+        True
+    )
+    delayed_messages[auto_reply.id] = auto_reply
+    return auto_reply
+
 
 @client.event
 async def on_message(msg):
@@ -3701,9 +3863,15 @@ async def on_message(msg):
                     await client.get_user(settings.bot_owner_id).send(f"{msg.author.mention} is interacting with {client.user.mention} in the {msg.guild.name} server")
                     giguser.users[msg.author.id].set_last_active(time())
 
-                match = re.match(r'~g(iggle)? +(auto(-reply)?)( +([^\s\n]+))\s*([^\n]*)\n(.+)', msg.content, re.DOTALL)
-                if match:
-                    await parse_args(create_auto_reply, {'message_channel': msg.channel, 'guild_id': msg.guild.id, 'author_id': msg.author.id, 'trigger': match.group(5), 'reply': match.group(7)}, match.group(6))
+                if re.match(
+                    r'~g(iggle)? +(auto|auto-reply|auto-replies)(?:\s+.*)?$',
+                    msg.content,
+                    re.IGNORECASE | re.DOTALL
+                ):
+                    await send_prefix_migration_help(
+                        msg.channel,
+                        auto_reply_slash_help_embed()
+                    )
                     return
 
                 match = re.match(r'~g(iggle)? +(list|ls)( +((all)|(next( +\d+)?)))?( +(templates?|tmp|repeats?|a(uto(-replies)?)?)?)? *$', msg.content)
